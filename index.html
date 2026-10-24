@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#2a1a10" />
+    <meta name="description" content="Ginémon — RPG de collection et de combat au tour par tour inspiré des contes d'Afrique de l'Ouest et des légendes du monde." />
+    <title>Ginémon</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='19' r='11' fill='%23d8a040' stroke='%232a1a10' stroke-width='2'/%3E%3Crect x='13' y='3' width='6' height='8' fill='%23d8a040' stroke='%232a1a10' stroke-width='2'/%3E%3Cline x1='5' y1='19' x2='27' y2='19' stroke='%23a8441e' stroke-width='2'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main id="app">
+      <div id="cadre">
+        <canvas id="ecran" width="320" height="240" aria-label="Ginémon"></canvas>
+      </div>
+      <div id="manette" aria-hidden="true">
+        <div class="croix">
+          <button data-bouton="up" class="haut">▲</button>
+          <button data-bouton="left" class="gauche">◀</button>
+          <button data-bouton="right" class="droite">▶</button>
+          <button data-bouton="down" class="bas">▼</button>
+        </div>
+        <button data-bouton="start" class="menu">☰</button>
+        <div class="actions">
+          <button data-bouton="b" class="b">B</button>
+          <button data-bouton="a" class="a">A</button>
+        </div>
+      </div>
+    </main>
+    <noscript>Ginémon nécessite JavaScript.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

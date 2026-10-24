@@ -1,0 +1,19 @@
+{
+  "name": "ginemon",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ginémon — RPG de collection et de combat au tour par tour inspiré des folklores d'Afrique de l'Ouest et du monde.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

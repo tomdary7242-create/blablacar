@@ -1,0 +1,141 @@
+:root {
+  --fond: #1a1208;
+  --encre: #2a1a10;
+  --ocre: #c8892a;
+  --rouille: #a8441e;
+  --creme: #f6ecd6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--fond);
+  color: var(--creme);
+  font-family: 'Trebuchet MS', 'Segoe UI', Verdana, sans-serif;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: 100dvh;
+}
+
+#cadre {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+#ecran {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: 0 0 0 3px var(--encre), 0 0 0 5px var(--ocre), 0 12px 40px rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+}
+
+#manette {
+  display: none;
+  position: relative;
+  height: 180px;
+  flex: none;
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom));
+}
+
+/* Sur téléphone, l'écran se cale en haut pour laisser la place aux pouces. */
+body.tactile #cadre {
+  align-items: flex-start;
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+
+body.tactile #manette {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#manette button {
+  font: inherit;
+  color: var(--creme);
+  background: linear-gradient(#5a3a22, #3a2414);
+  border: 2px solid var(--ocre);
+  border-radius: 10px;
+  touch-action: none;
+}
+
+#manette button.actif {
+  background: var(--rouille);
+}
+
+.croix {
+  position: relative;
+  width: 150px;
+  height: 150px;
+}
+
+.croix button {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  font-size: 18px;
+}
+
+.croix .haut {
+  left: 50px;
+  top: 0;
+}
+
+.croix .bas {
+  left: 50px;
+  bottom: 0;
+}
+
+.croix .gauche {
+  left: 0;
+  top: 50px;
+}
+
+.croix .droite {
+  right: 0;
+  top: 50px;
+}
+
+.menu {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 34px;
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.actions button {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.actions .a {
+  margin-bottom: 36px;
+}
