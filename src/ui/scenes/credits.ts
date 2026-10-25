@@ -36,6 +36,7 @@ export class CreditsScene implements Scene {
   readonly opaque = true;
   private phase: 'pantheon' | 'generique' = 'pantheon';
   private t = 0;
+  readonly music = 'titre';
 
   constructor(private readonly game: Game) {}
 

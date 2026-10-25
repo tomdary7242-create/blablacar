@@ -6,6 +6,7 @@ import { evolutionGlow } from '../backdrops';
 import { PAL, box, continueMarker, stamp, text } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
+import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 import { W } from '../screen';
 import { drawCreature } from '../sprites';
@@ -19,6 +20,10 @@ export class EvolutionScene implements Scene {
   private message: string;
   private shownSpecies: number;
   private readonly oldName: string;
+
+  get music(): TrackId | undefined {
+    return this.phase === 'fin' ? undefined : 'evolution';
+  }
 
   constructor(
     private readonly game: Game,
@@ -55,7 +60,8 @@ export class EvolutionScene implements Scene {
         this.shownSpecies = this.to;
         this.phase = 'fin';
         this.message = `Félicitations ! ${this.oldName} a évolué en ${getSpecies(this.to).name} !`;
-        this.game.sfx('capture');
+        this.game.audio.cry(this.to);
+        this.game.jingle('evolue');
       }
       return;
     }

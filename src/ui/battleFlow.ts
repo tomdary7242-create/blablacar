@@ -1,10 +1,11 @@
 // Lancement des combats et conséquences : capture, récompenses, évolutions, défaite.
 import { getSpecies } from '../data/ginedex';
-import { BADGES, getTrainer, trainerTeam } from '../data/trainers';
+import { BADGES, getTrainer, trainerTeam, type Trainer } from '../data/trainers';
 import { Combat, type Outcome } from '../engine/combat';
 import { createJinemon, evolutionTarget, type Jinemon } from '../engine/creature';
 import { addJinemon, healParty, markSeen } from '../engine/gameState';
 import type { Game } from './game';
+import type { TrackId } from './musicScore';
 import { BattleScene } from './scenes/battle';
 import { CreditsScene } from './scenes/credits';
 import { EvolutionScene } from './scenes/evolution';
@@ -21,6 +22,8 @@ export interface WildOptions {
   intro?: string;
   /** Appelé dès la fin du combat, quelle qu'en soit l'issue. */
   onOutcome?: (outcome: Outcome) => void;
+  /** Musique du combat (par défaut : combat sauvage, ou légende). */
+  music?: TrackId;
 }
 
 export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}): void {
@@ -40,6 +43,7 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}
       game.scenes.push(
         new BattleScene(game, combat, {
           theme: game.world?.zone.theme ?? 'savane',
+          music: opts.music ?? (species.legendary ? 'legende' : 'combat'),
           onEnd: (outcome) => {
             opts.onOutcome?.(outcome);
             afterWild(game, combat, outcome, before, opts.flag);
@@ -91,6 +95,7 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
         new BattleScene(game, combat, {
           theme: game.world?.zone.theme ?? 'savane',
           trainer,
+          music: trainerMusic(trainer),
           onEnd: (outcome) => {
             if (outcome !== 'victoire') {
               blackout(game);
@@ -102,18 +107,25 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
             if (trainer.badge && !state.badges.includes(trainer.badge)) {
               state.badges.push(trainer.badge);
               lines.push(`Vous obtenez l'${BADGES[trainer.badge].name} !`);
+              game.jingle('insigne');
             }
             game.say(lines, () =>
               evolutions(game, before, () => {
                 game.save(true);
                 if (trainer.id === 'assa') game.scenes.push(new CreditsScene(game));
               }),
-            );
+            'victoire');
           },
         }),
       );
     }),
   );
+}
+
+/** Musique d'un combat de dresseur selon son rang. */
+function trainerMusic(trainer: Trainer): TrackId {
+  if (trainer.id === 'assa') return 'legende';
+  return trainer.badge ? 'maitre' : 'dresseur';
 }
 
 /** Fait évoluer, l'un après l'autre, les Jinémon qui ont progressé pendant le combat. */

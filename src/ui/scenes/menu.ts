@@ -93,7 +93,7 @@ export class OptionsScene implements Scene {
     const input = this.game.input;
     const options = this.game.s.options;
     if (input.pressed('up') || input.pressed('down')) {
-      this.index = (this.index + (input.pressed('up') ? 2 : 1)) % 3;
+      this.index = (this.index + (input.pressed('up') ? 3 : 1)) % 4;
       this.game.sfx('curseur');
     }
     const delta = input.pressed('left') ? -1 : input.pressed('right') ? 1 : 0;
@@ -107,7 +107,12 @@ export class OptionsScene implements Scene {
       this.game.audio.enabled = options.sound;
       this.game.sfx('valider');
     }
-    if (input.pressed('b') || (input.pressed('a') && this.index === 2)) {
+    if ((delta || input.pressed('a')) && this.index === 2) {
+      options.music = !options.music;
+      this.game.audio.music.enabled = options.music;
+      this.game.sfx('valider');
+    }
+    if (input.pressed('b') || (input.pressed('a') && this.index === 3)) {
       this.game.sfx('retour');
       this.game.save(true);
       this.game.scenes.pop(this);
@@ -117,9 +122,9 @@ export class OptionsScene implements Scene {
   render(ctx: CanvasRenderingContext2D): void {
     const o = this.game.s.options;
     const speed = { lent: 'Lente', normal: 'Normale', rapide: 'Rapide' }[o.textSpeed];
-    box(ctx, 24, 56, 208, 66);
-    text(ctx, 'OPTIONS', 128, 60, { align: 'center', color: PAL.rust });
-    menuList(ctx, [`Texte : ◄ ${speed} ►`, `Sons : ◄ ${o.sound ? 'Activés' : 'Coupés'} ►`, 'Retour'], 34, 76, this.index, { lineHeight: 13 });
+    box(ctx, 24, 50, 208, 79);
+    text(ctx, 'OPTIONS', 128, 54, { align: 'center', color: PAL.rust });
+    menuList(ctx, [`Texte : ◄ ${speed} ►`, `Sons : ◄ ${o.sound ? 'Activés' : 'Coupés'} ►`, `Musique : ◄ ${o.music ? 'Activée' : 'Coupée'} ►`, 'Retour'], 34, 70, this.index, { lineHeight: 13 });
   }
 }
 

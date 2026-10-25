@@ -25,6 +25,7 @@ import { box, PAL, text } from '../draw';
 import { textWidth, wrapText } from '../font';
 import type { Game, World } from '../game';
 import type { Button } from '../input';
+import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
 import { battleBackdrop } from '../backdrops';
@@ -50,6 +51,17 @@ const DECOR_TEXT: Record<string, string> = {
   E: 'L’étal déborde de tissus, d’épices et de calebasses.',
   D: 'La porte est fermée. Une bonne odeur de tô s’échappe de la case.',
   '~': "L'eau est profonde ici. Mieux vaut ne pas s'y aventurer.",
+};
+
+/** Thème musical de chaque zone. */
+const ZONE_MUSIC: Record<ZoneId, TrackId> = {
+  village: 'village',
+  savane: 'route',
+  terresRouges: 'ville',
+  marigot: 'foret',
+  foret: 'foret',
+  piste: 'route',
+  falaise: 'falaise',
 };
 
 export class OverworldScene implements Scene, World {
@@ -82,6 +94,14 @@ export class OverworldScene implements Scene, World {
     const p = game.s.position;
     this.loadZone(p.zone, p.x, p.y, p.dir);
     this.prewarmParty();
+  }
+
+  /** Musique de la zone ; la nuit, une berceuse inquiète, et le silence quand une Hantise approche. */
+  get music(): TrackId | null {
+    const night = isNight(this.game.s.clock);
+    if (night && this.haunt && this.haunt.distance() <= 7) return null;
+    if (night) return 'nuit';
+    return ZONE_MUSIC[this.zone.id];
   }
 
   /** Sculpte à l'avance les sprites de l'équipe (menus et combat). */
@@ -198,6 +218,7 @@ export class OverworldScene implements Scene, World {
       startWildBattle(game, foe, {
         flag: hauntCapturedFlag(zone),
         intro: `La Hantise ${name} surgit des ténèbres !`,
+        music: 'hantise',
         onOutcome: () => {
           // Quelle que soit l'issue, elle disparaît jusqu'à la nuit suivante.
           game.s.repelled[zone] = nightId(game.s.clock);
@@ -463,7 +484,7 @@ export class OverworldScene implements Scene, World {
           }
           healParty(state);
           state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
-          game.sfx('soin');
+          game.jingle('soin');
           game.say(['… … …', 'Tes Jinémon sont en pleine forme ! Que les ancêtres veillent sur toi.'], () => game.save());
         });
         break;
@@ -497,7 +518,7 @@ export class OverworldScene implements Scene, World {
       case 'objet': {
         addItem(state, s.item, s.quantity);
         state.flags[s.flag] = true;
-        game.sfx('valider');
+        game.jingle('objet');
         const label = s.quantity > 1 ? `${s.quantity} × ${getItem(s.item).name}` : getItem(s.item).name;
         game.say([`Vous trouvez : ${label} !`], () => game.save(true));
         break;
@@ -556,7 +577,7 @@ export class OverworldScene implements Scene, World {
               const j = giveStarter(state, speciesId, game.rng);
               addItem(state, 'calebasse', 5);
               addItem(state, 'karite', 3);
-              game.sfx('capture');
+              game.jingle('capture');
               game.say(
                 [
                   `Vous recevez ${displayName(j)} !`,

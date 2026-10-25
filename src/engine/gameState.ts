@@ -18,6 +18,7 @@ export interface Position {
 export interface Options {
   textSpeed: 'lent' | 'normal' | 'rapide';
   sound: boolean;
+  music: boolean;
 }
 
 export interface GameState {
@@ -64,7 +65,7 @@ export function newGameState(playerName: string): GameState {
     flags: {},
     playTimeMs: 0,
     nextUid: 1,
-    options: { textSpeed: 'normal', sound: true },
+    options: { textSpeed: 'normal', sound: true, music: true },
     clock: newClock(),
     repelled: {},
   };

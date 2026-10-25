@@ -1,5 +1,6 @@
 // Pile de scènes : la scène du dessus reçoit les entrées, les scènes
 // transparentes laissent voir celles du dessous (menus, dialogues).
+import type { TrackId } from './musicScore';
 
 export interface Scene {
   /** Vrai : les scènes inférieures ne sont pas dessinées. */
@@ -8,6 +9,8 @@ export interface Scene {
   render(ctx: CanvasRenderingContext2D): void;
   /** Appelé quand la scène redevient celle du dessus. */
   resume?(): void;
+  /** Musique voulue par la scène (`null` : silence ; absente : celle de dessous). */
+  readonly music?: TrackId | null;
 }
 
 export class SceneManager {
@@ -50,6 +53,15 @@ export class SceneManager {
 
   update(dt: number): void {
     this.top?.update(dt);
+  }
+
+  /** Musique de la scène la plus haute qui en demande une. */
+  music(): TrackId | null | undefined {
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      const m = this.stack[i].music;
+      if (m !== undefined) return m;
+    }
+    return undefined;
   }
 
   render(ctx: CanvasRenderingContext2D): void {

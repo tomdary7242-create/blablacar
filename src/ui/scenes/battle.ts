@@ -12,6 +12,7 @@ import { removeItem } from '../../engine/gameState';
 import { PAL, bar, box, calabash, cursor, fillEllipse, hpBar, stamp, statusBadge, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
+import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
 import { battleBackdrop } from '../backdrops';
@@ -46,6 +47,7 @@ const MAIN_MENU = ['ATTAQUE', 'SAC', 'ÉQUIPE', 'FUITE'];
 export interface BattleOptions {
   theme: Theme;
   trainer?: Trainer;
+  music: TrackId;
   onEnd: (outcome: Outcome) => void;
 }
 
@@ -79,6 +81,11 @@ export class BattleScene implements Scene {
     private readonly opts: BattleOptions,
   ) {
     this.queue.push(...combat.start());
+  }
+
+  get music(): TrackId {
+    if (this.opts.trainer && this.combat.isOver() && this.combat.outcome === 'victoire') return 'victoire';
+    return this.opts.music;
   }
 
   // ── Boucle ─────────────────────────────────────────────────────────────
@@ -167,6 +174,7 @@ export class BattleScene implements Scene {
           this.xpShown = this.xpTarget = this.xpRatio(j.xp, event.level);
         }
         this.anims.push({ kind: 'entree', side: event.side, t: 0, duration: 0.35 });
+        this.game.audio.cry(event.speciesId);
         this.wait = 0.4;
         break;
       }
@@ -213,6 +221,7 @@ export class BattleScene implements Scene {
         break;
       case 'ko':
         this.anims.push({ kind: 'ko', side: event.side, t: 0, duration: 0.5 });
+        if (this.views[event.side]) this.game.audio.cry(this.views[event.side]!.speciesId, 0.72);
         this.game.sfx('ko');
         this.wait = 0.6;
         break;
@@ -312,7 +321,7 @@ export class BattleScene implements Scene {
     } else if (c.phase === 'secousses' && c.t > c.shakes * 0.55) {
       c.phase = 'resultat';
       c.t = 0;
-      if (c.success) this.game.sfx('capture');
+      if (c.success) this.game.jingle('capture');
       else if (foe) foe.visible = true;
     } else if (c.phase === 'resultat' && c.t > 0.6 && !c.success) {
       this.capture = null;

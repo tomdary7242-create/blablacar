@@ -22,6 +22,7 @@ export class TitleScene implements Scene {
   readonly opaque = true;
   private index = 0;
   private options: string[];
+  readonly music = 'titre';
 
   constructor(private readonly game: Game) {
     this.options = hasSave() ? ['Continuer', 'Nouvelle partie'] : ['Nouvelle partie'];
@@ -130,6 +131,7 @@ export class NameScene implements Scene {
 export function startWorld(game: Game, state: ReturnType<typeof newGameState>, intro: boolean): void {
   game.state = state;
   game.audio.enabled = state.options.sound;
+  game.audio.music.enabled = state.options.music;
   game.scenes.reset(new OverworldScene(game));
   if (!intro) {
     game.scenes.push(new RevealScene(game, 0.6));

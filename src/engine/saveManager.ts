@@ -122,6 +122,7 @@ export function sanitize(data: unknown): GameState | null {
     state.options = {
       textSpeed: ['lent', 'normal', 'rapide'].includes(d.options.textSpeed) ? d.options.textSpeed : 'normal',
       sound: d.options.sound !== false,
+      music: d.options.music !== false,
     };
   }
   const clock = d.clock as Partial<GameState['clock']> | undefined;

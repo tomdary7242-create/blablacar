@@ -4,6 +4,7 @@ import { saveGame } from '../engine/saveManager';
 import { type GameState } from '../engine/gameState';
 import { mathRng, type Rng } from '../engine/rng';
 import type { Audio, Sfx } from './audio';
+import type { JingleId, TrackId } from './musicScore';
 import { box, text } from './draw';
 import type { Input } from './input';
 import { SceneManager } from './scene';
@@ -40,6 +41,8 @@ export class Game {
     this.time += dt;
     if (this.state) this.state.playTimeMs += dt * 1000;
     this.scenes.update(dt);
+    const music = this.scenes.music();
+    if (music !== undefined) this.audio.music.play(music);
     this.toastTimer = Math.max(0, this.toastTimer - dt);
     this.input.endFrame(dt);
   }
@@ -61,6 +64,11 @@ export class Game {
     this.audio.play(name);
   }
 
+  /** Jingle (soin, capture, insigne…) : la musique reprend ensuite. */
+  jingle(id: JingleId, onDone?: () => void): void {
+    this.audio.music.jingle(id, onDone);
+  }
+
   toast(message: string): void {
     this.toastText = message;
     this.toastTimer = 1.6;
@@ -80,8 +88,8 @@ export class Game {
     return speed === 'lent' ? 28 : speed === 'rapide' ? 140 : 60;
   }
 
-  say(lines: string[], onDone?: () => void): void {
-    this.scenes.push(new DialogScene(this, lines, { onDone }));
+  say(lines: string[], onDone?: () => void, music?: TrackId): void {
+    this.scenes.push(new DialogScene(this, lines, { onDone, music }));
   }
 
   ask(lines: string[], choices: string[], onChoice: (index: number) => void, cancelIndex = choices.length - 1): void {

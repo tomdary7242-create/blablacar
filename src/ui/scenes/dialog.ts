@@ -2,6 +2,7 @@
 import { box, continueMarker, menuList, PAL, text } from '../draw';
 import { textWidth, wrapText } from '../font';
 import type { Game } from '../game';
+import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 
 const BOX = { x: 2, y: 144, w: 252, h: 46 };
@@ -12,6 +13,8 @@ export interface DialogOptions {
   choices?: string[];
   onChoice?: (index: number) => void;
   cancelIndex?: number;
+  /** Musique pendant le dialogue (victoire après un combat…). */
+  music?: TrackId;
 }
 
 export class DialogScene implements Scene {
@@ -20,6 +23,7 @@ export class DialogScene implements Scene {
   private shown = 0;
   private choiceIndex = 0;
   private choosing = false;
+  readonly music: TrackId | undefined;
 
   constructor(
     private readonly game: Game,
@@ -32,6 +36,7 @@ export class DialogScene implements Scene {
       for (let i = 0; i < rows.length; i += LINES_PER_PAGE) pages.push(rows.slice(i, i + LINES_PER_PAGE));
     }
     this.pages = pages.length ? pages : [['']];
+    this.music = opts.music;
   }
 
   private get pageLength(): number {
