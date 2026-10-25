@@ -45,9 +45,10 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 
 ## Contenu
 
-- **73 Jinémon** répartis en 44 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
+- **128 Jinémon** répartis en 84 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
   Termitox, Rochard) et deux Légendes du Panthéon (Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou).
-  Fiche complète : [`docs/GINEDEX.md`](docs/GINEDEX.md).
+  Le bestiaire puise surtout dans les contes d’Afrique de l’Ouest, mais aussi d’Afrique centrale et australe, d’Égypte,
+  d’Europe, d’Asie, d’Océanie et des Amériques. Fiche complète : [`docs/GINEDEX.md`](docs/GINEDEX.md).
 - **100 attaques** réparties sur les 14 types, en quatre paliers (base, élémentaire, statut, divin), avec altérations,
   modificateurs de statistiques, soins, drain, contrecoup et priorité.
 - **Bassins d’attaques** d’environ 15 attaques par lignée, apprises du niveau 1 au niveau 70 ; au-delà de 4 attaques,
@@ -62,6 +63,30 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - Calebasses de capture (Sacrée, Ornée, des Ancêtres), remèdes (karité, bissap, pain de singe, moringa, noix de
   kola), marché en cauris, Grenier pour les Jinémon en surplus, Ginédex, évolutions animées (annulables avec B),
   générique de fin.
+
+## Jour, nuit et Hantises
+
+- **Horloge** : une seconde réelle vaut une minute de jeu, une journée dure donc 24 minutes. Aube de 5 h à 7 h, jour
+  jusqu’à 18 h, crépuscule jusqu’à 20 h, puis nuit. L’heure s’affiche dans le menu ; chez la guérisseuse, on peut
+  se reposer jusqu’au matin ou jusqu’à la nuit.
+- **La nuit**, la carte s’assombrit (tramage en pixel art) : seuls la lanterne du joueur, les forges, les portes des
+  cases et les autels éclairent. Les combats se déroulent sous un ciel étoilé.
+- **14 Jinémon nocturnes** ne sortent des hautes herbes qu’entre 20 h et 5 h (Hiboulet, Roussetin, Bakeneko,
+  Kponyon, Onimaru, Gargouillon, Bunyip, Chupacabra…).
+- **6 Hantises**, une par zone sauvage, plus fortes que la faune locale, rôdent sur la carte la nuit. On les voit se
+  déplacer, et elles attaquent au contact :
+
+  | Zone | Hantise | Comportement |
+  |---|---|---|
+  | Savane des Termitières | Tikoloshe (niv. 11) | Tapie dans les hautes herbes, seul le froissement des tiges la trahit. |
+  | Terres Rouges | Boudarou (niv. 17) | Suit vos traces pas à pas ; quand vous vous arrêtez, elle continue d’avancer. |
+  | Marigot des Ancêtres | Kishimiroir (niv. 23) | Votre reflet de l’autre côté de l’eau, qui reproduit vos gestes. |
+  | Forêt Sacrée | Nkondiclou (niv. 29) | Une statue qui ne bouge que lorsque vous ne la regardez pas. |
+  | Piste des Chasseurs | Nopperabô (niv. 35) | Un passant, dos tourné, qui se retourne sans visage. |
+  | Falaise des Ancêtres | Obayifeu (niv. 48) | Une lueur qui s’éteint et se rallume plus près, souvent dans votre dos. |
+
+  Un murmure annonce la Hantise à l’entrée de la zone, un battement de cœur s’accélère quand elle approche. Vaincue
+  ou fuie, elle disparaît jusqu’à la nuit suivante ; capturée, elle ne revient plus.
 
 ## Règles de combat
 
@@ -92,16 +117,22 @@ src/
     talents.ts          Talents passifs
     items.ts            Calebasses et remèdes
     trainers.ts         Dresseurs, rivale, Maîtres de Piste, insignes
-    zones.ts            Cartes ASCII, PNJ, rencontres, téléporteurs
+    zones.ts            Cartes ASCII, PNJ, rencontres de jour et de nuit, téléporteurs
+    hantises.ts         Les six Hantises nocturnes et leurs comportements
   engine/               Logique pure, testée sans navigateur
     combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience)
     creature.ts         Statistiques, expérience, apprentissage, évolution, objets
     gameState.ts        État de partie
+    clock.ts            Horloge du jeu : phases du jour, obscurité, nuits
     saveManager.ts      Sauvegarde automatique dans le LocalStorage (avec validation)
     rng.ts              Aléatoire injectable (déterministe dans les tests)
   ui/                   Rendu Canvas et scènes (titre, exploration, combat, menus…)
     sculpt.ts           Sculpteur de volumes et conversion en pixel art
-    creatures.ts        Modelage des 73 Jinémon (un plan corporel par famille, réglé par espèce)
+    sculptKit.ts        Pièces de modelage partagées (squelettes, ailes, cornes, flammes…)
+    creatures.ts        Modelage des Jinémon 001 à 073 (un plan corporel par famille, réglé par espèce)
+    creaturesNouveaux.ts Modelage des Jinémon 074 à 128, dont les six Hantises
+    night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
+    haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
     props.ts            Objets du décor sculptés
     tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
     backdrops.ts        Fonds de combat, titre, case de l’Ancien, halo d’évolution

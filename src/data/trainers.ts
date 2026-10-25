@@ -33,6 +33,8 @@ export interface CharacterLook {
   outfit: string;
   accent: string;
   headwear?: 'chapeau' | 'foulard' | 'bonnet' | 'turban' | 'masque';
+  /** Visage lisse, sans yeux ni bouche (nopperabō). */
+  faceless?: boolean;
 }
 
 export interface TrainerMon {

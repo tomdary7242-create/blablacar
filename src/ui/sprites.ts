@@ -255,7 +255,7 @@ function overlay(base: string[], top: string[] | undefined): string[] {
 
 /** Sprite de personnage 16×24 ; `frame` 0 = immobile, 1 et 2 = pas alternés. */
 export function characterSprite(look: CharacterLook, dir: Dir, frame: number): HTMLCanvasElement {
-  const key = `${look.skin}${look.outfit}${look.accent}${look.headwear}:${dir}:${frame}`;
+  const key = `${look.skin}${look.outfit}${look.accent}${look.headwear}${look.faceless ? ':lisse' : ''}:${dir}:${frame}`;
   const cached = charCache.get(key);
   if (cached) return cached;
   const facing: Facing = dir === 'bas' ? 'bas' : dir === 'haut' ? 'haut' : 'gauche';
@@ -264,10 +264,10 @@ export function characterSprite(look: CharacterLook, dir: Dir, frame: number): H
   const pal: Record<string, string> = {
     O: '#20140c',
     S: look.skin,
-    s: shade(look.skin, -0.25),
+    s: look.faceless ? look.skin : shade(look.skin, -0.25),
     H: '#1c1412',
     h: '#4a3a34',
-    E: '#140c08',
+    E: look.faceless ? look.skin : '#140c08',
     C: look.outfit,
     c: shade(look.outfit, -0.28),
     L: shade(look.outfit, 0.28),

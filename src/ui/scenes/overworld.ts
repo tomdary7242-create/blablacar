@@ -1,6 +1,7 @@
 // Exploration des zones : déplacements case par case, PNJ, panneaux,
 // rencontres dans les hautes herbes et techniques hors combat des insignes.
-import { SPECIES } from '../../data/ginedex';
+import { SPECIES, getSpecies } from '../../data/ginedex';
+import { hauntCapturedFlag, hauntOf } from '../../data/hantises';
 import { getItem } from '../../data/items';
 import { MOVES } from '../../data/moves';
 import { getTrainer } from '../../data/trainers';
@@ -15,17 +16,20 @@ import {
   type Zone,
   type ZoneId,
 } from '../../data/zones';
+import { MINUTES_PER_SECOND, advance, advanceTo, darknessOf, isNight, nightId, phaseOf, warmthOf } from '../../engine/clock';
 import { createJinemon, displayName } from '../../engine/creature';
 import { addItem, giveStarter, hasBadge, healParty } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { startTrainerBattle, startWildBattle } from '../battleFlow';
 import { box, PAL, text } from '../draw';
-import { textWidth } from '../font';
+import { textWidth, wrapText } from '../font';
 import type { Game, World } from '../game';
 import type { Button } from '../input';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
 import { battleBackdrop } from '../backdrops';
+import { HauntActor, type HauntHost } from '../haunts';
+import { NightLayer, type Light } from '../night';
 import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
 import { TILE, animateTile, grassOverlay, itemBall, renderZoneLayers, type ZoneLayers } from '../tiles';
 import { MenuScene } from './menu';
@@ -59,8 +63,19 @@ export class OverworldScene implements Scene, World {
   private stepFrame = 0;
   private npcDirs = new Map<string, Dir>();
   private banner = 0;
+  private bannerText = '';
   private stepsSinceBattle = 0;
   private bumpCooldown = 0;
+  private readonly night = new NightLayer();
+  /** Hantise qui rôde dans la zone (la nuit seulement). */
+  private haunt: HauntActor | null = null;
+  /** Traces de pas de la nuit dans cette zone (suivies par le traqueur). */
+  private steps: Array<[number, number]> = [];
+  private omen = '';
+  private omenTimer = 0;
+  private heartbeat = 0;
+  /** Embuscade en cours : l'écran tremble avant le combat. */
+  private ambush = -1;
 
   constructor(private readonly game: Game) {
     game.world = this;
@@ -87,15 +102,22 @@ export class OverworldScene implements Scene, World {
     this.dir = dir;
     this.moving = null;
     this.banner = 2.5;
+    this.bannerText = this.zone.name;
     this.npcDirs = new Map(this.zone.npcs.map((n) => [n.id, n.dir]));
     this.redrawMap();
     this.savePosition();
+    this.haunt = null;
+    this.steps = [];
+    this.ambush = -1;
+    this.syncHaunt();
     // Fond de combat et Jinémon sauvages de la zone, préparés pendant la promenade.
     const zone = this.zone;
     setTimeout(() => {
       if (this.zone !== zone) return;
-      battleBackdrop(zone.theme);
-      prewarmCreatures(zone.encounters.map((e): [number, number] => [e.species, 64]));
+      battleBackdrop(zone.theme, isNight(this.game.s.clock));
+      prewarmCreatures([...zone.encounters, ...(zone.nightEncounters ?? [])].map((e): [number, number] => [e.species, 64]));
+      const haunt = hauntOf(zone.id);
+      if (haunt) prewarmCreatures([[haunt.species, 32], [haunt.species, 64]]);
     }, 600);
   }
 
@@ -109,6 +131,81 @@ export class OverworldScene implements Scene, World {
 
   private savePosition(): void {
     this.game.s.position = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+  }
+
+  // ── Nuit et Hantises ───────────────────────────────────────────────────
+
+  /** Fait apparaître (ou disparaître) la Hantise de la zone selon l'heure. */
+  private syncHaunt(): void {
+    const state = this.game.s;
+    const def = hauntOf(this.zone.id);
+    const allowed =
+      !!def && isNight(state.clock) && !state.flags[hauntCapturedFlag(this.zone.id)] && state.repelled[this.zone.id] !== nightId(state.clock);
+    if (!allowed) {
+      if (this.haunt && this.ambush < 0) this.haunt = null;
+      return;
+    }
+    if (this.haunt || !def) return;
+    let start: [number, number];
+    if (def.behavior === 'miroir') {
+      const axis = def.axis ?? 0;
+      start = [this.x, Math.max(0, Math.min(this.zone.map.length - 1, 2 * axis - this.y))];
+    } else {
+      start = [...def.spawns].sort((a, b) => Math.abs(b[0] - this.x) + Math.abs(b[1] - this.y) - (Math.abs(a[0] - this.x) + Math.abs(a[1] - this.y)))[0];
+    }
+    this.haunt = new HauntActor(def, this.hauntHost(), start[0], start[1]);
+    this.steps = [[this.x, this.y]];
+    this.omen = def.omen;
+    this.omenTimer = 5;
+  }
+
+  private hauntHost(): HauntHost {
+    const scene = this;
+    return {
+      rng: this.game.rng,
+      get mapWidth() {
+        return scene.zone.map[0].length;
+      },
+      get mapHeight() {
+        return scene.zone.map.length;
+      },
+      player: () => ({ x: this.x, y: this.y, dir: this.dir }),
+      // Les Hantises traversent les vivants comme des esprits : seuls le décor et le joueur les arrêtent.
+      walkable: (x, y) => {
+        if (x === this.x && y === this.y) return false;
+        return !SOLID_TILES.has(this.tile(x, y));
+      },
+      tile: (x, y) => this.tile(x, y),
+      trail: () => this.steps,
+      sfx: (name) => this.game.sfx(name),
+      caught: () => {
+        this.ambush = 0;
+        this.moving = null;
+      },
+    };
+  }
+
+  /** La Hantise a rattrapé le joueur : cri, écran qui tremble, puis combat. */
+  private launchAmbush(): void {
+    const haunt = this.haunt;
+    if (!haunt) return;
+    const def = haunt.haunt;
+    const game = this.game;
+    const zone = this.zone.id;
+    const name = getSpecies(def.species).name;
+    game.say(def.cry, () => {
+      const foe = createJinemon(def.species, def.level, game.rng);
+      startWildBattle(game, foe, {
+        flag: hauntCapturedFlag(zone),
+        intro: `La Hantise ${name} surgit des ténèbres !`,
+        onOutcome: () => {
+          // Quelle que soit l'issue, elle disparaît jusqu'à la nuit suivante.
+          game.s.repelled[zone] = nightId(game.s.clock);
+          this.haunt = null;
+          this.ambush = -1;
+        },
+      });
+    });
   }
 
   private rockBroken(x: number, y: number): boolean {
@@ -145,6 +242,7 @@ export class OverworldScene implements Scene, World {
   private canEnter(x: number, y: number): boolean {
     const t = this.tile(x, y);
     if (this.npcAt(x, y)) return false;
+    if (this.haunt && this.haunt.x === x && this.haunt.y === y && !(this.haunt.haunt.behavior === 'miroir' && this.haunt.submerged())) return false;
     if (t === 'w') return hasBadge(this.game.s, 'pluie') && !!this.fieldUser('Eau');
     return !SOLID_TILES.has(t);
   }
@@ -153,7 +251,27 @@ export class OverworldScene implements Scene, World {
 
   update(dt: number): void {
     this.banner = Math.max(0, this.banner - dt);
+    this.omenTimer = Math.max(0, this.omenTimer - dt);
     this.bumpCooldown = Math.max(0, this.bumpCooldown - dt);
+    if (this.ambush >= 0) {
+      this.ambush += dt;
+      if (this.ambush >= 0.75 && this.ambush - dt < 0.75) this.launchAmbush();
+      return;
+    }
+    this.tickClock(dt);
+    if (this.haunt) {
+      this.haunt.update(dt);
+      if (this.ambush >= 0) return;
+      // Le cœur s'emballe quand la Hantise approche.
+      const d = this.haunt.distance();
+      if (d <= 6) {
+        this.heartbeat -= dt;
+        if (this.heartbeat <= 0) {
+          this.game.sfx('battement');
+          this.heartbeat = 0.35 + d * 0.16;
+        }
+      }
+    }
     if (this.moving) {
       this.moving.t += dt / this.moving.duration;
       if (this.moving.t >= 1) {
@@ -185,6 +303,28 @@ export class OverworldScene implements Scene, World {
     this.tryMove();
   }
 
+  /** L'heure tourne pendant l'exploration ; la nuit tombe, l'aube se lève. */
+  private tickClock(dt: number): void {
+    const clock = this.game.s.clock;
+    const wasNight = isNight(clock);
+    if (!advance(clock, dt * MINUTES_PER_SECOND)) return;
+    const phase = phaseOf(clock.minute);
+    const labels = { aube: 'L’aube se lève…', jour: 'Le jour est levé', crepuscule: 'Le soleil se couche…', nuit: 'La nuit tombe…' };
+    this.bannerText = labels[phase];
+    this.banner = 2.5;
+    if (phase === 'nuit' && !wasNight) {
+      this.game.sfx('nuit');
+      this.steps = [];
+    }
+    if (wasNight && phase !== 'nuit' && this.haunt) {
+      this.omen = 'Aux premières lueurs du jour, la présence se dissipe.';
+      this.omenTimer = 4;
+    }
+    this.syncHaunt();
+    // Le fond de combat de la nuit est préparé à l'avance.
+    setTimeout(() => battleBackdrop(this.zone.theme, isNight(clock)), 200);
+  }
+
   private tryMove(): void {
     const { dx, dy } = DIR_DELTA[this.dir];
     const nx = this.x + dx;
@@ -206,6 +346,10 @@ export class OverworldScene implements Scene, World {
   private finishStep(): void {
     this.savePosition();
     this.stepsSinceBattle += 1;
+    if (this.haunt) {
+      this.steps.push([this.x, this.y]);
+      if (this.steps.length > 300) this.steps.shift();
+    }
     const warp = this.zone.warps.find((w) => w.x === this.x && w.y === this.y);
     if (warp) {
       this.game.scenes.push(
@@ -223,7 +367,8 @@ export class OverworldScene implements Scene, World {
   }
 
   private wildEncounter(): void {
-    const entry = weightedPick(this.game.rng, this.zone.encounters);
+    const table = isNight(this.game.s.clock) && this.zone.nightEncounters?.length ? this.zone.nightEncounters : this.zone.encounters;
+    const entry = weightedPick(this.game.rng, table);
     const foe = createJinemon(entry.species, randInt(this.game.rng, entry.min, entry.max), this.game.rng);
     this.stepsSinceBattle = 0;
     startWildBattle(this.game, foe);
@@ -240,6 +385,11 @@ export class OverworldScene implements Scene, World {
     const { dx, dy } = DIR_DELTA[this.dir];
     const tx = this.x + dx;
     const ty = this.y + dy;
+    if (this.haunt && this.haunt.x === tx && this.haunt.y === ty && this.haunt.disguised()) {
+      this.haunt.talkedTo();
+      this.game.say(['Excusez-moi… vous savez où mène cette piste ?', '…', '… … …']);
+      return;
+    }
     const npc = this.npcAt(tx, ty);
     if (npc) {
       if (npc.look.kind === 'personne') this.npcDirs.set(npc.id, OPPOSITE[this.dir]);
@@ -302,7 +452,11 @@ export class OverworldScene implements Scene, World {
         game.say(s.lines);
         break;
       case 'soin':
-        game.ask([...s.lines, 'Veux-tu que je soigne tes Jinémon ?'], ['Oui', 'Non'], (i) => {
+        game.ask([...s.lines, 'Veux-tu que je soigne tes Jinémon ?'], ['Oui', 'Se reposer', 'Non'], (i) => {
+          if (i === 1) {
+            this.rest();
+            return;
+          }
           if (i !== 0) {
             game.say(['Reviens quand tu veux.']);
             return;
@@ -355,6 +509,34 @@ export class OverworldScene implements Scene, World {
         });
         break;
     }
+  }
+
+  /** Se reposer chez un guérisseur : soigne l'équipe et fait passer le temps. */
+  private rest(): void {
+    const game = this.game;
+    game.ask(['Jusqu’à quand veux-tu te reposer ?'], ['Jusqu’au matin', 'Jusqu’à la nuit', 'Annuler'], (i) => {
+      if (i > 1) return;
+      game.scenes.push(
+        new CoverScene(game, 'fondu', () => {
+          const state = game.s;
+          advanceTo(state.clock, i === 0 ? 7 * 60 : 20 * 60 + 15);
+          healParty(state);
+          state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+          this.haunt = null;
+          this.steps = [];
+          this.syncHaunt();
+          this.bannerText = i === 0 ? 'Le jour est levé' : 'La nuit tombe…';
+          this.banner = 2.5;
+          game.scenes.push(
+            new RevealScene(game, 0.6, () =>
+              game.say([i === 0 ? 'Vous vous réveillez reposé. Le soleil se lève sur la brousse.' : 'Vous vous réveillez à la nuit tombée. Au loin, quelque chose a hurlé.'], () =>
+                game.save(true),
+              ),
+            ),
+          );
+        }, 0.6),
+      );
+    });
   }
 
   private ancien(): void {
@@ -421,7 +603,9 @@ export class OverworldScene implements Scene, World {
     const { px, py } = this.playerPixel();
     const camX = mapW <= W ? (mapW - W) / 2 : Math.max(0, Math.min(mapW - W, px + 8 - W / 2));
     const camY = mapH <= H ? (mapH - H) / 2 : Math.max(0, Math.min(mapH - H, py + 8 - H / 2));
-    const ox = Math.round(-camX);
+    // L'écran tremble pendant une embuscade.
+    const quake = this.ambush >= 0 ? Math.round(Math.sin(this.ambush * 70) * 3) : 0;
+    const ox = Math.round(-camX) + quake;
     const oy = Math.round(-camY);
 
     ctx.fillStyle = '#1a1208';
@@ -467,6 +651,10 @@ export class OverworldScene implements Scene, World {
         },
       });
     }
+    if (this.haunt) {
+      const haunt = this.haunt;
+      drawables.push({ y: haunt.pixel().py, draw: () => haunt.render(ctx, ox, oy, time) });
+    }
     // Pas alterné gauche / droite pendant la première moitié de chaque déplacement.
     const frame = this.moving && this.moving.t < 0.6 ? 1 + (this.stepFrame % 2) : 0;
     drawables.push({
@@ -481,15 +669,71 @@ export class OverworldScene implements Scene, World {
     });
     drawables.sort((a, b) => a.y - b.y).forEach((d) => d.draw());
     ctx.drawImage(this.layers.over, ox, oy);
+    this.renderLighting(ctx, ox, oy, px, py, x0, y0);
 
-    // Nom de la zone
+    // Nom de la zone, ou changement de moment de la journée
     if (this.banner > 0) {
-      const w = textWidth(this.zone.name) + 24;
+      const w = textWidth(this.bannerText) + 24;
       // Glisse depuis le haut, reste affiché, puis remonte.
       const t = Math.min(2.5 - this.banner, this.banner);
       const slide = t < 0.3 ? -24 + (t / 0.3) * 24 : 0;
       box(ctx, 4, 4 + Math.round(slide), w, 20);
-      text(ctx, this.zone.name, 4 + w / 2, 8 + Math.round(slide), { align: 'center', shadow: PAL.shadow });
+      text(ctx, this.bannerText, 4 + w / 2, 8 + Math.round(slide), { align: 'center', shadow: PAL.shadow });
+    }
+    // Présage murmuré quand une Hantise rôde.
+    if (this.omenTimer > 0) {
+      const rows = wrapText(this.omen, W - 28).slice(0, 3);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, this.omenTimer);
+      box(ctx, 4, H - 10 - rows.length * 12, W - 8, rows.length * 12 + 6, 'sombre');
+      rows.forEach((row, i) => text(ctx, row, 12, H - 7 - rows.length * 12 + i * 12, { color: '#c8b8e8' }));
+      ctx.restore();
+    }
+    // Flash rouge au moment où la Hantise surgit.
+    if (this.ambush >= 0 && this.ambush < 0.3 && Math.floor(this.ambush * 20) % 2 === 0) {
+      ctx.fillStyle = 'rgba(160, 0, 0, 0.45)';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /** Teinte du crépuscule, obscurité et lumières, yeux des Hantises, vignette de danger. */
+  private renderLighting(ctx: CanvasRenderingContext2D, ox: number, oy: number, px: number, py: number, x0: number, y0: number): void {
+    const clock = this.game.s.clock;
+    const time = this.game.time;
+    const darkness = darknessOf(clock.minute);
+    const warmth = warmthOf(clock.minute);
+    if (darkness < 0.02 && warmth < 0.02) return;
+    const lights: Light[] = [{ x: px + ox + 8, y: py + oy + 6, r: 46 + Math.sin(time * 5) * 1.5 }];
+    for (let ty = Math.max(0, y0 - 2); ty < Math.min(this.zone.map.length, y0 + H / TILE + 4); ty++) {
+      for (let tx = Math.max(0, x0 - 2); tx < Math.min(this.zone.map[0].length, x0 + W / TILE + 4); tx++) {
+        const ch = this.zone.map[ty][tx];
+        const cx = tx * TILE + ox + 8;
+        const cy = ty * TILE + oy + 8;
+        if (ch === 'K') lights.push({ x: cx, y: cy, r: 34 + Math.sin(time * 11 + tx) * 2 });
+        else if (ch === 'D') lights.push({ x: cx, y: cy + 4, r: 22 });
+        else if (ch === 'A') lights.push({ x: cx, y: cy, r: 16 });
+      }
+    }
+    const glow = this.haunt?.light(ox, oy, time);
+    if (glow) lights.push(glow);
+    this.night.draw(ctx, darkness, warmth, lights);
+    if (!this.haunt || darkness < 0.3) return;
+    this.haunt.renderEyes(ctx, ox, oy, time);
+    // Vignette rouge qui bat avec le cœur quand la Hantise est proche.
+    const d = this.haunt.distance();
+    if (d <= 6) {
+      const pulse = (Math.sin(time * (4 + (6 - d) * 1.2)) + 1) / 2;
+      const a = (0.1 + (6 - d) * 0.05) * (0.5 + pulse * 0.5);
+      ctx.fillStyle = `rgba(120, 0, 10, ${a.toFixed(3)})`;
+      for (let band = 0; band < 3; band++) {
+        const m = band * 5;
+        ctx.globalAlpha = 1 - band * 0.3;
+        ctx.fillRect(m, m, W - 2 * m, 5);
+        ctx.fillRect(m, H - m - 5, W - 2 * m, 5);
+        ctx.fillRect(m, m + 5, 5, H - 2 * m - 10);
+        ctx.fillRect(W - m - 5, m + 5, 5, H - 2 * m - 10);
+      }
+      ctx.globalAlpha = 1;
     }
   }
 }

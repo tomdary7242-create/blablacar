@@ -1,6 +1,7 @@
 // Menu principal d'exploration, options et insignes.
 import { SPECIES } from '../../data/ginedex';
 import { BADGES, BADGE_ORDER, type BadgeId } from '../../data/trainers';
+import { formatClock, phaseOf } from '../../engine/clock';
 import { formatPlayTime } from '../../engine/gameState';
 import { PAL, box, fillEllipse, menuList, shade, stamp, text } from '../draw';
 import { wrapText } from '../font';
@@ -67,12 +68,17 @@ export class MenuScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     const s = this.game.s;
-    box(ctx, 2, 2, 124, 66);
+    box(ctx, 2, 2, 124, 78);
     text(ctx, s.playerName, 10, 5, { shadow: PAL.shadow });
     text(ctx, `Cauris : ${s.cauris}`, 10, 18);
     text(ctx, `Insignes : ${s.badges.length}/3`, 10, 29);
     text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length}`, 10, 40);
-    text(ctx, `Temps : ${formatPlayTime(s.playTimeMs)}`, 10, 51, { color: PAL.grey });
+    // Heure du monde, avec un soleil ou une lune.
+    const phase = phaseOf(s.clock.minute);
+    const night = phase === 'nuit';
+    stamp(ctx, night ? ['.ww.', 'ww..', 'ww..', '.ww.'] : ['.yy.', 'yyyy', 'yyyy', '.yy.'], 10, 54, { w: '#e8e4c0', y: '#f0b030' });
+    text(ctx, `Jour ${s.clock.day} · ${formatClock(s.clock)}`, 18, 51, { color: night ? PAL.indigo : PAL.ink });
+    text(ctx, `Temps : ${formatPlayTime(s.playTimeMs)}`, 10, 63, { color: PAL.grey });
     box(ctx, 150, 2, 104, OPTIONS.length * 12 + 12);
     menuList(ctx, OPTIONS, 156, 7, this.index);
   }

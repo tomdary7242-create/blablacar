@@ -61,7 +61,13 @@ export type Feature =
   | 'couronne'
   | 'gemme'
   | 'coiffe'
-  | 'chaines';
+  | 'chaines'
+  | 'defenses'
+  | 'pinces'
+  | 'clous'
+  | 'sansVisage'
+  | 'deuxVisages'
+  | 'tourbillon';
 
 export interface SpeciesLook {
   plan: BodyPlan;
@@ -98,6 +104,10 @@ export interface Species {
   description: string;
   look: SpeciesLook;
   legendary?: boolean;
+  /** Ne se montre qu'à la nuit tombée. */
+  nocturne?: boolean;
+  /** Hantise : monstre nocturne qui rôde, visible, sur la carte. */
+  hantise?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -324,6 +334,208 @@ const LS = {
     [1, 'queueFouettante'], [1, 'griffeArgile'], [8, 'regardPenetrant'], [15, 'piegeBoue'], [22, 'souffleDragon'],
     [29, 'fissureLaterite'], [36, 'regardMalefique'], [43, 'griffeDraconique'], [47, 'armureBanco'], [50, 'grondementFalaise'],
     [54, 'danseEcailles'], [58, 'pluieHivernage'], [62, 'courrouxDraconique'], [66, 'pluieMeteores'], [70, 'colereAncetres'],
+  ],
+  // ── Nouvelles lignées ──
+  pangolin: [
+    [1, 'griffeArgile'], [1, 'armureBanco'], [5, 'jetCaillou'], [9, 'limaille'], [13, 'piegeBoue'],
+    [17, 'griffeLaiton'], [21, 'tombeauPierre'], [25, 'regardPenetrant'], [30, 'fissureLaterite'], [35, 'lameFerForge'],
+    [40, 'eboulement'], [45, 'marteauForgeron'], [51, 'grondementFalaise'], [57, 'dalleLaterite'], [64, 'chuteEnclume'],
+  ],
+  cameleon: [
+    [1, 'pousseMil'], [1, 'ruseLievre'], [5, 'ondeMentale'], [9, 'seveCollante'], [13, 'racineEpineuse'],
+    [17, 'regardHypnotique'], [21, 'illusionKitsune'], [26, 'berceuseFeuilles'], [31, 'lameRonier'], [36, 'lectureSable'],
+    [41, 'chocPsychique'], [46, 'seveNourriciere'], [52, 'etreinteBaobab'], [58, 'enigmeSphinx'], [64, 'moissonSacree'],
+  ],
+  hippo: [
+    [1, 'chargeBrousse'], [1, 'gicleeSource'], [5, 'criDeGuerre'], [9, 'piegeBoue'], [13, 'tourbillonMarigot'],
+    [17, 'armureBanco'], [21, 'vagueFleuve'], [26, 'ruadeZebu'], [31, 'fissureLaterite'], [36, 'pluieHivernage'],
+    [41, 'chantAbysses'], [46, 'grondementFalaise'], [52, 'rueeSauvage'], [58, 'crueGrandFleuve'], [64, 'dalleLaterite'],
+  ],
+  dromadaire: [
+    [1, 'chargeBrousse'], [1, 'regardPenetrant'], [5, 'jetCaillou'], [9, 'griffeArgile'], [13, 'ventHarmattan'],
+    [17, 'piegeBoue'], [21, 'ruadeZebu'], [26, 'palabre'], [31, 'fissureLaterite'], [36, 'brulureSahel'],
+    [41, 'danseChasseurs'], [46, 'tombeauPierre'], [52, 'rueeSauvage'], [58, 'grondementFalaise'], [64, 'dalleLaterite'],
+  ],
+  scorpion: [
+    [1, 'piqureTermite'], [1, 'criDeGuerre'], [5, 'dardVenimeux'], [9, 'griffeArgile'], [13, 'jetCaillou'],
+    [17, 'sporesToxiques'], [21, 'mandibules'], [26, 'tombeauPierre'], [31, 'regardHypnotique'], [36, 'fissureLaterite'],
+    [41, 'enigmeSphinx'], [46, 'nueeCriquets'], [52, 'chocPsychique'], [58, 'essaimDevastateur'], [64, 'dalleLaterite'],
+  ],
+  djinnSable: [
+    [1, 'jetCaillou'], [1, 'ondeMentale'], [5, 'ventHarmattan'], [9, 'piegeBoue'], [13, 'regardHypnotique'],
+    [17, 'illusionKitsune'], [21, 'fissureLaterite'], [26, 'lectureSable'], [31, 'brulureSahel'], [36, 'chocPsychique'],
+    [41, 'voileGenies'], [46, 'enigmeSphinx'], [52, 'grondementFalaise'], [58, 'cycloneCeleste'], [64, 'pluieMeteores'],
+  ],
+  kponyungo: [
+    [1, 'etincelleForge'], [1, 'criDeGuerre'], [5, 'morsureHyene'], [9, 'coupDeCorne'], [13, 'flammeFollette'],
+    [17, 'regardMalefique'], [21, 'feuBrousse'], [26, 'embuscadeNocturne'], [31, 'braiseAncestrale'], [36, 'danseMasques'],
+    [41, 'crocsNuit'], [46, 'brulureSahel'], [52, 'souffletForge'], [58, 'eclipseDevorante'], [64, 'fournaiseSacree'],
+  ],
+  okapi: [
+    [1, 'coupDePatte'], [1, 'murmureAncetres'], [5, 'bondLievre'], [9, 'regardPenetrant'], [13, 'chargeBrousse'],
+    [17, 'miroirEmeraude'], [21, 'coupDeCorne'], [26, 'paroleGriot'], [31, 'voileGenies'], [36, 'ruadeZebu'],
+    [41, 'souffleVital'], [46, 'lueurSacree'], [52, 'rueeSauvage'], [58, 'danseMasques'], [64, 'colereAncetres'],
+  ],
+  mandrill: [
+    [1, 'coupDePatte'], [1, 'criDeGuerre'], [5, 'ondeMentale'], [9, 'larcin'], [13, 'regardHypnotique'],
+    [17, 'chargeBrousse'], [21, 'illusionKitsune'], [26, 'palabre'], [31, 'lectureSable'], [36, 'chocPsychique'],
+    [41, 'ruadeZebu'], [46, 'enigmeSphinx'], [52, 'danseChasseurs'], [58, 'rueeSauvage'], [64, 'paroleGriot'],
+  ],
+  crocodile: [
+    [1, 'queueFouettante'], [1, 'gicleeSource'], [5, 'regardPenetrant'], [9, 'morsureHyene'], [13, 'tourbillonMarigot'],
+    [17, 'embuscadeNocturne'], [21, 'vagueFleuve'], [26, 'souffleDragon'], [31, 'crocsNuit'], [36, 'danseEcailles'],
+    [41, 'griffeDraconique'], [46, 'chantAbysses'], [52, 'courrouxDraconique'], [58, 'crueGrandFleuve'], [64, 'pluieHivernage'],
+  ],
+  lamantin: [
+    [1, 'gicleeSource'], [1, 'murmureAncetres'], [5, 'ondeMentale'], [9, 'berceuseFeuilles'], [13, 'tourbillonMarigot'],
+    [17, 'brumeSoporifique'], [21, 'vagueFleuve'], [26, 'regardHypnotique'], [31, 'souffleVital'], [36, 'chantAbysses'],
+    [41, 'chocPsychique'], [46, 'pluieHivernage'], [52, 'miroirEmeraude'], [58, 'crueGrandFleuve'], [64, 'enigmeSphinx'],
+  ],
+  hibou: [
+    [1, 'coupDeBec'], [1, 'regardPenetrant'], [5, 'frissonTombe'], [9, 'regardHypnotique'], [13, 'ventHarmattan'],
+    [17, 'maledictionTertre'], [21, 'piqueCalao'], [26, 'ombreRampante'], [31, 'embuscadeNocturne'], [36, 'plumesVirevoltantes'],
+    [41, 'lamentation'], [46, 'ailesTonnerre'], [52, 'rondeAmes'], [58, 'cycloneCeleste'], [64, 'eclipseDevorante'],
+  ],
+  chauveSouris: [
+    [1, 'larcin'], [1, 'coupDeBec'], [5, 'ondeMentale'], [9, 'morsureHyene'], [13, 'ventHarmattan'],
+    [17, 'regardMalefique'], [21, 'embuscadeNocturne'], [26, 'piqueCalao'], [31, 'crocsNuit'], [36, 'ventArriere'],
+    [41, 'ricanement'], [46, 'ailesTonnerre'], [52, 'lamentation'], [58, 'cycloneCeleste'], [64, 'eclipseDevorante'],
+  ],
+  chat: [
+    [1, 'coupDePatte'], [1, 'frissonTombe'], [5, 'bondLievre'], [9, 'larcin'], [13, 'maledictionTertre'],
+    [17, 'flammeFollette'], [21, 'ombreRampante'], [26, 'illusionKitsune'], [31, 'embuscadeNocturne'], [36, 'lamentation'],
+    [41, 'chocPsychique'], [46, 'regardHypnotique'], [52, 'rondeAmes'], [58, 'danseChasseurs'], [64, 'appelMictlan'],
+  ],
+  tanuki: [
+    [1, 'coupDePatte'], [1, 'ruseLievre'], [5, 'bondLievre'], [9, 'ondeMentale'], [13, 'larcin'],
+    [17, 'illusionKitsune'], [21, 'chargeBrousse'], [26, 'palabre'], [31, 'regardHypnotique'], [36, 'ruadeZebu'],
+    [41, 'chocPsychique'], [46, 'danseMasques'], [52, 'lectureSable'], [58, 'rueeSauvage'], [64, 'enigmeSphinx'],
+  ],
+  kodama: [
+    [1, 'pousseMil'], [1, 'frissonTombe'], [5, 'murmureAncetres'], [9, 'berceuseFeuilles'], [13, 'racineEpineuse'],
+    [17, 'ombreRampante'], [21, 'seveNourriciere'], [26, 'maledictionTertre'], [31, 'lameRonier'], [36, 'lamentation'],
+    [41, 'voileGenies'], [46, 'etreinteBaobab'], [52, 'rondeAmes'], [58, 'moissonSacree'], [64, 'appelMictlan'],
+  ],
+  oni: [
+    [1, 'coupDePatte'], [1, 'criDeGuerre'], [5, 'etincelleForge'], [9, 'morsureHyene'], [13, 'chargeBrousse'],
+    [17, 'feuBrousse'], [21, 'regardMalefique'], [26, 'marteauForgeron'], [31, 'crocsNuit'], [36, 'braiseAncestrale'],
+    [41, 'ricanement'], [46, 'brulureSahel'], [52, 'rueeSauvage'], [58, 'eclipseDevorante'], [64, 'fournaiseSacree'],
+  ],
+  qilin: [
+    [1, 'murmureAncetres'], [1, 'coupDeCorne'], [5, 'etincelleForge'], [9, 'regardPenetrant'], [13, 'flammeFollette'],
+    [17, 'miroirEmeraude'], [21, 'feuBrousse'], [26, 'voileGenies'], [31, 'braiseAncestrale'], [36, 'souffleVital'],
+    [41, 'lueurSacree'], [46, 'danseMasques'], [52, 'brulureSahel'], [58, 'colereAncetres'], [64, 'fournaiseSacree'],
+  ],
+  phenix: [
+    [1, 'coupDeBec'], [1, 'etincelleForge'], [5, 'ventHarmattan'], [9, 'flammeFollette'], [13, 'regardPenetrant'],
+    [17, 'feuBrousse'], [21, 'piqueCalao'], [26, 'souffletForge'], [31, 'braiseAncestrale'], [36, 'plumesVirevoltantes'],
+    [41, 'ailesTonnerre'], [46, 'souffleVital'], [52, 'brulureSahel'], [58, 'cycloneCeleste'], [64, 'fournaiseSacree'],
+  ],
+  pixiu: [
+    [1, 'limaille'], [1, 'coupDeBec'], [5, 'larcin'], [9, 'vifArgent'], [13, 'ventHarmattan'],
+    [17, 'griffeLaiton'], [21, 'coupDeCorne'], [26, 'piqueCalao'], [31, 'lameFerForge'], [36, 'ventArriere'],
+    [41, 'ailesTonnerre'], [46, 'marteauForgeron'], [52, 'danseChasseurs'], [58, 'chuteEnclume'], [64, 'cycloneCeleste'],
+  ],
+  gargouille: [
+    [1, 'jetCaillou'], [1, 'regardPenetrant'], [5, 'coupDeBec'], [9, 'armureBanco'], [13, 'ventHarmattan'],
+    [17, 'tombeauPierre'], [21, 'regardPetrifiant'], [26, 'piqueCalao'], [31, 'embuscadeNocturne'], [36, 'eboulement'],
+    [41, 'ailesTonnerre'], [46, 'regardMalefique'], [52, 'dalleLaterite'], [58, 'cycloneCeleste'], [64, 'pluieMeteores'],
+  ],
+  kobold: [
+    [1, 'limaille'], [1, 'larcin'], [5, 'jetCaillou'], [9, 'vifArgent'], [13, 'ruseLievre'],
+    [17, 'griffeLaiton'], [21, 'tombeauPierre'], [26, 'lameFerForge'], [31, 'eboulement'], [36, 'souffletForge'],
+    [41, 'marteauForgeron'], [46, 'regardPetrifiant'], [52, 'dalleLaterite'], [58, 'chuteEnclume'], [64, 'pluieMeteores'],
+  ],
+  selkie: [
+    [1, 'gicleeSource'], [1, 'ondeMentale'], [5, 'bondLievre'], [9, 'regardHypnotique'], [13, 'tourbillonMarigot'],
+    [17, 'illusionKitsune'], [21, 'vagueFleuve'], [26, 'brumeSoporifique'], [31, 'chocPsychique'], [36, 'chantAbysses'],
+    [41, 'miroirEmeraude'], [46, 'lectureSable'], [52, 'enigmeSphinx'], [58, 'crueGrandFleuve'], [64, 'voileGenies'],
+  ],
+  lindworm: [
+    [1, 'queueFouettante'], [1, 'criDeGuerre'], [5, 'griffeArgile'], [9, 'souffleDragon'], [13, 'piegeBoue'],
+    [17, 'morsureHyene'], [21, 'griffeDraconique'], [26, 'fissureLaterite'], [31, 'danseEcailles'], [36, 'tombeauPierre'],
+    [41, 'courrouxDraconique'], [46, 'grondementFalaise'], [52, 'regardMalefique'], [58, 'dalleLaterite'], [64, 'pluieMeteores'],
+  ],
+  griffon: [
+    [1, 'coupDeBec'], [1, 'criDeGuerre'], [5, 'coupDePatte'], [9, 'ventHarmattan'], [13, 'bondLievre'],
+    [17, 'piqueCalao'], [21, 'chargeBrousse'], [26, 'plumesVirevoltantes'], [31, 'ruadeZebu'], [36, 'ventArriere'],
+    [41, 'ailesTonnerre'], [46, 'danseChasseurs'], [52, 'rueeSauvage'], [58, 'palabre'], [64, 'cycloneCeleste'],
+  ],
+  bunyip: [
+    [1, 'gicleeSource'], [1, 'larcin'], [5, 'regardPenetrant'], [9, 'morsureHyene'], [13, 'tourbillonMarigot'],
+    [17, 'brumeSoporifique'], [21, 'embuscadeNocturne'], [26, 'vagueFleuve'], [31, 'ricanement'], [36, 'crocsNuit'],
+    [41, 'chantAbysses'], [46, 'regardMalefique'], [52, 'lamentation'], [58, 'crueGrandFleuve'], [64, 'eclipseDevorante'],
+  ],
+  ahuizotl: [
+    [1, 'larcin'], [1, 'gicleeSource'], [5, 'coupDePatte'], [9, 'tourbillonMarigot'], [13, 'embuscadeNocturne'],
+    [17, 'piegeBoue'], [21, 'morsureHyene'], [26, 'vagueFleuve'], [31, 'regardMalefique'], [36, 'crocsNuit'],
+    [41, 'brumeSoporifique'], [46, 'chantAbysses'], [52, 'appelMictlan'], [58, 'crueGrandFleuve'], [64, 'eclipseDevorante'],
+  ],
+  chupacabra: [
+    [1, 'larcin'], [1, 'piqureTermite'], [5, 'morsureHyene'], [9, 'dardVenimeux'], [13, 'bondLievre'],
+    [17, 'embuscadeNocturne'], [21, 'sporesToxiques'], [26, 'crocsNuit'], [31, 'mandibules'], [36, 'regardMalefique'],
+    [41, 'nueeCriquets'], [46, 'ricanement'], [52, 'essaimDevastateur'], [58, 'rueeSauvage'], [64, 'eclipseDevorante'],
+  ],
+  simurgh: [
+    [1, 'coupDeBec'], [1, 'murmureAncetres'], [6, 'ventHarmattan'], [11, 'souffleVital'], [16, 'piqueCalao'],
+    [21, 'voileGenies'], [26, 'plumesVirevoltantes'], [31, 'lueurSacree'], [36, 'ailesTonnerre'], [41, 'paroleGriot'],
+    [46, 'ventArriere'], [52, 'danseMasques'], [58, 'cycloneCeleste'], [64, 'colereAncetres'], [68, 'chocPsychique'],
+  ],
+  mokele: [
+    [1, 'queueFouettante'], [1, 'gicleeSource'], [5, 'jetCaillou'], [9, 'chargeBrousse'], [13, 'tourbillonMarigot'],
+    [17, 'tombeauPierre'], [21, 'vagueFleuve'], [26, 'armureBanco'], [31, 'eboulement'], [36, 'chantAbysses'],
+    [41, 'ruadeZebu'], [46, 'dalleLaterite'], [52, 'crueGrandFleuve'], [58, 'grondementFalaise'], [64, 'pluieMeteores'],
+  ],
+  grootslang: [
+    [1, 'queueFouettante'], [1, 'jetCaillou'], [6, 'regardPenetrant'], [11, 'tombeauPierre'], [16, 'souffleDragon'],
+    [21, 'coupDeCorne'], [26, 'regardPetrifiant'], [31, 'griffeDraconique'], [36, 'eboulement'], [41, 'danseEcailles'],
+    [46, 'dalleLaterite'], [52, 'courrouxDraconique'], [58, 'grondementFalaise'], [64, 'pluieMeteores'], [68, 'rueeSauvage'],
+  ],
+  shango: [
+    [1, 'coupDeCorne'], [1, 'criDeGuerre'], [5, 'etincelleForge'], [9, 'chargeBrousse'], [13, 'ventHarmattan'],
+    [17, 'feuBrousse'], [21, 'ruadeZebu'], [26, 'piqueCalao'], [31, 'braiseAncestrale'], [36, 'ailesTonnerre'],
+    [41, 'danseChasseurs'], [46, 'brulureSahel'], [52, 'rueeSauvage'], [58, 'cycloneCeleste'], [64, 'fournaiseSacree'],
+  ],
+  vautour: [
+    [1, 'coupDeBec'], [1, 'larcin'], [5, 'regardPenetrant'], [9, 'ventHarmattan'], [13, 'morsureHyene'],
+    [17, 'piqueCalao'], [21, 'ricanement'], [26, 'embuscadeNocturne'], [31, 'plumesVirevoltantes'], [36, 'crocsNuit'],
+    [41, 'ailesTonnerre'], [46, 'regardMalefique'], [52, 'ventArriere'], [58, 'cycloneCeleste'], [64, 'eclipseDevorante'],
+  ],
+  taniwha: [
+    [1, 'gicleeSource'], [1, 'queueFouettante'], [6, 'regardPenetrant'], [11, 'tourbillonMarigot'], [16, 'souffleDragon'],
+    [21, 'vagueFleuve'], [26, 'griffeDraconique'], [31, 'murmureAncetres'], [36, 'danseEcailles'], [41, 'chantAbysses'],
+    [46, 'lueurSacree'], [52, 'courrouxDraconique'], [58, 'crueGrandFleuve'], [64, 'pluieHivernage'], [68, 'colereAncetres'],
+  ],
+  // ── Hantises ──
+  tikoloshe: [
+    [1, 'larcin'], [1, 'ricanement'], [6, 'gicleeSource'], [11, 'embuscadeNocturne'], [16, 'morsureHyene'],
+    [21, 'brumeSoporifique'], [26, 'regardMalefique'], [31, 'tourbillonMarigot'], [36, 'crocsNuit'], [41, 'vagueFleuve'],
+    [46, 'lamentation'], [52, 'chantAbysses'], [58, 'eclipseDevorante'], [64, 'crueGrandFleuve'], [68, 'appelMictlan'],
+  ],
+  bouda: [
+    [1, 'morsureHyene'], [1, 'limaille'], [6, 'criDeGuerre'], [11, 'griffeLaiton'], [16, 'embuscadeNocturne'],
+    [21, 'vifArgent'], [26, 'crocsNuit'], [31, 'lameFerForge'], [36, 'ricanement'], [41, 'marteauForgeron'],
+    [46, 'danseChasseurs'], [52, 'regardMalefique'], [58, 'chuteEnclume'], [64, 'eclipseDevorante'], [68, 'rueeSauvage'],
+  ],
+  kishi: [
+    [1, 'ondeMentale'], [1, 'larcin'], [6, 'regardHypnotique'], [11, 'morsureHyene'], [16, 'illusionKitsune'],
+    [21, 'embuscadeNocturne'], [26, 'miroirEmeraude'], [31, 'crocsNuit'], [36, 'chocPsychique'], [41, 'regardMalefique'],
+    [46, 'enigmeSphinx'], [52, 'ricanement'], [58, 'eclipseDevorante'], [64, 'lectureSable'], [68, 'danseMasques'],
+  ],
+  nkondi: [
+    [1, 'frissonTombe'], [1, 'limaille'], [6, 'regardPenetrant'], [11, 'maledictionTertre'], [16, 'griffeLaiton'],
+    [21, 'ombreRampante'], [26, 'armureBanco'], [31, 'lameFerForge'], [36, 'lamentation'], [41, 'regardPetrifiant'],
+    [46, 'marteauForgeron'], [52, 'rondeAmes'], [58, 'chuteEnclume'], [64, 'colereAncetres'], [68, 'appelMictlan'],
+  ],
+  noppera: [
+    [1, 'frissonTombe'], [1, 'ondeMentale'], [6, 'regardHypnotique'], [11, 'maledictionTertre'], [16, 'illusionKitsune'],
+    [21, 'ombreRampante'], [26, 'lectureSable'], [31, 'lamentation'], [36, 'chocPsychique'], [41, 'voileGenies'],
+    [46, 'rondeAmes'], [52, 'enigmeSphinx'], [58, 'danseMasques'], [64, 'appelMictlan'], [68, 'regardMalefique'],
+  ],
+  obayifo: [
+    [1, 'etincelleForge'], [1, 'frissonTombe'], [6, 'flammeFollette'], [11, 'regardHypnotique'], [16, 'maledictionTertre'],
+    [21, 'feuBrousse'], [26, 'ombreRampante'], [31, 'braiseAncestrale'], [36, 'chocPsychique'], [41, 'lamentation'],
+    [46, 'brulureSahel'], [52, 'rondeAmes'], [58, 'enigmeSphinx'], [64, 'fournaiseSacree'], [68, 'appelMictlan'],
   ],
 } satisfies Record<string, readonly LearnsetEntry[]>;
 
@@ -941,6 +1153,480 @@ export const SPECIES: readonly Species[] = [
     folklore: 'Europe (Méditerranée, Moyen Âge) — la mandragore, racine à forme humaine dont le cri est redouté.',
     description: 'Arrachée du sol, elle pousse un cri à glacer le sang. Les guérisseurs ne la cueillent qu’avec d’infinies précautions.',
     look: { plan: 'bipede', colors: ['#a8805a', '#6d5a9c', '#7ac84a'], features: ['feuilles', 'yeux', 'aura'], size: 0.8 },
+  },
+
+  // 🛡️ Pangolins, porte-bonheur de la brousse
+  {
+    id: 74, name: 'Pangolou', category: 'Jinémon Écailleux', types: ['Terre'],
+    baseStats: stats(50, 55, 70, 35), catchRate: 120, baseXp: 66,
+    evolution: { to: 75, level: 28 }, learnset: LS.pangolin, talent: 'carapace',
+    folklore: 'Afrique de l’Ouest et centrale — le pangolin, porte-bonheur que l’on dit capable de chasser les mauvais esprits.',
+    description: 'Il se roule en boule au moindre bruit. Ses écailles tintent comme des cauris quand il marche.',
+    look: { plan: 'quadrupede', colors: ['#a0785a', '#6a4a32', '#e8c8a0'], features: [], size: 0.45 },
+  },
+  {
+    id: 75, name: 'Pangolarmure', category: 'Jinémon Armure', types: ['Terre', 'Métal'],
+    baseStats: stats(75, 85, 110, 50), catchRate: 60, baseXp: 160,
+    learnset: LS.pangolin, talent: 'carapace',
+    folklore: 'Afrique de l’Ouest et centrale — le pangolin, porte-bonheur que l’on dit capable de chasser les mauvais esprits.',
+    description: 'Ses écailles ont la dureté du fer forgé. Roulé en boule, il dévale les pentes comme un boulet de canon.',
+    look: { plan: 'quadrupede', colors: ['#8a7a6a', '#5a4a3a', '#d8c0a0'], features: ['epines'], size: 0.85 },
+  },
+
+  // 🦎 Caméléons, messagers trop lents
+  {
+    id: 76, name: 'Kaméléo', category: 'Jinémon Messager', types: ['Plante'],
+    baseStats: stats(45, 45, 50, 40), catchRate: 150, baseXp: 60,
+    evolution: { to: 77, level: 26 }, learnset: LS.cameleon,
+    folklore: 'Zoulou et Afrique de l’Ouest — le caméléon, messager trop lent qui porta aux hommes la nouvelle de l’immortalité.',
+    description: 'Il change de couleur selon son humeur. Il avance si lentement qu’on oublie qu’il est là.',
+    look: { plan: 'lezard', colors: ['#7ac848', '#e8a030', '#f0e070'], features: ['crete'], size: 0.45 },
+  },
+  {
+    id: 77, name: 'Kaméléomage', category: 'Jinémon Présage', types: ['Plante', 'Psy'],
+    baseStats: stats(70, 80, 75, 72), catchRate: 60, baseXp: 158,
+    learnset: LS.cameleon, talent: 'ruse',
+    folklore: 'Zoulou et Afrique de l’Ouest — le caméléon, messager trop lent qui porta aux hommes la nouvelle de l’immortalité.',
+    description: 'Ses yeux pivotent chacun de leur côté : l’un regarde le présent, l’autre l’avenir.',
+    look: { plan: 'lezard', colors: ['#4aa848', '#c83a8a', '#f0d040'], features: ['crete', 'cornes'], size: 0.8 },
+  },
+
+  // 🦛 Hippopotames du fleuve
+  {
+    id: 78, name: 'Hippobul', category: 'Jinémon Fleuve', types: ['Eau'],
+    baseStats: stats(70, 55, 60, 30), catchRate: 120, baseXp: 66,
+    evolution: { to: 79, level: 30 }, learnset: LS.hippo,
+    folklore: 'Égypte et bassin du Niger — l’hippopotame, maître redouté des fleuves.',
+    description: 'Il passe ses journées immergé, seules ses oreilles dépassent. Il bâille pour impressionner ses rivaux.',
+    look: { plan: 'quadrupede', colors: ['#8a7a9a', '#e8a0a8', '#f0e0e0'], features: [], size: 0.55 },
+  },
+  {
+    id: 79, name: 'Tawerise', category: 'Jinémon Protectrice', types: ['Eau', 'Terre'],
+    baseStats: stats(105, 90, 85, 45), catchRate: 50, baseXp: 172,
+    learnset: LS.hippo, talent: 'carapace',
+    folklore: 'Égypte antique — Taouret, la déesse hippopotame qui protège les mères et les enfants.',
+    description: 'Elle veille sur les berges où jouent les petits Jinémon. Gare à qui ose les menacer.',
+    look: { plan: 'quadrupede', colors: ['#6a7a8a', '#c88a90', '#f0c040'], features: ['couronne'], size: 1 },
+  },
+
+  // 🐪 Dromadaires des caravanes
+  {
+    id: 80, name: 'Chamelon', category: 'Jinémon Caravane', types: ['Normal'],
+    baseStats: stats(55, 50, 55, 40), catchRate: 150, baseXp: 62,
+    evolution: { to: 81, level: 28 }, learnset: LS.dromadaire,
+    folklore: 'Touareg (Sahara) — le dromadaire, compagnon des caravanes du sel.',
+    description: 'Il peut marcher des jours sans boire. Il garde dans sa bosse les chansons des caravaniers.',
+    look: { plan: 'quadrupede', colors: ['#d8b07a', '#8a5a32', '#3a6ab8'], features: ['bosse'], size: 0.55 },
+  },
+  {
+    id: 81, name: 'Méharoi', category: 'Jinémon Méhariste', types: ['Normal', 'Terre'],
+    baseStats: stats(85, 85, 75, 70), catchRate: 60, baseXp: 165,
+    learnset: LS.dromadaire,
+    folklore: 'Touareg (Sahara) — le dromadaire, compagnon des caravanes du sel.',
+    description: 'Paré de tissus indigo, il guide les caravanes à travers les tempêtes de sable sans jamais se perdre.',
+    look: { plan: 'quadrupede', colors: ['#c89a60', '#2a4a8a', '#f0c040'], features: ['bosse'], size: 0.95 },
+  },
+
+  // 🦂 Scorpions des dunes
+  {
+    id: 82, name: 'Scorpidune', category: 'Jinémon Scorpion', types: ['Insecte', 'Terre'],
+    baseStats: stats(45, 60, 60, 45), catchRate: 130, baseXp: 64,
+    evolution: { to: 83, level: 32 }, learnset: LS.scorpion, talent: 'toucherToxique',
+    folklore: 'Sahara et Égypte — le scorpion des dunes, que l’on croise sous les pierres chaudes.',
+    description: 'Il s’enfouit sous le sable aux heures chaudes. La nuit, sa carapace luit faiblement sous la lune.',
+    look: { plan: 'insecte', colors: ['#c8a060', '#7a5a32', '#e85a3a'], features: ['pinces', 'carapace'], size: 0.45 },
+  },
+  {
+    id: 83, name: 'Serqétide', category: 'Jinémon Guérisseuse', types: ['Insecte', 'Psy'],
+    baseStats: stats(70, 90, 85, 70), catchRate: 55, baseXp: 170,
+    learnset: LS.scorpion, talent: 'toucherToxique',
+    folklore: 'Égypte antique — Serket, la déesse scorpion qui protège des venins.',
+    description: 'Son dard peut tuer ou guérir. On dit qu’elle choisit selon la pureté du cœur de sa cible.',
+    look: { plan: 'insecte', colors: ['#d8b040', '#4a3a6a', '#7ad8ff'], features: ['pinces', 'carapace', 'aura'], size: 0.85 },
+  },
+
+  // 🌪️ Djinns des sables
+  {
+    id: 84, name: 'Tourbisable', category: 'Jinémon Tourbillon', types: ['Terre', 'Psy'],
+    baseStats: stats(45, 55, 45, 65), catchRate: 140, baseXp: 64,
+    evolution: { to: 85, level: 34 }, learnset: LS.djinnSable, talent: 'levitation',
+    folklore: 'Sahara et Arabie — les djinns des sables, qui voyagent dans les tourbillons de poussière.',
+    description: 'Ce petit tourbillon de sable rit en soulevant les pagnes des passants. Il ne reste jamais en place.',
+    look: { plan: 'esprit', colors: ['#e8c890', '#b08850', '#7a4ab8'], features: ['tourbillon'], size: 0.45 },
+  },
+  {
+    id: 85, name: 'Djinnoum', category: 'Jinémon Djinn', types: ['Terre', 'Psy'],
+    baseStats: stats(75, 95, 70, 95), catchRate: 45, baseXp: 175,
+    learnset: LS.djinnSable, talent: 'levitation',
+    folklore: 'Sahara et Arabie — les djinns des sables, qui voyagent dans les tourbillons de poussière.',
+    description: 'Un djinn des dunes au regard de braise. Il exauce les vœux… en les détournant toujours un peu.',
+    look: { plan: 'esprit', colors: ['#d8a860', '#6a3a8a', '#f0c040'], features: ['tourbillon', 'couronne'], size: 0.9 },
+  },
+
+  // 🔥 Masques cracheurs de feu (nocturnes)
+  {
+    id: 86, name: 'Kponyon', category: 'Jinémon Masque', types: ['Feu'],
+    baseStats: stats(50, 60, 45, 50), catchRate: 120, baseXp: 66,
+    evolution: { to: 87, level: 30 }, learnset: LS.kponyungo, nocturne: true,
+    folklore: 'Sénoufo (Côte d’Ivoire, Mali, Burkina Faso) — le Kponyungo, masque « cracheur de feu » qui chasse les âmes errantes.',
+    description: 'Ce jeune masque n’apparaît qu’à la nuit tombée. Il s’entraîne à cracher des étincelles en grognant.',
+    look: { plan: 'quadrupede', colors: ['#3a2a22', '#c8401a', '#f0c040'], features: ['cornes', 'defenses', 'flamme'], size: 0.5 },
+  },
+  {
+    id: 87, name: 'Kponyungo', category: 'Jinémon Cracheur de Feu', types: ['Feu', 'Ténèbres'],
+    baseStats: stats(85, 105, 75, 80), catchRate: 45, baseXp: 180,
+    learnset: LS.kponyungo, talent: 'ignifuge', nocturne: true,
+    folklore: 'Sénoufo (Côte d’Ivoire, Mali, Burkina Faso) — le Kponyungo, masque « cracheur de feu » qui chasse les âmes errantes.',
+    description: 'Gueule de crocodile, cornes d’antilope et défenses de phacochère : il crache des flammes pour chasser les mauvais esprits.',
+    look: { plan: 'quadrupede', colors: ['#2a2420', '#d8501a', '#f0d040'], features: ['grandesCornes', 'defenses', 'flamme'], size: 1 },
+  },
+
+  // 🦓 Forêt profonde
+  {
+    id: 88, name: 'Okapuri', category: 'Jinémon Licorne Sylvestre', types: ['Normal', 'Esprit'],
+    baseStats: stats(70, 75, 70, 85), catchRate: 60, baseXp: 150,
+    learnset: LS.okapi,
+    folklore: 'Mbuti (forêt de l’Ituri, Congo) — l’okapi, l’animal que la forêt cache aux étrangers.',
+    description: 'Si discret que les chasseurs le croyaient imaginaire. Les rayures de ses pattes imitent les rais de lumière dans le sous-bois.',
+    look: { plan: 'quadrupede', colors: ['#5a2a2a', '#f0e8e0', '#3a2020'], features: ['oreilles'], size: 0.8 },
+  },
+  {
+    id: 89, name: 'Mandrillon', category: 'Jinémon Masque Vivant', types: ['Psy', 'Normal'],
+    baseStats: stats(55, 60, 50, 60), catchRate: 120, baseXp: 64,
+    evolution: { to: 90, level: 34 }, learnset: LS.mandrill, talent: 'ruse',
+    folklore: 'Gabon et Cameroun — le mandrill au visage de masque, malicieux et imitateur.',
+    description: 'Son visage bleu et rouge ressemble à un masque de cérémonie. Il imite les gestes des humains pour se moquer d’eux.',
+    look: { plan: 'bipede', colors: ['#6a5a4a', '#3a7ac8', '#e83a3a'], features: [], size: 0.5 },
+  },
+  {
+    id: 90, name: 'Babouthot', category: 'Jinémon Scribe', types: ['Psy', 'Normal'],
+    baseStats: stats(85, 95, 80, 85), catchRate: 45, baseXp: 178,
+    learnset: LS.mandrill, talent: 'ruse',
+    folklore: 'Égypte antique — Thot, dieu du savoir et de l’écriture, souvent représenté en babouin.',
+    description: 'Il trace dans la poussière des signes que personne ne sait lire. On dit qu’il note les secrets de chaque dresseur.',
+    look: { plan: 'bipede', colors: ['#c8c0b0', '#3a7ac8', '#e83a3a'], features: ['aura'], size: 0.85 },
+  },
+
+  // 🐊 Crocodiles sacrés
+  {
+    id: 91, name: 'Bazoulé', category: 'Jinémon Crocodile Sacré', types: ['Eau'],
+    baseStats: stats(55, 60, 60, 40), catchRate: 120, baseXp: 66,
+    evolution: { to: 92, level: 34 }, learnset: LS.crocodile,
+    folklore: 'Mossi (Burkina Faso) — les crocodiles sacrés de Bazoulé, qui laissent les enfants s’asseoir sur leur dos.',
+    description: 'Il somnole au bord de la mare sacrée. Les villageois l’appellent par son nom et lui apportent des poulets.',
+    look: { plan: 'lezard', colors: ['#6a8a4a', '#d8c890', '#f0d040'], features: [], size: 0.55 },
+  },
+  {
+    id: 92, name: 'Sobekroc', category: 'Jinémon Seigneur du Nil', types: ['Eau', 'Dragon'],
+    baseStats: stats(95, 105, 95, 60), catchRate: 45, baseXp: 185,
+    learnset: LS.crocodile, talent: 'ecaillesAntiques',
+    folklore: 'Égypte antique — Sobek, le dieu crocodile du Nil.',
+    description: 'Coiffé d’un disque solaire, il règne sur les crues. Sa morsure peut fendre une pirogue en deux.',
+    look: { plan: 'lezard', colors: ['#4a6a3a', '#d8c890', '#f0c040'], features: ['couronne', 'epines'], size: 1 },
+  },
+  {
+    id: 93, name: 'Lamantine', category: 'Jinémon Sirène du Fleuve', types: ['Eau', 'Psy'],
+    baseStats: stats(95, 60, 75, 55), catchRate: 75, baseXp: 150,
+    learnset: LS.lamantin,
+    folklore: 'Afrique de l’Ouest — le lamantin, que les pêcheurs du Niger et de la Casamance associent à Mami Wata.',
+    description: 'Elle chante sous l’eau des berceuses que seuls les pêcheurs endormis entendent.',
+    look: { plan: 'amphibien', colors: ['#9aa8b0', '#6a7880', '#f0d0e0'], features: ['nageoires'], size: 0.75 },
+  },
+
+  // 🦉 Créatures de la nuit
+  {
+    id: 94, name: 'Hiboulet', category: 'Jinémon Chouette', types: ['Vol', 'Spectre'],
+    baseStats: stats(45, 50, 45, 60), catchRate: 140, baseXp: 62,
+    evolution: { to: 95, level: 30 }, learnset: LS.hibou, talent: 'oeilVigilant', nocturne: true,
+    folklore: 'Afrique de l’Ouest — la chouette, oiseau de nuit que l’on dit messager des sorciers.',
+    description: 'Il ne sort qu’à la nuit tombée. Ses grands yeux voient les esprits que les humains ignorent.',
+    look: { plan: 'oiseau', colors: ['#8a7a6a', '#e8e0d0', '#f0c040'], features: [], size: 0.45 },
+  },
+  {
+    id: 95, name: 'Hiboumbre', category: 'Jinémon Grand-Duc', types: ['Vol', 'Ténèbres'],
+    baseStats: stats(80, 95, 75, 90), catchRate: 45, baseXp: 176,
+    learnset: LS.hibou, talent: 'oeilVigilant', nocturne: true,
+    folklore: 'Afrique de l’Ouest — la chouette, oiseau de nuit que l’on dit messager des sorciers.',
+    description: 'Son hululement fait taire toute la forêt. Ceux qui croisent son regard oublient le chemin du retour.',
+    look: { plan: 'oiseau', colors: ['#4a3a4a', '#c8b8a0', '#f08a20'], features: ['oreilles'], size: 0.85 },
+  },
+  {
+    id: 96, name: 'Roussetin', category: 'Jinémon Roussette', types: ['Vol', 'Ténèbres'],
+    baseStats: stats(45, 55, 40, 65), catchRate: 150, baseXp: 60,
+    evolution: { to: 97, level: 32 }, learnset: LS.chauveSouris, talent: 'levitation', nocturne: true,
+    folklore: 'Afrique de l’Ouest et centrale — les roussettes, chauves-souris frugivores qui envahissent les manguiers au crépuscule.',
+    description: 'Il dort tête en bas tout le jour et se goinfre de mangues la nuit. Il pousse de petits cris aigus.',
+    look: { plan: 'oiseau', colors: ['#6a4a3a', '#c87a4a', '#f0d040'], features: ['ailes'], size: 0.45 },
+  },
+  {
+    id: 97, name: 'Popobawa', category: 'Jinémon Ombre Ailée', types: ['Ténèbres', 'Vol'],
+    baseStats: stats(80, 105, 70, 95), catchRate: 40, baseXp: 182,
+    learnset: LS.chauveSouris, talent: 'levitation', nocturne: true,
+    folklore: 'Swahili (Zanzibar) — le Popobawa, esprit ailé qui hante les nuits et dont on n’ose prononcer le nom.',
+    description: 'Une ombre à ailes de chauve-souris et à l’œil unique. Les nuits où il rôde, les villages veillent autour du feu.',
+    look: { plan: 'bipede', colors: ['#2a2030', '#6a3a4a', '#e83a3a'], features: ['ailes', 'yeux'], size: 0.9 },
+  },
+  {
+    id: 98, name: 'Bakeneko', category: 'Jinémon Chat-Fantôme', types: ['Spectre', 'Normal'],
+    baseStats: stats(50, 55, 45, 65), catchRate: 130, baseXp: 64,
+    evolution: { to: 99, level: 32 }, learnset: LS.chat, nocturne: true,
+    folklore: 'Japon — le bakeneko, chat domestique devenu esprit après une longue vie.',
+    description: 'Il marche sur ses pattes arrière quand personne ne regarde. Il lèche l’huile des lampes à minuit.',
+    look: { plan: 'quadrupede', colors: ['#e8e0d0', '#3a3030', '#f0c040'], features: ['oreilles', 'queue'], size: 0.45 },
+  },
+  {
+    id: 99, name: 'Nekomata', category: 'Jinémon Deux-Queues', types: ['Spectre', 'Psy'],
+    baseStats: stats(75, 95, 70, 100), catchRate: 40, baseXp: 180,
+    learnset: LS.chat, nocturne: true,
+    folklore: 'Japon — le nekomata, chat dont la queue s’est fendue en deux avec l’âge.',
+    description: 'Sa queue s’est fendue en deux à sa centième année. D’un geste, il fait danser les morts comme des marionnettes.',
+    look: { plan: 'quadrupede', colors: ['#f0e8d8', '#3a3030', '#b84ae8'], features: ['oreilles', 'aura'], size: 0.85 },
+  },
+
+  // 🍃 Esprits farceurs du Japon
+  {
+    id: 100, name: 'Tanukoko', category: 'Jinémon Farceur', types: ['Normal', 'Psy'],
+    baseStats: stats(70, 65, 65, 60), catchRate: 90, baseXp: 140,
+    learnset: LS.tanuki, talent: 'ruse',
+    folklore: 'Japon — le tanuki, chien viverrin farceur qui se déguise grâce à une feuille posée sur la tête.',
+    description: 'Une feuille sur la tête, et le voilà théière, statue ou marchand ambulant. Il adore duper les voyageurs.',
+    look: { plan: 'quadrupede', colors: ['#8a6a4a', '#3a2a22', '#5fa83a'], features: ['feuilles'], size: 0.6 },
+  },
+  {
+    id: 101, name: 'Kodamo', category: 'Jinémon Écho des Arbres', types: ['Plante', 'Spectre'],
+    baseStats: stats(55, 55, 60, 70), catchRate: 100, baseXp: 120,
+    learnset: LS.kodama, talent: 'levitation',
+    folklore: 'Japon — les kodama, esprits qui habitent les vieux arbres et renvoient l’écho des voix.',
+    description: 'Si tu cries dans la forêt et que l’écho tarde à revenir, c’est un Kodamo qui t’a répondu.',
+    look: { plan: 'esprit', colors: ['#f0f0e8', '#9ad87a', '#3a3a3a'], features: [], size: 0.4 },
+  },
+  {
+    id: 102, name: 'Onimaru', category: 'Jinémon Ogre', types: ['Ténèbres', 'Feu'],
+    baseStats: stats(95, 110, 85, 60), catchRate: 45, baseXp: 182,
+    learnset: LS.oni, talent: 'prestance', nocturne: true,
+    folklore: 'Japon — les oni, ogres cornus qui brandissent un gourdin de fer.',
+    description: 'Il descend des montagnes les nuits sans lune, son gourdin hérissé sur l’épaule. Il déteste les haricots grillés.',
+    look: { plan: 'bipede', colors: ['#c83a2a', '#3a3a4a', '#f0d040'], features: ['cornes'], size: 0.95 },
+  },
+
+  // 🐉 Créatures de bon augure d'Orient
+  {
+    id: 103, name: 'Qilindor', category: 'Jinémon Bienveillant', types: ['Esprit', 'Feu'],
+    baseStats: stats(85, 90, 85, 95), catchRate: 30, baseXp: 190,
+    learnset: LS.qilin, talent: 'ignifuge',
+    folklore: 'Chine — le qilin, créature de bon augure qui ne foule jamais l’herbe vivante.',
+    description: 'Il n’apparaît qu’aux époques de paix. Ses sabots ne touchent jamais une fleur, même au galop.',
+    look: { plan: 'quadrupede', colors: ['#5ab8a0', '#f0c040', '#ff7a3a'], features: ['cornes', 'criniere', 'flamme'], size: 0.95 },
+  },
+  {
+    id: 104, name: 'Fenghuan', category: 'Jinémon Phénix', types: ['Feu', 'Vol'],
+    baseStats: stats(80, 100, 75, 100), catchRate: 30, baseXp: 190,
+    learnset: LS.phenix, talent: 'ignifuge',
+    folklore: 'Chine — le fenghuang, oiseau des cinq vertus qui ne se pose que sur les sterculiers.',
+    description: 'Ses cinq couleurs symbolisent les cinq vertus. Son chant annonce la venue d’un souverain juste.',
+    look: { plan: 'oiseau', colors: ['#e83a3a', '#f0c040', '#3a8ac8'], features: ['crete'], size: 0.9 },
+  },
+  {
+    id: 105, name: 'Pixor', category: 'Jinémon Gardien du Trésor', types: ['Métal', 'Vol'],
+    baseStats: stats(85, 100, 95, 70), catchRate: 40, baseXp: 182,
+    learnset: LS.pixiu, talent: 'carapace',
+    folklore: 'Chine — le pixiu, lion ailé qui dévore l’or et l’argent pour protéger les richesses.',
+    description: 'Il avale l’or et ne le rend jamais. Les marchands gardent sa statuette tournée vers la porte.',
+    look: { plan: 'quadrupede', colors: ['#d8b040', '#8a6a2a', '#3a8a6a'], features: ['ailes', 'cornes', 'criniere'], size: 0.9 },
+  },
+
+  // 🗿 Pierres et mines d'Europe
+  {
+    id: 106, name: 'Gargouillon', category: 'Jinémon Gouttière', types: ['Roche', 'Vol'],
+    baseStats: stats(55, 60, 75, 35), catchRate: 120, baseXp: 66,
+    evolution: { to: 107, level: 42 }, learnset: LS.gargouille, nocturne: true,
+    folklore: 'France (Moyen Âge) — les gargouilles, monstres de pierre qui veillent sur les toits des cathédrales.',
+    description: 'Le jour, c’est une statue. La nuit venue, il secoue la poussière de ses ailes et part chasser.',
+    look: { plan: 'bipede', colors: ['#8a8a88', '#5a5a58', '#e85a3a'], features: ['ailes', 'cornes'], size: 0.5 },
+  },
+  {
+    id: 107, name: 'Gargouillard', category: 'Jinémon Cathédrale', types: ['Roche', 'Vol'],
+    baseStats: stats(85, 100, 115, 55), catchRate: 45, baseXp: 184,
+    learnset: LS.gargouille, talent: 'carapace', nocturne: true,
+    folklore: 'France (Moyen Âge) — les gargouilles, monstres de pierre qui veillent sur les toits des cathédrales.',
+    description: 'Il crache la pluie d’orage par sa gueule ouverte. Ses griffes ont gardé l’empreinte des siècles.',
+    look: { plan: 'bipede', colors: ['#7a7a78', '#4a4a48', '#f04a2a'], features: ['ailes', 'cornes', 'yeux'], size: 0.95 },
+  },
+  {
+    id: 108, name: 'Koboldine', category: 'Jinémon Mineur', types: ['Métal', 'Roche'],
+    baseStats: stats(70, 85, 90, 60), catchRate: 70, baseXp: 150,
+    learnset: LS.kobold,
+    folklore: 'Allemagne — les kobolds, lutins des mines qui aident ou égarent les mineurs.',
+    description: 'Sa lanterne ne s’éteint jamais. Il frappe trois coups sur la roche pour signaler un filon.',
+    look: { plan: 'bipede', colors: ['#7a6a5a', '#8a8f98', '#ffd04a'], features: ['casque'], size: 0.5 },
+  },
+
+  // 🦭 Peuples des eaux froides
+  {
+    id: 109, name: 'Selkine', category: 'Jinémon Phoque', types: ['Eau'],
+    baseStats: stats(55, 45, 55, 55), catchRate: 140, baseXp: 62,
+    evolution: { to: 110, level: 30 }, learnset: LS.selkie,
+    folklore: 'Écosse et îles du Nord — les selkies, phoques qui ôtent leur peau pour danser sur la grève.',
+    description: 'Ses grands yeux noirs semblent toujours au bord des larmes. Il imite les chants des pêcheurs.',
+    look: { plan: 'amphibien', colors: ['#8a9aa8', '#5a6a78', '#e8e8f0'], features: ['nageoires'], size: 0.45 },
+  },
+  {
+    id: 110, name: 'Selkirie', category: 'Jinémon Peau-de-Phoque', types: ['Eau', 'Psy'],
+    baseStats: stats(85, 80, 80, 85), catchRate: 45, baseXp: 175,
+    learnset: LS.selkie,
+    folklore: 'Écosse et îles du Nord — les selkies, phoques qui ôtent leur peau pour danser sur la grève.',
+    description: 'Les nuits de pleine lune, elle laisse sa peau sur un rocher et prend forme humaine. Malheur à qui la cache.',
+    look: { plan: 'amphibien', colors: ['#6a7a90', '#e8d8c8', '#b8d8f8'], features: ['nageoires', 'aura'], size: 0.85 },
+  },
+  {
+    id: 111, name: 'Lindvorm', category: 'Jinémon Ver-Dragon', types: ['Dragon', 'Terre'],
+    baseStats: stats(90, 105, 90, 65), catchRate: 40, baseXp: 184,
+    learnset: LS.lindworm, talent: 'ecaillesAntiques',
+    folklore: 'Scandinavie — le lindworm, dragon serpent à deux pattes des légendes nordiques.',
+    description: 'Il rampe sur ses deux pattes griffues et s’enroule autour des églises abandonnées.',
+    look: { plan: 'serpent', colors: ['#6a8a5a', '#c8b870', '#e8c040'], features: ['crete'], size: 0.95 },
+  },
+
+  // 🦅 Gardiens des cimes
+  {
+    id: 112, name: 'Griffonnet', category: 'Jinémon Aiglon-Lion', types: ['Vol', 'Normal'],
+    baseStats: stats(55, 60, 50, 60), catchRate: 110, baseXp: 66,
+    evolution: { to: 113, level: 38 }, learnset: LS.griffon,
+    folklore: 'Grèce et Perse antiques — le griffon, mi-aigle mi-lion, gardien des trésors.',
+    description: 'Il a le bec et les ailes d’un aigle sur un corps de lionceau. Il garde jalousement tout ce qui brille.',
+    look: { plan: 'quadrupede', colors: ['#d8b878', '#f0f0e8', '#f0c040'], features: ['ailes', 'bec'], size: 0.5 },
+  },
+  {
+    id: 113, name: 'Griffonroi', category: 'Jinémon Gardien des Cimes', types: ['Vol', 'Normal'],
+    baseStats: stats(90, 110, 85, 95), catchRate: 45, baseXp: 190,
+    learnset: LS.griffon, talent: 'prestance',
+    folklore: 'Grèce et Perse antiques — le griffon, mi-aigle mi-lion, gardien des trésors.',
+    description: 'Il plane au-dessus des falaises et fond sur sa proie dans un cri qui fait trembler les rochers.',
+    look: { plan: 'quadrupede', colors: ['#c8a060', '#f8f0e0', '#e8a020'], features: ['ailes', 'bec', 'criniere'], size: 1 },
+  },
+
+  // 🌊 Gardiens et rôdeurs des eaux du monde
+  {
+    id: 114, name: 'Bunyip', category: 'Jinémon Marais Hurlant', types: ['Eau', 'Ténèbres'],
+    baseStats: stats(85, 90, 80, 55), catchRate: 50, baseXp: 176,
+    learnset: LS.bunyip, nocturne: true,
+    folklore: 'Australie (peuples aborigènes) — le bunyip, créature des points d’eau dont le cri résonne la nuit.',
+    description: 'On ne le voit presque jamais, on l’entend mugir au fond des marais. Les enfants n’approchent pas de l’eau après le coucher du soleil.',
+    look: { plan: 'quadrupede', colors: ['#3a4a3a', '#6a5a3a', '#c8e040'], features: ['yeux'], size: 0.85 },
+  },
+  {
+    id: 115, name: 'Taniwha', category: 'Jinémon Gardien des Rivières', types: ['Eau', 'Dragon'],
+    baseStats: stats(95, 95, 90, 75), catchRate: 35, baseXp: 188,
+    learnset: LS.taniwha, talent: 'ecaillesAntiques',
+    folklore: 'Māori (Aotearoa / Nouvelle-Zélande) — les taniwha, gardiens des rivières, protecteurs ou redoutables selon les tribus.',
+    description: 'Il veille sur un tronçon de rivière comme sur sa propre famille. Les motifs lumineux de sa peau racontent l’histoire de son peuple.',
+    look: { plan: 'serpent', colors: ['#2a6a7a', '#c8e0d0', '#f0e080'], features: ['crete', 'cornes'], size: 0.95 },
+  },
+  {
+    id: 116, name: 'Ahuizotl', category: 'Jinémon Chien d’Eau', types: ['Eau', 'Ténèbres'],
+    baseStats: stats(70, 95, 65, 85), catchRate: 55, baseXp: 168,
+    learnset: LS.ahuizotl, nocturne: true,
+    folklore: 'Aztèque (Mexique) — l’ahuizotl, chien d’eau à la main au bout de la queue, qui attire les pêcheurs au fond des lacs.',
+    description: 'Il pleure comme un enfant perdu pour attirer les curieux près de l’eau. La main au bout de sa queue ne lâche jamais prise.',
+    look: { plan: 'quadrupede', colors: ['#2a3a4a', '#4a6a8a', '#e8e040'], features: [], size: 0.6 },
+  },
+  {
+    id: 117, name: 'Chupacabra', category: 'Jinémon Suceur de Chèvres', types: ['Ténèbres', 'Insecte'],
+    baseStats: stats(70, 100, 60, 95), catchRate: 50, baseXp: 170,
+    learnset: LS.chupacabra, talent: 'toucherToxique', nocturne: true,
+    folklore: 'Amérique latine (Porto Rico, Mexique) — le chupacabra, rôdeur nocturne aux piquants dorsaux qui s’attaque aux troupeaux.',
+    description: 'Ses yeux rouges brillent entre les enclos. Au matin, les chèvres sont pâles et tremblantes, sans une égratignure.',
+    look: { plan: 'quadrupede', colors: ['#5a6a4a', '#2a2a22', '#ff3a3a'], features: ['epines', 'yeux'], size: 0.75 },
+  },
+  {
+    id: 118, name: 'Simorgh', category: 'Jinémon Oiseau-Sage', types: ['Vol', 'Esprit'],
+    baseStats: stats(95, 95, 90, 100), catchRate: 15, baseXp: 220,
+    learnset: LS.simurgh, talent: 'oeilVigilant',
+    folklore: 'Perse — le Simorgh, oiseau immense et bienveillant qui connaît tous les remèdes.',
+    description: 'Il a vu trois fois la fin du monde. Une seule de ses plumes, jetée au feu, l’appelle au secours de son porteur.',
+    look: { plan: 'oiseau', colors: ['#3a8a8a', '#e8a040', '#e83a8a'], features: ['crete', 'aura'], size: 1 },
+  },
+  {
+    id: 119, name: 'Mokelembé', category: 'Jinémon Arrête-Rivière', types: ['Eau', 'Roche'],
+    baseStats: stats(110, 95, 100, 50), catchRate: 20, baseXp: 210,
+    learnset: LS.mokele, talent: 'carapace',
+    folklore: 'Bassin du Congo (lingala) — le Mokèlé-mbèmbé, « celui qui arrête le cours des rivières ».',
+    description: 'Il broute les lianes au bord des fleuves. Quand il se couche dans le lit d’une rivière, l’eau cesse de couler.',
+    look: { plan: 'lezard', colors: ['#5a6a5a', '#8a8a6a', '#d8d8b0'], features: [], size: 1 },
+  },
+  {
+    id: 120, name: 'Grootslang', category: 'Jinémon Serpent-Éléphant', types: ['Roche', 'Dragon'],
+    baseStats: stats(105, 110, 100, 55), catchRate: 20, baseXp: 212,
+    learnset: LS.grootslang, talent: 'ecaillesAntiques',
+    folklore: 'Afrique du Sud (Richtersveld) — le Grootslang, serpent-éléphant qui garde une caverne de diamants.',
+    description: 'Les dieux l’ont jugé trop puissant et l’ont partagé en éléphants et en serpents. Lui seul a échappé au partage.',
+    look: { plan: 'serpent', colors: ['#6a6a6a', '#4a4a4a', '#e8f0ff'], features: ['defenses', 'gemme'], size: 1 },
+  },
+  {
+    id: 121, name: 'Shangoélier', category: 'Jinémon Bélier-Tonnerre', types: ['Vol', 'Feu'],
+    baseStats: stats(85, 105, 75, 90), catchRate: 40, baseXp: 182,
+    learnset: LS.shango, talent: 'prestance',
+    folklore: 'Yoruba (Nigeria, Bénin) — le bélier, animal de Shango, l’orisha du tonnerre et du feu.',
+    description: 'Ses cornes enroulées attirent la foudre. Quand il charge, le ciel gronde avec lui.',
+    look: { plan: 'quadrupede', colors: ['#f0e8d8', '#c83a2a', '#ffe040'], features: ['cornes', 'eclairs'], size: 0.9 },
+  },
+  {
+    id: 122, name: 'Vautouré', category: 'Jinémon Charognard Ailé', types: ['Vol', 'Ténèbres'],
+    baseStats: stats(80, 85, 70, 80), catchRate: 70, baseXp: 160,
+    learnset: LS.vautour,
+    folklore: 'Sahel — le vautour, nettoyeur de la savane, que l’on dit capable de sentir la mort de loin.',
+    description: 'Il tourne en silence au-dessus des troupeaux affaiblis. Son crâne chauve rougit quand il est en colère.',
+    look: { plan: 'oiseau', colors: ['#4a3a32', '#e8d8c0', '#e85a5a'], features: [], size: 0.85 },
+  },
+
+  // 🌑 Les Hantises : elles rôdent la nuit, visibles, et attaquent
+  {
+    id: 123, name: 'Tikoloshe', category: 'Jinémon Rôdeur des Herbes', types: ['Ténèbres', 'Eau'],
+    baseStats: stats(80, 110, 75, 115), catchRate: 25, baseXp: 230,
+    learnset: LS.tikoloshe, talent: 'ruse', nocturne: true, hantise: true,
+    folklore: 'Zoulou et Xhosa (Afrique australe) — le tikoloshe, petit être velu qui se rend invisible et rôde la nuit près des cours d’eau.',
+    description: 'Hantise. Il se tapit dans les hautes herbes et ne se montre qu’au dernier moment. Seul le froissement des tiges trahit sa présence.',
+    look: { plan: 'bipede', colors: ['#3a3028', '#6a5a4a', '#e8f040'], features: ['yeux'], size: 0.55 },
+  },
+  {
+    id: 124, name: 'Boudarou', category: 'Jinémon Garou', types: ['Ténèbres', 'Métal'],
+    baseStats: stats(105, 125, 90, 95), catchRate: 25, baseXp: 235,
+    learnset: LS.bouda, talent: 'prestance', nocturne: true, hantise: true,
+    folklore: 'Éthiopie et Maghreb — le bouda, forgeron qui se change en hyène à la nuit tombée.',
+    description: 'Hantise. Il suit tes traces pas à pas, sans jamais se presser. Si tu t’arrêtes, lui ne s’arrête pas.',
+    look: { plan: 'quadrupede', colors: ['#5a5048', '#8a8f98', '#ff5a2a'], features: ['criniere', 'chaines', 'yeux'], size: 1 },
+  },
+  {
+    id: 125, name: 'Kishimiroir', category: 'Jinémon Deux-Visages', types: ['Ténèbres', 'Psy'],
+    baseStats: stats(90, 105, 95, 105), catchRate: 25, baseXp: 232,
+    learnset: LS.kishi, talent: 'ruse', nocturne: true, hantise: true,
+    folklore: 'Angola — le kishi, démon à deux visages : un homme charmant devant, une hyène derrière.',
+    description: 'Hantise. Il imite chacun de tes gestes comme un reflet dans l’eau noire. Quand vos chemins se croisent, il montre son autre visage.',
+    look: { plan: 'bipede', colors: ['#2a2a3a', '#e8d8c0', '#b8a0ff'], features: ['deuxVisages'], size: 0.9 },
+  },
+  {
+    id: 126, name: 'Nkondiclou', category: 'Jinémon Fétiche', types: ['Spectre', 'Métal'],
+    baseStats: stats(100, 115, 130, 40), catchRate: 25, baseXp: 235,
+    learnset: LS.nkondi, talent: 'carapace', nocturne: true, hantise: true,
+    folklore: 'Kongo (RDC, Angola) — le nkisi nkondi, statue de bois hérissée de clous qui traque les parjures.',
+    description: 'Hantise. Une statue hérissée de clous. Tant que tu la regardes, elle ne bouge pas. Détourne les yeux une seconde…',
+    look: { plan: 'bipede', colors: ['#6a4a32', '#8a8f98', '#f0f0f0'], features: ['clous'], size: 0.95 },
+  },
+  {
+    id: 127, name: 'Nopperabô', category: 'Jinémon Sans-Visage', types: ['Spectre', 'Psy'],
+    baseStats: stats(85, 110, 90, 110), catchRate: 25, baseXp: 232,
+    learnset: LS.noppera, nocturne: true, hantise: true,
+    folklore: 'Japon — le nopperabō, fantôme qui prend l’apparence d’un passant avant de révéler un visage lisse comme un œuf.',
+    description: 'Hantise. De dos, on croirait un simple villageois. Ne lui demande surtout pas ton chemin.',
+    look: { plan: 'bipede', colors: ['#e8e0d0', '#2a2a3a', '#f0e8e0'], features: ['sansVisage', 'cheveux'], size: 0.9 },
+  },
+  {
+    id: 128, name: 'Obayifeu', category: 'Jinémon Sorcière', types: ['Feu', 'Spectre'],
+    baseStats: stats(75, 120, 75, 125), catchRate: 25, baseXp: 232,
+    learnset: LS.obayifo, talent: 'levitation', nocturne: true, hantise: true,
+    folklore: 'Akan (Ghana) — l’obayifo, sorcière qui quitte son corps la nuit sous la forme d’une boule de lumière.',
+    description: 'Hantise. Une lueur vacillante qui disparaît et reparaît toujours plus près. Quand tu la vois briller juste derrière toi, il est trop tard.',
+    look: { plan: 'esprit', colors: ['#7aff8a', '#3a8a4a', '#ff6a3a'], features: ['flamme', 'aura'], size: 0.7 },
   },
 ];
 

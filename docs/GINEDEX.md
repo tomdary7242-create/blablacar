@@ -2,7 +2,9 @@
 
 > Document généré à partir de `src/data/ginedex.ts` et `src/data/moves.ts`, qui restent la source de vérité.
 
-## Bestiaire (73 espèces)
+## Bestiaire (128 espèces)
+
+☾ : ne se montre que la nuit (20 h – 5 h) dans les hautes herbes. ✦ : Hantise, visible sur la carte la nuit.
 
 | N° | Nom | Types | Évolution | Talent | Origine |
 |---|---|---|---|---|---|
@@ -75,10 +77,79 @@
 | 067 | **Xolombre** | Spectre / Normal |  | Prestance du Chasseur | Aztèque (Mexique) — Xolotl et le xoloitzcuintle, chien qui guide les âmes vers le Mictlan. |
 | 068 | **Coatlplume** | Dragon / Vol |  | Écailles Antiques | Mésoamérique — le serpent à plumes, maître des vents et des pluies. |
 | 069 | **Lechivert** | Plante / Psy |  |  | Slave (Russie, Ukraine, Pologne) — le leshy, seigneur changeant de la forêt. |
-| 070 | **Yurugal** ✨ | Psy / Ténèbres |  | Ruse du Conteur | Dogon (Mali) — Yurugu, le Renard Pâle, maître du désordre et de la divination. |
-| 071 | **Bidawa** ✨ | Dragon / Terre |  | Écailles Antiques | Soninké (Empire du Ghana, Wagadou) — Bida, le serpent qui faisait pleuvoir l’or. |
+| 070 | **Yurugal** | Psy / Ténèbres |  | Ruse du Conteur | Dogon (Mali) — Yurugu, le Renard Pâle, maître du désordre et de la divination. |
+| 071 | **Bidawa** | Dragon / Terre |  | Écailles Antiques | Soninké (Empire du Ghana, Wagadou) — Bida, le serpent qui faisait pleuvoir l’or. |
 | 072 | **Mandragorin** | Plante | → Mandracri (niv. 24) |  | Europe (Méditerranée, Moyen Âge) — la mandragore, racine à forme humaine dont le cri est redouté. |
 | 073 | **Mandracri** | Plante / Spectre |  |  | Europe (Méditerranée, Moyen Âge) — la mandragore, racine à forme humaine dont le cri est redouté. |
+| 074 | **Pangolou** | Terre | → Pangolarmure (niv. 28) | Carapace | Afrique de l’Ouest et centrale — le pangolin, porte-bonheur que l’on dit capable de chasser les mauvais esprits. |
+| 075 | **Pangolarmure** | Terre / Métal |  | Carapace | Afrique de l’Ouest et centrale — le pangolin, porte-bonheur que l’on dit capable de chasser les mauvais esprits. |
+| 076 | **Kaméléo** | Plante | → Kaméléomage (niv. 26) |  | Zoulou et Afrique de l’Ouest — le caméléon, messager trop lent qui porta aux hommes la nouvelle de l’immortalité. |
+| 077 | **Kaméléomage** | Plante / Psy |  | Ruse du Conteur | Zoulou et Afrique de l’Ouest — le caméléon, messager trop lent qui porta aux hommes la nouvelle de l’immortalité. |
+| 078 | **Hippobul** | Eau | → Tawerise (niv. 30) |  | Égypte et bassin du Niger — l’hippopotame, maître redouté des fleuves. |
+| 079 | **Tawerise** | Eau / Terre |  | Carapace | Égypte antique — Taouret, la déesse hippopotame qui protège les mères et les enfants. |
+| 080 | **Chamelon** | Normal | → Méharoi (niv. 28) |  | Touareg (Sahara) — le dromadaire, compagnon des caravanes du sel. |
+| 081 | **Méharoi** | Normal / Terre |  |  | Touareg (Sahara) — le dromadaire, compagnon des caravanes du sel. |
+| 082 | **Scorpidune** | Insecte / Terre | → Serqétide (niv. 32) | Toucher Toxique | Sahara et Égypte — le scorpion des dunes, que l’on croise sous les pierres chaudes. |
+| 083 | **Serqétide** | Insecte / Psy |  | Toucher Toxique | Égypte antique — Serket, la déesse scorpion qui protège des venins. |
+| 084 | **Tourbisable** | Terre / Psy | → Djinnoum (niv. 34) | Lévitation | Sahara et Arabie — les djinns des sables, qui voyagent dans les tourbillons de poussière. |
+| 085 | **Djinnoum** | Terre / Psy |  | Lévitation | Sahara et Arabie — les djinns des sables, qui voyagent dans les tourbillons de poussière. |
+| 086 | **Kponyon** ☾ | Feu | → Kponyungo (niv. 30) |  | Sénoufo (Côte d’Ivoire, Mali, Burkina Faso) — le Kponyungo, masque « cracheur de feu » qui chasse les âmes errantes. |
+| 087 | **Kponyungo** ☾ | Feu / Ténèbres |  | Ignifuge | Sénoufo (Côte d’Ivoire, Mali, Burkina Faso) — le Kponyungo, masque « cracheur de feu » qui chasse les âmes errantes. |
+| 088 | **Okapuri** | Normal / Esprit |  |  | Mbuti (forêt de l’Ituri, Congo) — l’okapi, l’animal que la forêt cache aux étrangers. |
+| 089 | **Mandrillon** | Psy / Normal | → Babouthot (niv. 34) | Ruse du Conteur | Gabon et Cameroun — le mandrill au visage de masque, malicieux et imitateur. |
+| 090 | **Babouthot** | Psy / Normal |  | Ruse du Conteur | Égypte antique — Thot, dieu du savoir et de l’écriture, souvent représenté en babouin. |
+| 091 | **Bazoulé** | Eau | → Sobekroc (niv. 34) |  | Mossi (Burkina Faso) — les crocodiles sacrés de Bazoulé, qui laissent les enfants s’asseoir sur leur dos. |
+| 092 | **Sobekroc** | Eau / Dragon |  | Écailles Antiques | Égypte antique — Sobek, le dieu crocodile du Nil. |
+| 093 | **Lamantine** | Eau / Psy |  |  | Afrique de l’Ouest — le lamantin, que les pêcheurs du Niger et de la Casamance associent à Mami Wata. |
+| 094 | **Hiboulet** ☾ | Vol / Spectre | → Hiboumbre (niv. 30) | Œil Vigilant | Afrique de l’Ouest — la chouette, oiseau de nuit que l’on dit messager des sorciers. |
+| 095 | **Hiboumbre** ☾ | Vol / Ténèbres |  | Œil Vigilant | Afrique de l’Ouest — la chouette, oiseau de nuit que l’on dit messager des sorciers. |
+| 096 | **Roussetin** ☾ | Vol / Ténèbres | → Popobawa (niv. 32) | Lévitation | Afrique de l’Ouest et centrale — les roussettes, chauves-souris frugivores qui envahissent les manguiers au crépuscule. |
+| 097 | **Popobawa** ☾ | Ténèbres / Vol |  | Lévitation | Swahili (Zanzibar) — le Popobawa, esprit ailé qui hante les nuits et dont on n’ose prononcer le nom. |
+| 098 | **Bakeneko** ☾ | Spectre / Normal | → Nekomata (niv. 32) |  | Japon — le bakeneko, chat domestique devenu esprit après une longue vie. |
+| 099 | **Nekomata** ☾ | Spectre / Psy |  |  | Japon — le nekomata, chat dont la queue s’est fendue en deux avec l’âge. |
+| 100 | **Tanukoko** | Normal / Psy |  | Ruse du Conteur | Japon — le tanuki, chien viverrin farceur qui se déguise grâce à une feuille posée sur la tête. |
+| 101 | **Kodamo** | Plante / Spectre |  | Lévitation | Japon — les kodama, esprits qui habitent les vieux arbres et renvoient l’écho des voix. |
+| 102 | **Onimaru** ☾ | Ténèbres / Feu |  | Prestance du Chasseur | Japon — les oni, ogres cornus qui brandissent un gourdin de fer. |
+| 103 | **Qilindor** | Esprit / Feu |  | Ignifuge | Chine — le qilin, créature de bon augure qui ne foule jamais l’herbe vivante. |
+| 104 | **Fenghuan** | Feu / Vol |  | Ignifuge | Chine — le fenghuang, oiseau des cinq vertus qui ne se pose que sur les sterculiers. |
+| 105 | **Pixor** | Métal / Vol |  | Carapace | Chine — le pixiu, lion ailé qui dévore l’or et l’argent pour protéger les richesses. |
+| 106 | **Gargouillon** ☾ | Roche / Vol | → Gargouillard (niv. 42) |  | France (Moyen Âge) — les gargouilles, monstres de pierre qui veillent sur les toits des cathédrales. |
+| 107 | **Gargouillard** ☾ | Roche / Vol |  | Carapace | France (Moyen Âge) — les gargouilles, monstres de pierre qui veillent sur les toits des cathédrales. |
+| 108 | **Koboldine** | Métal / Roche |  |  | Allemagne — les kobolds, lutins des mines qui aident ou égarent les mineurs. |
+| 109 | **Selkine** | Eau | → Selkirie (niv. 30) |  | Écosse et îles du Nord — les selkies, phoques qui ôtent leur peau pour danser sur la grève. |
+| 110 | **Selkirie** | Eau / Psy |  |  | Écosse et îles du Nord — les selkies, phoques qui ôtent leur peau pour danser sur la grève. |
+| 111 | **Lindvorm** | Dragon / Terre |  | Écailles Antiques | Scandinavie — le lindworm, dragon serpent à deux pattes des légendes nordiques. |
+| 112 | **Griffonnet** | Vol / Normal | → Griffonroi (niv. 38) |  | Grèce et Perse antiques — le griffon, mi-aigle mi-lion, gardien des trésors. |
+| 113 | **Griffonroi** | Vol / Normal |  | Prestance du Chasseur | Grèce et Perse antiques — le griffon, mi-aigle mi-lion, gardien des trésors. |
+| 114 | **Bunyip** ☾ | Eau / Ténèbres |  |  | Australie (peuples aborigènes) — le bunyip, créature des points d’eau dont le cri résonne la nuit. |
+| 115 | **Taniwha** | Eau / Dragon |  | Écailles Antiques | Māori (Aotearoa / Nouvelle-Zélande) — les taniwha, gardiens des rivières, protecteurs ou redoutables selon les tribus. |
+| 116 | **Ahuizotl** ☾ | Eau / Ténèbres |  |  | Aztèque (Mexique) — l’ahuizotl, chien d’eau à la main au bout de la queue, qui attire les pêcheurs au fond des lacs. |
+| 117 | **Chupacabra** ☾ | Ténèbres / Insecte |  | Toucher Toxique | Amérique latine (Porto Rico, Mexique) — le chupacabra, rôdeur nocturne aux piquants dorsaux qui s’attaque aux troupeaux. |
+| 118 | **Simorgh** | Vol / Esprit |  | Œil Vigilant | Perse — le Simorgh, oiseau immense et bienveillant qui connaît tous les remèdes. |
+| 119 | **Mokelembé** | Eau / Roche |  | Carapace | Bassin du Congo (lingala) — le Mokèlé-mbèmbé, « celui qui arrête le cours des rivières ». |
+| 120 | **Grootslang** | Roche / Dragon |  | Écailles Antiques | Afrique du Sud (Richtersveld) — le Grootslang, serpent-éléphant qui garde une caverne de diamants. |
+| 121 | **Shangoélier** | Vol / Feu |  | Prestance du Chasseur | Yoruba (Nigeria, Bénin) — le bélier, animal de Shango, l’orisha du tonnerre et du feu. |
+| 122 | **Vautouré** | Vol / Ténèbres |  |  | Sahel — le vautour, nettoyeur de la savane, que l’on dit capable de sentir la mort de loin. |
+| 123 | **Tikoloshe** ✦ | Ténèbres / Eau |  | Ruse du Conteur | Zoulou et Xhosa (Afrique australe) — le tikoloshe, petit être velu qui se rend invisible et rôde la nuit près des cours d’eau. |
+| 124 | **Boudarou** ✦ | Ténèbres / Métal |  | Prestance du Chasseur | Éthiopie et Maghreb — le bouda, forgeron qui se change en hyène à la nuit tombée. |
+| 125 | **Kishimiroir** ✦ | Ténèbres / Psy |  | Ruse du Conteur | Angola — le kishi, démon à deux visages : un homme charmant devant, une hyène derrière. |
+| 126 | **Nkondiclou** ✦ | Spectre / Métal |  | Carapace | Kongo (RDC, Angola) — le nkisi nkondi, statue de bois hérissée de clous qui traque les parjures. |
+| 127 | **Nopperabô** ✦ | Spectre / Psy |  |  | Japon — le nopperabō, fantôme qui prend l’apparence d’un passant avant de révéler un visage lisse comme un œuf. |
+| 128 | **Obayifeu** ✦ | Feu / Spectre |  | Lévitation | Akan (Ghana) — l’obayifo, sorcière qui quitte son corps la nuit sous la forme d’une boule de lumière. |
+
+## Hantises
+
+Une Hantise par zone sauvage. Plus puissante que la faune locale, elle rôde sur la carte une fois la nuit tombée et
+attaque au contact. Vaincue ou fuie, elle disparaît jusqu’à la nuit suivante ; capturée, elle ne revient plus.
+
+| N° | Hantise | Zone | Niveau | Comportement |
+|---|---|---|---|---|
+| 123 | **Tikoloshe** | Savane des Termitières | 11 | se tapit dans les hautes herbes ; seul le froissement des tiges la trahit |
+| 124 | **Boudarou** | Terres Rouges | 17 | suit vos traces pas à pas et continue d’avancer quand vous vous arrêtez |
+| 125 | **Kishimiroir** | Marigot des Ancêtres | 23 | reproduit vos mouvements comme un reflet de l’autre côté de l’eau |
+| 126 | **Nkondiclou** | Forêt Sacrée | 29 | ne bouge que lorsque vous ne la regardez pas |
+| 127 | **Nopperabô** | Piste des Chasseurs Donzos | 35 | se fait passer pour un villageois, puis se retourne… sans visage |
+| 128 | **Obayifeu** | Falaise des Ancêtres | 48 | disparaît et reparaît, toujours plus près, souvent dans votre dos |
 
 ## Talents
 

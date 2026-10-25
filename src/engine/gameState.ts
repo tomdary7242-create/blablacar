@@ -2,6 +2,7 @@
 import type { ItemId } from '../data/items';
 import type { BadgeId } from '../data/trainers';
 import type { Dir, ZoneId } from '../data/zones';
+import { newClock, type Clock } from './clock';
 import { createJinemon, healFully, isFainted, type Jinemon } from './creature';
 import type { Rng } from './rng';
 
@@ -39,6 +40,10 @@ export interface GameState {
   playTimeMs: number;
   nextUid: number;
   options: Options;
+  /** Heure du monde (cycle jour / nuit). */
+  clock: Clock;
+  /** Hantises repoussées : zone → identifiant de la nuit où elles l'ont été. */
+  repelled: Partial<Record<ZoneId, number>>;
 }
 
 export const START_POSITION: Position = { zone: 'village', x: 18, y: 15, dir: 'bas' };
@@ -60,6 +65,8 @@ export function newGameState(playerName: string): GameState {
     playTimeMs: 0,
     nextUid: 1,
     options: { textSpeed: 'normal', sound: true },
+    clock: newClock(),
+    repelled: {},
   };
 }
 

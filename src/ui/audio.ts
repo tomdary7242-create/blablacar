@@ -1,6 +1,21 @@
 // Petits effets sonores synthétisés (WebAudio), sans fichier externe.
 
-export type Sfx = 'curseur' | 'valider' | 'retour' | 'coup' | 'superCoup' | 'ko' | 'capture' | 'niveau' | 'soin' | 'erreur' | 'pas';
+export type Sfx =
+  | 'curseur'
+  | 'valider'
+  | 'retour'
+  | 'coup'
+  | 'superCoup'
+  | 'ko'
+  | 'capture'
+  | 'niveau'
+  | 'soin'
+  | 'erreur'
+  | 'pas'
+  | 'grincement'
+  | 'cri'
+  | 'battement'
+  | 'nuit';
 
 type Note = [freq: number, duration: number, type?: OscillatorType];
 
@@ -16,6 +31,14 @@ const SOUNDS: Record<Sfx, Note[]> = {
   soin: [[587, 0.1, 'triangle'], [784, 0.1, 'triangle'], [880, 0.1, 'triangle'], [1174, 0.25, 'triangle']],
   erreur: [[200, 0.12, 'square'], [150, 0.15, 'square']],
   pas: [[90, 0.02, 'triangle']],
+  // Bois qui craque : deux grincements graves et désaccordés.
+  grincement: [[70, 0.09, 'sawtooth'], [62, 0.12, 'sawtooth']],
+  // Cri strident qui glisse vers le grave.
+  cri: [[1480, 0.07, 'sawtooth'], [1180, 0.07, 'sawtooth'], [940, 0.09, 'sawtooth'], [620, 0.14, 'sawtooth'], [300, 0.22, 'sawtooth']],
+  // Battement de cœur : « poum-poum ».
+  battement: [[58, 0.08, 'sine'], [1, 0.06, 'sine'], [52, 0.11, 'sine']],
+  // Tombée de la nuit : trois notes descendantes.
+  nuit: [[392, 0.18, 'triangle'], [330, 0.18, 'triangle'], [262, 0.35, 'triangle']],
 };
 
 export class Audio {
@@ -41,7 +64,7 @@ export class Audio {
       const gain = ctx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.setValueAtTime(name === 'battement' ? 0.16 : 0.06, t);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
       osc.connect(gain).connect(ctx.destination);
       osc.start(t);

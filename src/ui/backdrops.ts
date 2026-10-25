@@ -227,18 +227,21 @@ function sceneryProp(kind: Scenery, theme: Theme, pv: PropView, variant: number)
   }
 }
 
-const cache = new Map<Theme, HTMLCanvasElement>();
+const cache = new Map<string, HTMLCanvasElement>();
 
 /** Fond de combat (256×144) pour un décor ; les socles sont inclus. */
-export function battleBackdrop(theme: Theme): HTMLCanvasElement {
-  const hit = cache.get(theme);
+export function battleBackdrop(theme: Theme, night = false): HTMLCanvasElement {
+  const cacheKey = `${theme}:${night ? 'nuit' : 'jour'}`;
+  const hit = cache.get(cacheKey);
   if (hit) return hit;
-  const d = DESIGNS[theme];
+  const d = night ? { ...DESIGNS[theme], clouds: { color: '#fff', count: 0 } } : DESIGNS[theme];
   const c = new Canvas(BACKDROP_W, BACKDROP_H);
 
-  // Ciel
-  dithered(c, 0, HORIZON + 2, d.sky);
-  if (d.canopy) {
+  // Ciel (étoilé la nuit)
+  dithered(c, 0, HORIZON + 2, night ? (d.canopy ? NIGHT_CANOPY : NIGHT_SKY) : d.sky);
+  if (night) stars(c);
+  const skyOnly = night ? c.data.slice() : null;
+  if (d.canopy && !night) {
     // Rais de lumière obliques à travers le feuillage.
     const ray = shiftColor(d.sky[4], 0.12);
     for (let y = 0; y < HORIZON; y++) {
@@ -335,8 +338,50 @@ export function battleBackdrop(theme: Theme): HTMLCanvasElement {
   const player = platform(d.platform.top, d.platform.rim, 50);
   blit(ctx, foe, 186, 82);
   blit(ctx, player, 66, 138);
-  cache.set(theme, out);
+  // La nuit, tout ce qui n'est pas le ciel passe dans le bleu sombre du clair de lune.
+  if (skyOnly) {
+    const img = ctx.getImageData(0, 0, BACKDROP_W, BACKDROP_H);
+    const px = img.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const sky = px[i] === skyOnly[i] && px[i + 1] === skyOnly[i + 1] && px[i + 2] === skyOnly[i + 2] && skyOnly[i + 3] > 0;
+      if (sky) continue;
+      px[i] = px[i] * 0.36 + 6;
+      px[i + 1] = px[i + 1] * 0.4 + 8;
+      px[i + 2] = px[i + 2] * 0.58 + 22;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  cache.set(cacheKey, out);
   return out;
+}
+
+const NIGHT_SKY = ['#060818', '#0a0e24', '#10163a', '#18204a', '#22285a', '#2e3266'];
+const NIGHT_CANOPY = ['#04060a', '#060a0e', '#0a1014', '#0e161a', '#141e20', '#1a2626'];
+
+/** Étoiles et croissant de lune. */
+function stars(c: Canvas): void {
+  for (let i = 0; i < 90; i++) {
+    const x = Math.floor((noise3(i * 1.7, 3, 0) * 0.5 + 0.5) * c.w * 1.6) % c.w;
+    const y = Math.floor((noise3(i * 2.3, 7, 1) * 0.5 + 0.5) * (HORIZON - 14) * 1.6) % (HORIZON - 14);
+    const bright = i % 7 === 0;
+    c.set(x, y, bright ? [255, 255, 240] : i % 3 ? [150, 160, 210] : [210, 210, 240]);
+    if (bright) {
+      c.set(x + 1, y, [120, 130, 190]);
+      c.set(x - 1, y, [120, 130, 190]);
+      c.set(x, y + 1, [120, 130, 190]);
+      c.set(x, y - 1, [120, 130, 190]);
+    }
+  }
+  const mx = 214;
+  const my = 22;
+  for (let y = -14; y <= 14; y++) {
+    for (let x = -14; x <= 14; x++) {
+      const d = Math.hypot(x, y);
+      const shadow = Math.hypot(x + 4, y - 3);
+      if (d <= 8 && shadow > 7.5) c.set(mx + x, my + y, d > 6.5 ? [216, 214, 180] : [248, 244, 214]);
+      else if (d > 8 && d < 13 && (d - 8) / 5 < bayer(mx + x, my + y) * 0.5) c.set(mx + x, my + y, [60, 66, 112]);
+    }
+  }
 }
 
 /** Silhouette en contre-jour : aplat sombre et liseré lumineux du côté du soleil. */

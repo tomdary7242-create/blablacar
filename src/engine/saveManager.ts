@@ -124,6 +124,13 @@ export function sanitize(data: unknown): GameState | null {
       sound: d.options.sound !== false,
     };
   }
+  const clock = d.clock as Partial<GameState['clock']> | undefined;
+  if (clock && Number.isInteger(clock.day) && clock.day! >= 1 && typeof clock.minute === 'number' && clock.minute >= 0 && clock.minute < 1440) {
+    state.clock = { day: clock.day!, minute: clock.minute };
+  }
+  for (const [zone, night] of Object.entries(d.repelled ?? {})) {
+    if (zone in ZONES && Number.isInteger(night)) state.repelled[zone as keyof typeof ZONES] = night as number;
+  }
   // Une partie sans Jinémon après le choix du starter est incohérente : on repart du début.
   if (state.starter && state.party.length === 0 && state.storage.length === 0) return null;
   if (state.party.length === 0 && state.storage.length > 0) state.party.push(state.storage.shift()!);

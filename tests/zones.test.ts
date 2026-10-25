@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { SPECIES, getSpecies } from '../src/data/ginedex';
 import { ITEMS } from '../src/data/items';
 import { TRAINERS } from '../src/data/trainers';
-import { DIR_DELTA, SOLID_TILES, ZONES, tileAt, type Zone, type ZoneId } from '../src/data/zones';
+import { HAUNTS } from '../src/data/hantises';
+import { DIR_DELTA, GRASS_TILE, SOLID_TILES, ZONES, tileAt, type Zone, type ZoneId } from '../src/data/zones';
 import { START_POSITION } from '../src/engine/gameState';
 
 const zones = Object.values(ZONES);
@@ -112,8 +113,10 @@ describe('Cartes des zones', () => {
     const obtainable = new Set<number>([1, 4, 7]);
     for (const z of zones) {
       z.encounters.forEach((e) => obtainable.add(e.species));
+      z.nightEncounters?.forEach((e) => obtainable.add(e.species));
       z.npcs.forEach((n) => n.script.kind === 'legendaire' && obtainable.add(n.script.species));
     }
+    HAUNTS.forEach((h) => obtainable.add(h.species));
     let grew = true;
     while (grew) {
       grew = false;
@@ -125,5 +128,44 @@ describe('Cartes des zones', () => {
       }
     }
     expect(SPECIES.filter((s) => !obtainable.has(s.id)).map((s) => s.name)).toEqual([]);
+  });
+});
+
+describe('Nuit et Hantises', () => {
+  it('ont des rencontres nocturnes valides dans chaque zone d’herbes hautes', () => {
+    for (const z of zones) {
+      const hasGrass = z.map.some((row) => row.includes(GRASS_TILE));
+      expect(!!z.nightEncounters?.length, z.id).toBe(hasGrass);
+      for (const e of z.nightEncounters ?? []) {
+        expect(() => getSpecies(e.species)).not.toThrow();
+        expect(e.min).toBeLessThanOrEqual(e.max);
+      }
+    }
+  });
+
+  it('réservent les Jinémon nocturnes à la nuit et les Hantises à la carte', () => {
+    for (const z of zones) {
+      for (const e of z.encounters) expect(getSpecies(e.species).nocturne, `${z.id} : ${getSpecies(e.species).name} de jour`).toBeFalsy();
+      for (const e of z.nightEncounters ?? []) expect(getSpecies(e.species).hantise, `${z.id} : Hantise en rencontre`).toBeFalsy();
+    }
+    expect(SPECIES.filter((s) => s.nocturne).length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('comptent six Hantises plus puissantes que la faune de leur zone', () => {
+    expect(HAUNTS).toHaveLength(6);
+    expect(new Set(HAUNTS.map((h) => h.behavior)).size).toBe(6);
+    expect(SPECIES.filter((s) => s.hantise).map((s) => s.id).sort()).toEqual(HAUNTS.map((h) => h.species).sort());
+    for (const h of HAUNTS) {
+      const zone = ZONES[h.zone];
+      const wildMax = Math.max(...[...zone.encounters, ...(zone.nightEncounters ?? [])].map((e) => e.max));
+      expect(h.level, h.zone).toBeGreaterThan(wildMax);
+      const species = getSpecies(h.species);
+      const total = species.baseStats.hp + species.baseStats.attack + species.baseStats.defense + species.baseStats.speed;
+      expect(total, species.name).toBeGreaterThanOrEqual(380);
+      for (const [x, y] of h.spawns) {
+        expect(SOLID_TILES.has(tileAt(zone, x, y)), `${h.zone} ${x},${y}`).toBe(false);
+        if (h.behavior === 'herbes') expect(tileAt(zone, x, y), `${h.zone} ${x},${y}`).toBe(GRASS_TILE);
+      }
+    }
   });
 });

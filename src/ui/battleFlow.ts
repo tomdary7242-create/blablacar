@@ -14,7 +14,16 @@ function levelsBefore(game: Game): Map<Jinemon, number> {
   return new Map(game.s.party.map((j) => [j, j.level]));
 }
 
-export function startWildBattle(game: Game, foe: Jinemon, opts: { flag?: string } = {}): void {
+export interface WildOptions {
+  /** Drapeau posé si le Jinémon est capturé (légendes, Hantises). */
+  flag?: string;
+  /** Message d'ouverture du combat. */
+  intro?: string;
+  /** Appelé dès la fin du combat, quelle qu'en soit l'issue. */
+  onOutcome?: (outcome: Outcome) => void;
+}
+
+export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}): void {
   const state = game.s;
   markSeen(state, foe.speciesId);
   const before = levelsBefore(game);
@@ -24,14 +33,17 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: { flag?: string 
     player: state.party,
     foe: [foe],
     rng: game.rng,
-    intro: species.legendary ? `La Légende ${species.name} se dresse devant vous !` : undefined,
+    intro: opts.intro ?? (species.legendary ? `La Légende ${species.name} se dresse devant vous !` : undefined),
   });
   game.scenes.push(
     new CoverScene(game, 'combat', () => {
       game.scenes.push(
         new BattleScene(game, combat, {
           theme: game.world?.zone.theme ?? 'savane',
-          onEnd: (outcome) => afterWild(game, combat, outcome, before, opts.flag),
+          onEnd: (outcome) => {
+            opts.onOutcome?.(outcome);
+            afterWild(game, combat, outcome, before, opts.flag);
+          },
         }),
       );
     }),

@@ -6,6 +6,7 @@ import type { Trainer } from '../../data/trainers';
 import type { ElementType } from '../../data/types';
 import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
+import { isNight } from '../../engine/clock';
 import { displayName, xpForLevel } from '../../engine/creature';
 import { removeItem } from '../../engine/gameState';
 import { PAL, bar, box, calabash, cursor, fillEllipse, hpBar, stamp, statusBadge, text, typeBadge } from '../draw';
@@ -438,7 +439,7 @@ export class BattleScene implements Scene {
   }
 
   private renderBackground(ctx: CanvasRenderingContext2D): void {
-    ctx.drawImage(battleBackdrop(this.opts.theme), 0, 0);
+    ctx.drawImage(battleBackdrop(this.opts.theme, isNight(this.game.s.clock)), 0, 0);
     if (this.opts.trainer && !this.views.adversaire) {
       ctx.drawImage(characterSprite(this.opts.trainer.look, 'bas', 0), 170, 38, 32, 48);
     }
