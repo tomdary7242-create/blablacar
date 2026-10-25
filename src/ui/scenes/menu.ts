@@ -15,8 +15,12 @@ import { FlyScene, flyer } from './fly';
 import { TeamScene } from './team';
 
 const OPTIONS = ['GINÉDEX', 'ÉQUIPE', 'SAC', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'];
-/** Le menu gagne « VOLER » quand un Jinémon Vol peut porter le joueur. */
-const optionsFor = (game: Game) => (flyer(game.s) ? ['GINÉDEX', 'ÉQUIPE', 'SAC', 'VOLER', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'] : OPTIONS);
+/** Le menu gagne « VOLER » quand un Jinémon Vol peut porter le joueur ; avant le premier Jinémon, pas d'équipe ni de Ginédex. */
+const optionsFor = (game: Game) => {
+  const s = game.s;
+  if (s.party.length === 0) return OPTIONS.filter((o) => o !== 'ÉQUIPE' && (o !== 'GINÉDEX' || s.flags.starter));
+  return flyer(s) ? ['GINÉDEX', 'ÉQUIPE', 'SAC', 'VOLER', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'] : OPTIONS;
+};
 
 export class MenuScene implements Scene {
   private index = 0;

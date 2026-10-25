@@ -307,11 +307,11 @@ const ACTE1: Trainer[] = [
   {
     id: 'assa', name: 'Doyenne Assa', title: 'Gardienne du Panthéon', ai: 'malin', reward: 8000, sight: 0,
     team: [
-      { species: 23, level: 43 },
-      { species: 42, level: 44 },
-      { species: 13, level: 44 },
-      { species: 37, level: 45 },
-      { species: 64, level: 47 },
+      { species: 23, level: 41 },
+      { species: 42, level: 42 },
+      { species: 13, level: 42 },
+      { species: 37, level: 43 },
+      { species: 64, level: 45 },
     ],
     intro: [
       'Assa : Te voici au Panthéon des Légendes, là où dorment les mémoires de tous les peuples.',

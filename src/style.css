@@ -21,43 +21,43 @@ body {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* L'écran prend toute la place restante ; le canevas y est agrandi au maximum. */
 #cadre {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  padding: 8px;
 }
 
 #ecran {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  box-shadow: 0 0 0 3px var(--encre), 0 0 0 5px var(--ocre), 0 12px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 2px var(--encre), 0 0 0 4px var(--ocre), 0 12px 40px rgba(0, 0, 0, 0.6);
   border-radius: 2px;
+  outline: none;
 }
+
+/* ── Manette tactile ── */
 
 #manette {
   display: none;
   position: relative;
-  height: 180px;
   flex: none;
-  padding: 0 16px calc(12px + env(safe-area-inset-bottom));
-}
-
-/* Sur téléphone, l'écran se cale en haut pour laisser la place aux pouces. */
-body.tactile #cadre {
-  align-items: flex-start;
-  padding-top: calc(12px + env(safe-area-inset-top));
+  padding: 4px 12px 14px;
 }
 
 body.tactile #manette {
@@ -71,7 +71,7 @@ body.tactile #manette {
   color: var(--creme);
   background: linear-gradient(#5a3a22, #3a2414);
   border: 2px solid var(--ocre);
-  border-radius: 10px;
+  border-radius: 12px;
   touch-action: none;
 }
 
@@ -81,61 +81,110 @@ body.tactile #manette {
 
 .croix {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 168px;
+  height: 168px;
+  flex: none;
+  touch-action: none;
 }
 
+/* La croix entière reçoit le doigt : les flèches ne sont que des repères visuels. */
 .croix button {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  font-size: 18px;
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+  pointer-events: none;
 }
 
 .croix .haut {
-  left: 50px;
+  left: 56px;
   top: 0;
 }
 
 .croix .bas {
-  left: 50px;
+  left: 56px;
   bottom: 0;
 }
 
 .croix .gauche {
   left: 0;
-  top: 50px;
+  top: 56px;
 }
 
 .croix .droite {
   right: 0;
-  top: 50px;
+  top: 56px;
+}
+
+.centre {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translateX(-50%);
 }
 
 .menu {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  width: 56px;
-  height: 34px;
+  width: 58px;
+  height: 36px;
   font-size: 18px;
 }
 
 .actions {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   align-items: center;
+  flex: none;
 }
 
 .actions button {
-  width: 66px;
-  height: 66px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: bold;
 }
 
 .actions .a {
-  margin-bottom: 36px;
+  margin-bottom: 40px;
+}
+
+/* Téléphone à l'horizontale : croix à gauche, écran au centre, boutons à droite. */
+@media (orientation: landscape) {
+  body.tactile #app {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  body.tactile #manette {
+    display: contents;
+  }
+
+  body.tactile .croix {
+    order: 0;
+    margin-left: 8px;
+  }
+
+  body.tactile #cadre {
+    order: 1;
+    align-self: stretch;
+    padding: 6px;
+  }
+
+  body.tactile .actions {
+    order: 2;
+    flex-direction: column-reverse;
+    gap: 14px;
+    margin-right: 10px;
+  }
+
+  body.tactile .actions .a {
+    margin: 0 0 0 36px;
+  }
+
+  body.tactile .centre {
+    left: auto;
+    right: calc(14px + env(safe-area-inset-right));
+    top: calc(8px + env(safe-area-inset-top));
+    transform: none;
+  }
 }

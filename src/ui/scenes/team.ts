@@ -40,6 +40,12 @@ export class TeamScene implements Scene {
       objet: `${opts.item ? getItem(opts.item).name : 'Objet'} : sur quel Jinémon ?`,
     }[mode];
     if (opts.combat && mode !== 'objet') this.index = opts.combat.playerIndex;
+    // Remplacement forcé : le curseur part du premier Jinémon encore valide.
+    if (mode === 'remplacement') {
+      const ready = this.party.findIndex((j) => !isFainted(j));
+      if (ready >= 0) this.index = ready;
+    }
+    if (this.party.length === 0) this.hint = 'Vous n’avez encore aucun Jinémon.';
   }
 
   private get party() {
@@ -82,7 +88,7 @@ export class TeamScene implements Scene {
       }
       return;
     }
-    if (input.pressed('a')) this.act();
+    if (input.pressed('a') && this.party[this.index]) this.act();
   }
 
   private act(): void {

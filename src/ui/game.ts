@@ -25,6 +25,8 @@ export class Game {
   time = 0;
   private toastText = '';
   private toastTimer = 0;
+  /** Erreurs rattrapées par la boucle de jeu (consultées par les tests automatisés). */
+  readonly errors: string[] = [];
 
   constructor(
     readonly input: Input,
@@ -67,6 +69,18 @@ export class Game {
   /** Jingle (soin, capture, insigne…) : la musique reprend ensuite. */
   jingle(id: JingleId, onDone?: () => void): void {
     this.audio.music.jingle(id, onDone);
+  }
+
+  /**
+   * Filet de sécurité : si une scène plante, on la referme et on revient à la
+   * précédente plutôt que de laisser le jeu figé.
+   */
+  recover(error: unknown): void {
+    this.errors.push(error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error));
+    console.error(error);
+    if (this.scenes.size > 1) this.scenes.pop();
+    this.input.consume();
+    this.toast('Oups ! Retour en arrière.');
   }
 
   toast(message: string): void {

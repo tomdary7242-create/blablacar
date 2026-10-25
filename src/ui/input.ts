@@ -104,6 +104,47 @@ export class Input {
     el.addEventListener('pointerleave', up);
   }
 
+  /**
+   * Croix directionnelle tactile : la direction suit le doigt, qui peut glisser
+   * d'une flèche à l'autre sans se relever.
+   */
+  bindDpad(el: HTMLElement): void {
+    let current: Button | null = null;
+    const show = (b: Button | null) => {
+      el.querySelectorAll<HTMLElement>('[data-bouton]').forEach((btn) => btn.classList.toggle('actif', btn.dataset.bouton === b));
+    };
+    const set = (b: Button | null) => {
+      if (b === current) return;
+      if (current) this.release(current);
+      current = b;
+      if (b) this.press(b);
+      show(b);
+    };
+    const aim = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2);
+      const dy = e.clientY - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) < r.width * 0.12) return set(null);
+      set(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
+    };
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      el.setPointerCapture?.(e.pointerId);
+      this.interacted();
+      aim(e);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (current || e.buttons) aim(e);
+    });
+    const end = (e: Event) => {
+      e.preventDefault();
+      set(null);
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('lostpointercapture', end);
+  }
+
   /** Vrai à l'image où le bouton est pressé (avec répétition pour les directions maintenues). */
   pressed(b: Button): boolean {
     return this.pressedNow.has(b);

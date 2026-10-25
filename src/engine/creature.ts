@@ -73,7 +73,7 @@ export function xpForLevel(level: number): number {
 
 /** Expérience donnée par un adversaire vaincu. */
 export function xpYield(foe: Jinemon, fromTrainer: boolean): number {
-  const base = Math.floor((getSpecies(foe.speciesId).baseXp * foe.level) / 7);
+  const base = Math.floor((getSpecies(foe.speciesId).baseXp * foe.level) / 5);
   return Math.max(1, Math.floor(base * (fromTrainer ? 1.5 : 1)));
 }
 

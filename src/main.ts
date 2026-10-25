@@ -14,9 +14,11 @@ const audio = new Audio();
 const game = new Game(input, audio);
 input.onFirstInteraction = () => audio.unlock();
 
-// Manette tactile
+// Manette tactile : la croix suit le doigt, les autres boutons sont indépendants.
+const dpad = document.querySelector<HTMLElement>('.croix');
+if (dpad) input.bindDpad(dpad);
 document.querySelectorAll<HTMLElement>('[data-bouton]').forEach((el) => {
-  input.bindTouch(el, el.dataset.bouton as Button);
+  if (!el.closest('.croix')) input.bindTouch(el, el.dataset.bouton as Button);
 });
 const touch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 document.body.classList.toggle('tactile', touch);
@@ -26,13 +28,18 @@ game.scenes.push(new TitleScene(game));
 
 let last = performance.now();
 function frame(now: number): void {
+  // La boucle continue quoi qu'il arrive : une erreur dans une scène ne doit jamais figer le jeu.
+  requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  game.update(dt);
-  screen.ctx.clearRect(0, 0, W, H);
-  game.render(screen.ctx);
-  screen.present();
-  requestAnimationFrame(frame);
+  try {
+    game.update(dt);
+    screen.ctx.clearRect(0, 0, W, H);
+    game.render(screen.ctx);
+    screen.present();
+  } catch (error) {
+    game.recover(error);
+  }
 }
 requestAnimationFrame(frame);
 

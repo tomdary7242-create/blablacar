@@ -209,7 +209,7 @@ export const ACTE2_TRAINERS: Trainer[] = [
     'Sbire : Notre repaire est dans le Bois des Masques, au nord. Kouma t’y attend… enfin, j’imagine.'),
   {
     id: 'ndiaga', name: 'Ndiaga', title: 'Maître des Alizés', ai: 'malin', reward: 6800, badge: 'vent',
-    team: [{ species: 121, level: 56 }, { species: 104, level: 57 }, { species: 95, level: 57 }, { species: 113, level: 58 }, { species: 68, level: 59 }],
+    team: [{ species: 121, level: 55 }, { species: 104, level: 56 }, { species: 95, level: 56 }, { species: 113, level: 57 }, { species: 68, level: 58 }],
     intro: [
       'Ndiaga : Sens-tu ce vent ? Il a traversé tout l’océan pour arriver jusqu’ici.',
       'Ndiaga : Du haut de ce phare, je guide les pirogues et je lis les tempêtes.',
@@ -344,7 +344,7 @@ export const ACTE2_TRAINERS: Trainer[] = [
   },
   {
     id: 'kadyChampion', name: 'Kady', title: 'Championne du Mandé', rivalStage: 5, ai: 'malin', reward: 12000, sight: 0,
-    team: [{ species: 15, level: 64 }, { species: 42, level: 65 }, { species: 54, level: 65 }, { species: 92, level: 66 }, { species: 68, level: 66 }, { species: 0, level: 68 }],
+    team: [{ species: 15, level: 63 }, { species: 42, level: 64 }, { species: 54, level: 64 }, { species: 92, level: 65 }, { species: 68, level: 65 }, { species: 0, level: 67 }],
     intro: [
       'Kady : Je t’attendais. J’ai battu les quatre griots juste avant toi.',
       'Kady : Tu sais ce que ça veut dire ? Je suis la Championne du Mandé.',

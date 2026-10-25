@@ -98,6 +98,8 @@ export class OverworldScene implements Scene, World {
   private npcPos = new Map<string, { x: number; y: number }>();
   /** Dresseur qui vous a repéré : « ! », puis il marche jusqu'à vous. */
   private approach: { npc: Npc; t: number; from: { x: number; y: number }; walk: number } | null = null;
+  /** Dresseurs battus qui regagnent leur place, pas à pas (pour ne jamais boucher un passage). */
+  private returning = new Map<string, { from: { x: number; y: number }; walk: number }>();
   private banner = 0;
   private bannerText = '';
   private stepsSinceBattle = 0;
@@ -151,6 +153,7 @@ export class OverworldScene implements Scene, World {
     this.npcPos = new Map();
     this.game.s.flags[`visite:${id}`] = true;
     this.approach = null;
+    this.returning = new Map();
     this.redrawMap();
     this.savePosition();
     this.haunt = null;
@@ -329,6 +332,34 @@ export class OverworldScene implements Scene, World {
     this.runNpc(a.npc);
   }
 
+  /** Les dresseurs battus qui s'étaient déplacés retournent à leur poste. */
+  private updateReturns(dt: number): void {
+    for (const npc of this.zone.npcs) {
+      const pos = this.npcPos.get(npc.id);
+      if (!pos || npc.script.kind !== 'dresseur' || !this.game.s.flags[`dresseur:${npc.script.trainer}`]) continue;
+      const anim = this.returning.get(npc.id);
+      if (anim && anim.walk < 1) {
+        anim.walk = Math.min(1, anim.walk + dt / 0.26);
+        continue;
+      }
+      if (pos.x === npc.x && pos.y === npc.y) {
+        this.npcPos.delete(npc.id);
+        this.returning.delete(npc.id);
+        this.npcDirs.set(npc.id, npc.dir);
+        continue;
+      }
+      const dx = Math.sign(npc.x - pos.x);
+      const dy = dx !== 0 ? 0 : Math.sign(npc.y - pos.y);
+      const nx = pos.x + dx;
+      const ny = pos.y + dy;
+      // On attend que la voie soit libre (le joueur ou un autre PNJ peut gêner).
+      if ((nx === this.x && ny === this.y) || this.npcAt(nx, ny)) continue;
+      this.npcDirs.set(npc.id, dx > 0 ? 'droite' : dx < 0 ? 'gauche' : dy > 0 ? 'bas' : 'haut');
+      this.returning.set(npc.id, { from: { ...pos }, walk: 0 });
+      this.npcPos.set(npc.id, { x: nx, y: ny });
+    }
+  }
+
   /** Un Jinémon de l'équipe connaît-il une attaque du type donné ? */
   private fieldUser(type: 'Eau' | 'Métal' | 'Psy'): { name: string; move: string } | null {
     for (const j of this.game.s.party) {
@@ -361,6 +392,7 @@ export class OverworldScene implements Scene, World {
       this.updateApproach(dt);
       return;
     }
+    this.updateReturns(dt);
     this.tickClock(dt);
     if (this.haunt) {
       this.haunt.update(dt);
@@ -813,9 +845,11 @@ export class OverworldScene implements Scene, World {
       if (!this.npcVisible(npc)) continue;
       const p = this.posOf(npc);
       const a = this.approach?.npc === npc ? this.approach : null;
-      const walking = a && a.walk < 1;
-      const wx = walking ? a.from.x + (p.x - a.from.x) * a.walk : p.x;
-      const wy = walking ? a.from.y + (p.y - a.from.y) * a.walk : p.y;
+      const back = this.returning.get(npc.id);
+      const anim = a ?? (back && back.walk < 1 ? back : null);
+      const walking = !!anim && anim.walk < 1;
+      const wx = walking ? anim.from.x + (p.x - anim.from.x) * anim.walk : p.x;
+      const wy = walking ? anim.from.y + (p.y - anim.from.y) * anim.walk : p.y;
       const nx = Math.round(wx * TILE) + ox;
       const ny = Math.round(wy * TILE) + oy;
       drawables.push({
@@ -823,7 +857,7 @@ export class OverworldScene implements Scene, World {
         draw: () => {
           if (npc.look.kind === 'personne') {
             shadow(nx, ny);
-            const frame = walking && a.walk < 0.6 ? 1 + ((p.x + p.y) % 2) : 0;
+            const frame = walking && anim.walk < 0.6 ? 1 + ((p.x + p.y) % 2) : 0;
             ctx.drawImage(characterSprite(npc.look.look, this.npcDirs.get(npc.id) ?? npc.dir, frame), nx, ny - 8);
             if (a && a.t < 0.75) exclamation(ctx, nx + 4, ny - 21 - Math.round(Math.max(0, 0.15 - a.t) * 40));
           } else if (npc.look.kind === 'creature') {
