@@ -210,3 +210,108 @@ export function forgeProp(): Prop {
     s.paint([0, 4, 0], [5, 0.8, 5], m('#ff7a2a', { glow: true }));
   });
 }
+
+/** Palmier dattier : stipe annelé et couronne de palmes retombantes. */
+export function palmProp(variant: number, pv?: PropView): Prop {
+  return sculpted(`palmier:${variant}`, (s, m) => {
+    const trunk = m('#8a6a44', { pattern: { kind: 'rayures', color: '#5a4228', scale: 1.4, amount: 0.4, axis: 1 } });
+    const frond = m('#4a9a3a', { pattern: { kind: 'rayures', color: '#2e6a28', scale: 1, amount: 0.35, axis: 0 } });
+    const lean = variant % 2 ? -1 : 1;
+    s.tube([[0, 0, 0], [lean * 1.5, 9, 0], [lean * 3.5, 18, 0.5], [lean * 4.5, 26, 0]], [1.8, 1.5, 1.3, 1.1], trunk, { k: 0.8 });
+    const top: V3 = [lean * 4.5, 26.5, 0];
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + variant;
+      const dx = Math.cos(a);
+      const dz = Math.sin(a);
+      s.tube([top, [top[0] + dx * 5, top[1] + 2.5, top[2] + dz * 5], [top[0] + dx * 9.5, top[1] - 1, top[2] + dz * 9.5], [top[0] + dx * 11.5, top[1] - 4.5, top[2] + dz * 11.5]], [1.2, 1.5, 1, 0.3], frond, { k: 0.6 });
+    }
+    s.sphere([top[0] + 0.8, top[1] - 1.5, 1.2], 1.1, m('#b8602a'));
+    s.sphere([top[0] - 0.6, top[1] - 1.8, 1.4], 1, m('#c8702a'));
+  }, pv);
+}
+
+/** Tente touareg en peaux tannées, tendue sur des arceaux de bois. */
+export function tentProp(pv?: PropView): Prop {
+  return sculpted('tente', (s, m) => {
+    const hide = m('#b8865a', { pattern: { kind: 'rayures', color: '#8a5a34', scale: 2.4, amount: 0.25, axis: 0 } });
+    const wood = barkMat(m, '#5a3a20');
+    s.ellipsoid([0, 1.5, 0], [12, 8, 9], hide, { amp: 0.5, freq: 0.5 });
+    s.paint([0, 2.5, 8.6], [3, 4, 2.2], m('#24140c'));
+    // Arceaux qui dépassent du toit et piquets d'angle.
+    for (const x of [-5, 5]) s.tube([[x, 7, -6], [x, 10.5, 0], [x, 7, 6]], [0.6, 0.6, 0.6], wood);
+    for (const [x, z] of [[-11, 7], [11, 7], [-11, -7], [11, -7]] as const) s.cone([x, 0, z], [x * 1.08, 4, z * 1.08], 0.5, 0.4, wood);
+    s.paint([0, 6.5, 0], [12.5, 0.8, 9.5], m('#c8401a'));
+  }, pv);
+}
+
+/** Tour de banco hérissée de torons (pieux de palmier), comme à Djenné et Tombouctou. */
+export function toronTowerProp(pv?: PropView): Prop {
+  return sculpted('toron', (s, m) => {
+    const banco = m('#d4a070', { pattern: { kind: 'craquelures', color: '#a87448', scale: 3.4, amount: 0.12 } });
+    const wood = m('#5a3a1e');
+    // Pilier massif à section carrée, légèrement effilé, coiffé d'un pinacle.
+    s.box([0, 11, 0], [5, 11, 5], 1.6, banco, { amp: 0.3, freq: 0.6 });
+    s.box([0, 24, 0], [3.6, 3, 3.6], 1.4, banco, { k: 1.5 });
+    s.capped([0, 26.5, 0], [0, 31, 0], 2.6, 0.9, banco, { round: 0.6 });
+    s.sphere([0, 32, 0], 1.2, m('#f4ecdc', { gloss: true }));
+    for (let row = 0; row < 4; row++) {
+      const y = 5 + row * 5.5;
+      for (const [dx, dz] of [[1, 0], [0, 1], [-1, 0], [0, -1]] as const) {
+        for (const off of [-2.2, 2.2]) {
+          const ox = dz !== 0 ? off : 0;
+          const oz = dx !== 0 ? off : 0;
+          s.cone([dx * 4 + ox, y, dz * 4 + oz], [dx * 8 + ox, y + 0.4, dz * 8 + oz], 0.75, 0.6, wood);
+        }
+      }
+    }
+  }, pv);
+}
+
+/** Pirogue de pêcheurs, peinte de couleurs vives. */
+export function pirogueProp(): Prop {
+  return sculpted('pirogue', (s, m) => {
+    const hull = m('#e8c040', { pattern: { kind: 'rayures', color: '#c8401a', scale: 2.2, amount: 0.3, axis: 1 } });
+    s.ellipsoid([0, 2.4, 0], [12, 2.4, 3.6], hull);
+    s.paint([0, 4.6, 0], [10.5, 1, 2.6], m('#4a2a18'));
+    s.cone([-11, 2.5, 0], [-14, 6, 0], 1.2, 0.5, hull, { k: 1 });
+    s.cone([11, 2.5, 0], [14, 6, 0], 1.2, 0.5, hull, { k: 1 });
+    s.paint([0, 2.4, 3.6], [11, 0.6, 1], m('#3a86c8'));
+  });
+}
+
+/** Masque sacré planté sur un poteau, orné de raphia. */
+export function maskPoleProp(variant: number): Prop {
+  return sculpted(`masque:${variant}`, (s, m) => {
+    const wood = barkMat(m, '#5a3a22');
+    s.cone([0, 0, 0], [0, 16, 0], 1, 0.8, wood);
+    const colors = ['#e8e0d0', '#c8401a', '#3a2a20'];
+    const face = m(colors[variant % 3], { edge: true, pattern: { kind: 'rayures', color: colors[(variant + 1) % 3], scale: 2, amount: 0.2, axis: 1 } });
+    s.box([0, 19, 1], [3, 5, 1.2], 0.8, face);
+    s.paint([-1.4, 20, 2.2], [0.8, 0.6, 0.6], m('#140c08'));
+    s.paint([1.4, 20, 2.2], [0.8, 0.6, 0.6], m('#140c08'));
+    if (variant % 2 === 0) for (const x of [-2.5, 2.5]) s.cone([x, 23.5, 1], [x * 1.4, 28, 0.5], 0.8, 0.3, face);
+    else s.cone([0, 24, 1], [0, 31, 1], 0.7, 0.6, face);
+    s.cone([0, 14, 1.8], [0, 10, 3], 2.6, 3.2, m('#b8902a', { fur: 1 }), { amp: 0.5, freq: 1, stretch: 2 });
+  });
+}
+
+/** Phare blanc et rouge sur son promontoire. */
+export function lighthouseProp(): Prop {
+  return sculpted('phare', (s, m) => {
+    const white = m('#f0ece0', { pattern: { kind: 'rayures', color: '#c83a2a', scale: 5, amount: 0.5, axis: 1 } });
+    s.capped([0, 0, 0], [0, 34, 0], 6, 4, white, { round: 0.8 });
+    s.capped([0, 34, 0], [0, 36, 0], 5.6, 5.6, m('#3a3a40'), { round: 0.4 });
+    s.capped([0, 36, 0], [0, 40, 0], 3.5, 3.5, m('#ffe890', { glow: true }), { round: 0.3 });
+    s.capped([0, 40, 0], [0, 44, 0], 4, 0.6, m('#c83a2a'), { round: 0.5 });
+    s.paint([0, 10, 5.5], [1.6, 3, 1.5], m('#3a2a20'));
+  });
+}
+
+/** Mirage : rocher qui tremble dans l'air brûlant, à demi transparent. */
+export function mirageProp(): Prop {
+  return sculpted('mirage', (s, m) => {
+    const haze = m('#e8c890', { bare: true, maxTone: 2, pattern: { kind: 'rayures', color: '#f8e8c0', scale: 1.2, amount: 0.4, axis: 1 } });
+    s.ellipsoid([0, 6, 0], [7, 6.5, 5.5], haze, { amp: 1.2, freq: 0.6, stretch: 2.5 });
+    s.sphere([4, 3, 2], 3.4, haze, { k: 1.5, amp: 0.8, freq: 0.7 });
+  });
+}

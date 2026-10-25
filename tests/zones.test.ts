@@ -8,7 +8,7 @@ import { START_POSITION } from '../src/engine/gameState';
 
 const zones = Object.values(ZONES);
 
-/** Cases atteignables depuis un point (rochers fissurés et gués considérés franchissables). */
+/** Cases atteignables depuis un point (rochers fissurés, gués et mirages considérés franchissables). */
 function reachable(zone: Zone, sx: number, sy: number): Set<string> {
   const seen = new Set<string>([`${sx},${sy}`]);
   const queue: Array<[number, number]> = [[sx, sy]];
@@ -23,7 +23,7 @@ function reachable(zone: Zone, sx: number, sy: number): Set<string> {
       const key = `${nx},${ny}`;
       const tile = tileAt(zone, nx, ny);
       if (seen.has(key) || blockers.has(key)) continue;
-      if (SOLID_TILES.has(tile) && tile !== 'X' && tile !== 'w') continue;
+      if (SOLID_TILES.has(tile) && tile !== 'X' && tile !== 'w' && tile !== 'Y') continue;
       if (nx < 0 || ny < 0 || nx >= zone.map[0].length || ny >= zone.map.length) continue;
       seen.add(key);
       queue.push([nx, ny]);
@@ -114,6 +114,7 @@ describe('Cartes des zones', () => {
     for (const z of zones) {
       z.encounters.forEach((e) => obtainable.add(e.species));
       z.nightEncounters?.forEach((e) => obtainable.add(e.species));
+      z.fishing?.forEach((e) => obtainable.add(e.species));
       z.npcs.forEach((n) => n.script.kind === 'legendaire' && obtainable.add(n.script.species));
     }
     HAUNTS.forEach((h) => obtainable.add(h.species));
@@ -133,7 +134,8 @@ describe('Cartes des zones', () => {
 
 describe('Nuit et Hantises', () => {
   it('ont des rencontres nocturnes valides dans chaque zone d’herbes hautes', () => {
-    for (const z of zones) {
+    // Dans les grottes obscures, il fait nuit à toute heure : une seule table suffit.
+    for (const z of zones.filter((zone) => !zone.dark)) {
       const hasGrass = z.map.some((row) => row.includes(GRASS_TILE));
       expect(!!z.nightEncounters?.length, z.id).toBe(hasGrass);
       for (const e of z.nightEncounters ?? []) {
@@ -145,7 +147,8 @@ describe('Nuit et Hantises', () => {
 
   it('réservent les Jinémon nocturnes à la nuit et les Hantises à la carte', () => {
     for (const z of zones) {
-      for (const e of z.encounters) expect(getSpecies(e.species).nocturne, `${z.id} : ${getSpecies(e.species).name} de jour`).toBeFalsy();
+      if (!z.dark) for (const e of z.encounters) expect(getSpecies(e.species).nocturne, `${z.id} : ${getSpecies(e.species).name} de jour`).toBeFalsy();
+      for (const e of [...z.encounters, ...(z.fishing ?? [])]) expect(getSpecies(e.species).hantise, `${z.id} : Hantise en rencontre`).toBeFalsy();
       for (const e of z.nightEncounters ?? []) expect(getSpecies(e.species).hantise, `${z.id} : Hantise en rencontre`).toBeFalsy();
     }
     expect(SPECIES.filter((s) => s.nocturne).length).toBeGreaterThanOrEqual(12);

@@ -112,7 +112,8 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
             game.say(lines, () =>
               evolutions(game, before, () => {
                 game.save(true);
-                if (trainer.id === 'assa') game.scenes.push(new CreditsScene(game));
+                if (trainer.id === 'assa') game.scenes.push(new CreditsScene(game, 'acte1'));
+                if (trainer.id === 'kadyChampion') game.scenes.push(new CreditsScene(game, 'final'));
               }),
             'victoire');
           },
@@ -124,7 +125,8 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
 
 /** Musique d'un combat de dresseur selon son rang. */
 function trainerMusic(trainer: Trainer): TrackId {
-  if (trainer.id === 'assa') return 'legende';
+  if (trainer.id === 'assa' || trainer.id === 'kadyChampion' || trainer.id === 'balla') return 'legende';
+  if (['kandia', 'bazoumana', 'fanta'].includes(trainer.id)) return 'maitre';
   return trainer.badge ? 'maitre' : 'dresseur';
 }
 

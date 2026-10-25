@@ -537,6 +537,42 @@ const LS = {
     [21, 'feuBrousse'], [26, 'ombreRampante'], [31, 'braiseAncestrale'], [36, 'chocPsychique'], [41, 'lamentation'],
     [46, 'brulureSahel'], [52, 'rondeAmes'], [58, 'enigmeSphinx'], [64, 'fournaiseSacree'], [68, 'appelMictlan'],
   ],
+  // ── Acte II ──
+  fennec: [
+    [1, 'coupDePatte'], [1, 'regardPenetrant'], [5, 'bondLievre'], [9, 'ondeMentale'], [13, 'ruseLievre'],
+    [17, 'morsureHyene'], [21, 'illusionKitsune'], [26, 'lectureSable'], [31, 'ventHarmattan'], [36, 'chocPsychique'],
+    [41, 'regardHypnotique'], [46, 'enigmeSphinx'], [52, 'danseChasseurs'], [58, 'rueeSauvage'], [64, 'voileGenies'],
+  ],
+  addax: [
+    [1, 'coupDePatte'], [1, 'criDeGuerre'], [6, 'griffeArgile'], [11, 'coupDeCorne'], [16, 'piegeBoue'],
+    [21, 'ruadeZebu'], [26, 'armureBanco'], [31, 'fissureLaterite'], [36, 'danseChasseurs'], [41, 'assautTermitiere'],
+    [46, 'ventHarmattan'], [51, 'rueeSauvage'], [56, 'grondementFalaise'], [62, 'brulureSahel'], [68, 'palabre'],
+  ],
+  kelEssuf: [
+    [1, 'frissonTombe'], [1, 'ricanement'], [5, 'larcin'], [9, 'murmureAncetres'], [13, 'regardMalefique'],
+    [17, 'morsureHyene'], [21, 'ombreRampante'], [26, 'paroleGriot'], [31, 'embuscadeNocturne'], [36, 'voileGenies'],
+    [41, 'crocsNuit'], [46, 'lamentation'], [52, 'lueurSacree'], [58, 'rondeAmes'], [64, 'eclipseDevorante'],
+  ],
+  tellem: [
+    [1, 'jetCaillou'], [1, 'murmureAncetres'], [5, 'armureBanco'], [9, 'griffeArgile'], [13, 'tombeauPierre'],
+    [17, 'miroirEmeraude'], [21, 'regardPetrifiant'], [26, 'danseMasques'], [31, 'eboulement'], [36, 'voileGenies'],
+    [41, 'souffleVital'], [46, 'dalleLaterite'], [52, 'lueurSacree'], [58, 'pluieMeteores'], [64, 'colereAncetres'],
+  ],
+  kanaga: [
+    [1, 'coupDeBec'], [1, 'murmureAncetres'], [5, 'danseMasques'], [9, 'ventHarmattan'], [13, 'miroirEmeraude'],
+    [17, 'plumesVirevoltantes'], [21, 'piqueCalao'], [26, 'voileGenies'], [31, 'paroleGriot'], [36, 'ventArriere'],
+    [41, 'ailesTonnerre'], [46, 'lueurSacree'], [52, 'souffleVital'], [58, 'cycloneCeleste'], [64, 'colereAncetres'],
+  ],
+  faro: [
+    [1, 'gicleeSource'], [1, 'murmureAncetres'], [6, 'brumeSoporifique'], [12, 'vagueFleuve'], [18, 'miroirEmeraude'],
+    [24, 'tourbillonMarigot'], [30, 'pluieHivernage'], [36, 'paroleGriot'], [40, 'chantAbysses'], [45, 'voileGenies'],
+    [50, 'lueurSacree'], [55, 'crueGrandFleuve'], [60, 'souffleVital'], [65, 'colereAncetres'], [70, 'danseMasques'],
+  ],
+  aidoHwedo: [
+    [1, 'queueFouettante'], [1, 'murmureAncetres'], [6, 'piegeBoue'], [12, 'souffleDragon'], [18, 'danseEcailles'],
+    [24, 'miroirEmeraude'], [30, 'voileGenies'], [36, 'fissureLaterite'], [40, 'griffeDraconique'], [45, 'lueurSacree'],
+    [50, 'grondementFalaise'], [55, 'courrouxDraconique'], [60, 'colereAncetres'], [65, 'souffleNinkiNanka'], [70, 'souffleVital'],
+  ],
 } satisfies Record<string, readonly LearnsetEntry[]>;
 
 const stats = (hp: number, attack: number, defense: number, speed: number): BaseStats => ({ hp, attack, defense, speed });
@@ -1628,6 +1664,80 @@ export const SPECIES: readonly Species[] = [
     description: 'Hantise. Une lueur vacillante qui disparaît et reparaît toujours plus près. Quand tu la vois briller juste derrière toi, il est trop tard.',
     look: { plan: 'esprit', colors: ['#7aff8a', '#3a8a4a', '#ff6a3a'], features: ['flamme', 'aura'], size: 0.7 },
   },
+  // ── Acte II : le désert, les monts de Hombori, le Delta et les Masques ──
+  {
+    id: 129, name: 'Fennécho', category: 'Jinémon Écoute-Dunes', types: ['Normal'],
+    baseStats: stats(45, 50, 40, 75), catchRate: 120, baseXp: 66,
+    evolution: { to: 130, level: 32 }, learnset: LS.fennec,
+    folklore: 'Sahara — le fennec, petit renard des sables aux oreilles immenses, que les nomades disent capable d’entendre les djinns.',
+    description: 'Ses oreilles captent le pas d’un scarabée à cent mètres. Il creuse son terrier sous les dunes pour fuir la chaleur.',
+    look: { plan: 'quadrupede', colors: ['#f0d8a0', '#c89860', '#3a2a20'], features: ['oreilles'], size: 0.4 },
+  },
+  {
+    id: 130, name: 'Fennemirage', category: 'Jinémon Mirage', types: ['Psy', 'Normal'],
+    baseStats: stats(70, 85, 65, 115), catchRate: 45, baseXp: 172,
+    learnset: LS.fennec, talent: 'oeilVigilant',
+    folklore: 'Sahara — le fennec et les mirages, que les caravaniers attribuent aux djinns facétieux.',
+    description: 'Il fait danser des mirages au ras des dunes. Les voyageurs égarés suivent une oasis qui recule toujours.',
+    look: { plan: 'quadrupede', colors: ['#f0d090', '#b88850', '#7a4ab8'], features: ['oreilles', 'aura'], size: 0.65 },
+  },
+  {
+    id: 131, name: 'Addaxile', category: 'Jinémon Fantôme Blanc', types: ['Terre', 'Normal'],
+    baseStats: stats(80, 90, 80, 85), catchRate: 60, baseXp: 170,
+    learnset: LS.addax, talent: 'prestance',
+    folklore: 'Sahara (Touareg) — l’addax, antilope aux cornes spiralées qui peut vivre sans boire, surnommée « le fantôme blanc des dunes ».',
+    description: 'Il ne boit jamais : l’eau des plantes qu’il broute lui suffit. Ses cornes torsadées tracent des spirales dans le sable.',
+    look: { plan: 'quadrupede', colors: ['#f0ecd8', '#a89070', '#5a3a28'], features: ['grandesCornes'], size: 0.9 },
+  },
+  {
+    id: 132, name: 'Kelessouf', category: 'Jinémon Solitude', types: ['Ténèbres', 'Esprit'],
+    baseStats: stats(70, 85, 70, 105), catchRate: 45, baseXp: 175,
+    learnset: LS.kelEssuf, talent: 'ruse', nocturne: true,
+    folklore: 'Touareg (Sahara) — les Kel Essuf, esprits de la solitude et du vide, qui visitent les voyageurs restés seuls la nuit.',
+    description: 'Il ne s’approche que de ceux qui voyagent seuls. Les Touareg chantent et jouent de l’imzad pour l’éloigner.',
+    look: { plan: 'esprit', colors: ['#2a2440', '#4a4ac8', '#e8e0ff'], features: ['aura', 'yeux'], size: 0.75 },
+  },
+  {
+    id: 133, name: 'Tellemite', category: 'Jinémon Figurine', types: ['Roche', 'Esprit'],
+    baseStats: stats(55, 60, 75, 40), catchRate: 120, baseXp: 68,
+    evolution: { to: 134, level: 40 }, learnset: LS.tellem,
+    folklore: 'Pays dogon (Mali) — les Tellem, peuple des falaises d’avant les Dogon, dont on dit qu’ils savaient voler jusqu’à leurs greniers.',
+    description: 'Une petite figurine d’argile aux bras levés vers le ciel. On la trouve dans les grottes, où elle prie pour la pluie.',
+    look: { plan: 'bipede', colors: ['#a87048', '#5a3a28', '#f0c040'], features: [], size: 0.4 },
+  },
+  {
+    id: 134, name: 'Tellemancien', category: 'Jinémon Ancêtre', types: ['Roche', 'Esprit'],
+    baseStats: stats(85, 95, 115, 60), catchRate: 45, baseXp: 178,
+    learnset: LS.tellem, talent: 'carapace',
+    folklore: 'Pays dogon (Mali) — les statues tellem aux bras levés, couvertes d’une patine de libations millénaires.',
+    description: 'Couvert d’une croûte de libations séchées, il garde les tombeaux creusés dans la paroi. Ses bras levés appellent l’orage.',
+    look: { plan: 'bipede', colors: ['#7a5034', '#3a2418', '#f0c040'], features: ['aura'], size: 0.9 },
+  },
+  {
+    id: 135, name: 'Kanagou', category: 'Jinémon Masque', types: ['Esprit', 'Vol'],
+    baseStats: stats(65, 80, 70, 110), catchRate: 60, baseXp: 172,
+    learnset: LS.kanaga, talent: 'levitation',
+    folklore: 'Pays dogon (Mali) — le masque kanaga, en forme d’oiseau aux ailes déployées ou de main du dieu créateur, danse aux funérailles.',
+    description: 'Il danse en tournoyant pour guider l’âme des défunts vers le pays des ancêtres. Son masque ne tombe jamais.',
+    look: { plan: 'oiseau', colors: ['#e8e0d0', '#2a2a2a', '#c8401a'], features: ['ailes'], size: 0.7 },
+  },
+  {
+    id: 136, name: 'Faro', category: 'Jinémon Esprit du Fleuve', types: ['Eau', 'Esprit'],
+    baseStats: stats(100, 105, 110, 115), catchRate: 3, baseXp: 290,
+    learnset: LS.faro, talent: 'benedictionPluvieuse', legendary: true,
+    folklore: 'Bambara et Bozo (Mali) — Faro, génie du Niger, qui mit de l’ordre dans le monde, apporta la pluie et enseigna la parole aux hommes.',
+    description: 'Mi-humain mi-poisson, paré de cuivre, ce génie règle les crues du fleuve. On lui offre du lait et des cauris avant la pêche.',
+    look: { plan: 'amphibien', colors: ['#3a9ac8', '#c87a3a', '#f0f8ff'], features: ['nageoires', 'cheveux', 'aura'], size: 1.1 },
+  },
+  {
+    id: 137, name: 'Aïdohwedo', category: 'Jinémon Serpent Arc-en-ciel', types: ['Dragon', 'Esprit'],
+    baseStats: stats(105, 120, 100, 110), catchRate: 3, baseXp: 300,
+    learnset: LS.aidoHwedo, talent: 'ecaillesAntiques', legendary: true,
+    folklore: 'Fon (Bénin) — Aïdo-Hwédo, le serpent arc-en-ciel qui porta la créatrice Mawu et s’enroule sous la terre pour la soutenir.',
+    description: 'Lové sous le monde, il le porte depuis l’aube des temps. Quand il remue, la terre tremble ; quand il boit, l’arc-en-ciel apparaît.',
+    look: { plan: 'serpent', colors: ['#c83a3a', '#3a8ac8', '#f0d040'], features: ['aura'], size: 1.25 },
+  },
+
 ];
 
 const BY_ID = new Map(SPECIES.map((s) => [s.id, s]));

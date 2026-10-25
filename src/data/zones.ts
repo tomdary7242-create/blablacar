@@ -10,16 +10,36 @@
 //   G  grenier                    K  foyer / forge                 A  autel
 //   M  mur d'enceinte             E  étal de marché                O  puits
 //   U  termitière                 S  panneau
+//   V  palmier                    Y  mirage (Insigne du Mirage)    Q  tour de banco à torons
+//   J  pirogue                    N  tente touareg                 Z  masque sur poteau
+//   I  phare
+//
+// Dans les grottes (thème « grotte »), « , » désigne les éboulis où rôdent les Jinémon.
 
 import type { ItemId } from './items';
 import type { MoveId } from './moves';
-import { TRAINERS, type CharacterLook } from './trainers';
+import type { CharacterLook } from './trainers';
+import { ANCIEN, ENFANT, T, VILLAGEOIS, boutique, dresseur, grenier, objet, parole, soin } from './zoneKit';
+import { cote, desert, djenne, hombori, masques, tombouctou } from './zonesActe2';
 
-export type ZoneId = 'village' | 'savane' | 'terresRouges' | 'marigot' | 'foret' | 'piste' | 'falaise';
+export type ZoneId =
+  | 'village'
+  | 'savane'
+  | 'terresRouges'
+  | 'marigot'
+  | 'foret'
+  | 'piste'
+  | 'falaise'
+  | 'desert'
+  | 'hombori'
+  | 'djenne'
+  | 'cote'
+  | 'masques'
+  | 'tombouctou';
 export type Dir = 'haut' | 'bas' | 'gauche' | 'droite';
-export type Theme = 'village' | 'savane' | 'laterite' | 'marigot' | 'foret' | 'piste' | 'falaise';
+export type Theme = 'village' | 'savane' | 'laterite' | 'marigot' | 'foret' | 'piste' | 'falaise' | 'desert' | 'grotte' | 'delta' | 'cote' | 'masques' | 'cite';
 
-export const SOLID_TILES = new Set(['T', 'B', '~', '#', 'H', 'R', 'D', 'G', 'K', 'A', 'M', 'E', 'O', 'U', 'S', 'X', 'w']);
+export const SOLID_TILES = new Set(['T', 'B', '~', '#', 'H', 'R', 'D', 'G', 'K', 'A', 'M', 'E', 'O', 'U', 'S', 'X', 'w', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I']);
 export const GRASS_TILE = ',';
 
 export interface Warp {
@@ -38,7 +58,8 @@ export interface Encounter {
   weight: number;
 }
 
-export type Condition = 'starter' | 'troisInsignes';
+/** Condition d'ouverture d'un passage gardé : starter reçu, Gardienne du Panthéon battue, ou nombre d'insignes. */
+export type Condition = 'starter' | 'pantheon' | { insignes: number };
 
 export type NpcScript =
   | { kind: 'dialogue'; lines: string[] }
@@ -49,6 +70,8 @@ export type NpcScript =
   | { kind: 'starter' }
   | { kind: 'gardien'; condition: Condition; flag: string; blocked: string[]; open: string[] }
   | { kind: 'objet'; item: ItemId; quantity: number; flag: string }
+  /** Un PNJ offre un objet une seule fois, puis répète `after`. */
+  | { kind: 'don'; item: ItemId; quantity: number; flag: string; lines: string[]; after: string[] }
   | { kind: 'legendaire'; species: number; level: number; moves: MoveId[]; flag: string; lines: string[] };
 
 export type NpcLook =
@@ -89,53 +112,20 @@ export interface Zone {
   encounterRate: number;
   npcs: Npc[];
   signs: Sign[];
+  /** Rencontres à la pêche (avec la nasse, face à l'eau). */
+  fishing?: Encounter[];
+  /** Grotte obscure : seule la lanterne éclaire, mieux avec un Jinémon Feu. */
+  dark?: boolean;
+  /** Point d'arrivée quand on y vole (devant le lieu de soin). */
+  flyPoint?: { x: number; y: number; dir: Dir };
 }
-
-// ── Apparences ───────────────────────────────────────────────────────────
-const ANCIEN: CharacterLook = { skin: '#4a2a1a', outfit: '#f0ead8', accent: '#c8a060', headwear: 'bonnet' };
-const GUERISSEUSE: CharacterLook = { skin: '#5a3420', outfit: '#5fa83a', accent: '#f0f0f0', headwear: 'foulard' };
-const MARCHANDE: CharacterLook = { skin: '#6a4028', outfit: '#e2582a', accent: '#f0c040', headwear: 'foulard' };
-const GARDIEN: CharacterLook = { skin: '#5a3420', outfit: '#9c8a5a', accent: '#6b4a2a', headwear: 'chapeau' };
-const VILLAGEOIS: CharacterLook = { skin: '#7a4a30', outfit: '#3a86c8', accent: '#f0f0f0' };
-const ENFANT: CharacterLook = { skin: '#6a3a22', outfit: '#e8b84a', accent: '#5fa83a' };
-
-const objet = (id: string, x: number, y: number, item: ItemId, quantity = 1): Npc => ({
-  id, name: 'Objet', x, y, dir: 'bas', look: { kind: 'objet' },
-  script: { kind: 'objet', item, quantity, flag: `objet:${id}` },
-  hideFlag: `objet:${id}`,
-});
-
-const dresseur = (trainer: string, x: number, y: number, dir: Dir, look: CharacterLook, hideFlag?: string): Npc => ({
-  id: trainer, name: trainer, x, y, dir, look: { kind: 'personne', look },
-  script: { kind: 'dresseur', trainer }, hideFlag,
-});
-
-const soin = (id: string, x: number, y: number, dir: Dir, lines: string[], look = GUERISSEUSE): Npc => ({
-  id, name: 'Guérisseuse', x, y, dir, look: { kind: 'personne', look }, script: { kind: 'soin', lines },
-});
-
-const boutique = (id: string, x: number, y: number, items: ItemId[], lines: string[]): Npc => ({
-  id, name: 'Marchande', x, y, dir: 'bas', look: { kind: 'personne', look: MARCHANDE },
-  script: { kind: 'boutique', items, lines },
-});
-
-const grenier = (id: string, x: number, y: number): Npc => ({
-  id, name: 'Gardien du Grenier', x, y, dir: 'bas', look: { kind: 'personne', look: GARDIEN },
-  script: { kind: 'grenier', lines: ['Je garde les Jinémon qui ne voyagent pas avec toi. Ils sont au frais dans le grenier.'] },
-});
-
-const parole = (id: string, name: string, x: number, y: number, dir: Dir, look: CharacterLook, lines: string[]): Npc => ({
-  id, name, x, y, dir, look: { kind: 'personne', look }, script: { kind: 'dialogue', lines },
-});
-
-// Les dresseurs ont leur apparence définie dans trainers.ts : on la reprend.
-const T = (id: string) => TRAINERS[id].look;
 
 // ── Zones ────────────────────────────────────────────────────────────────
 
 const village: Zone = {
   id: 'village',
   name: 'Village des Greniers',
+  flyPoint: { x: 18, y: 6, dir: 'haut' },
   theme: 'village',
   encounterRate: 0,
   encounters: [],
@@ -191,6 +181,11 @@ const village: Zone = {
 const savane: Zone = {
   id: 'savane',
   name: 'Savane des Termitières',
+  fishing: [
+    { species: 43, min: 4, max: 7, weight: 20 },
+    { species: 109, min: 4, max: 6, weight: 10 },
+    { species: 4, min: 5, max: 6, weight: 2 },
+  ],
   theme: 'savane',
   encounterRate: 0.1,
   encounters: [
@@ -264,6 +259,7 @@ const savane: Zone = {
 const terresRouges: Zone = {
   id: 'terresRouges',
   name: 'Terres Rouges',
+  flyPoint: { x: 4, y: 8, dir: 'haut' },
   theme: 'laterite',
   encounterRate: 0.1,
   encounters: [
@@ -339,6 +335,15 @@ const terresRouges: Zone = {
 const marigot: Zone = {
   id: 'marigot',
   name: 'Marigot des Ancêtres',
+  fishing: [
+    { species: 49, min: 14, max: 18, weight: 16 },
+    { species: 38, min: 15, max: 18, weight: 12 },
+    { species: 91, min: 14, max: 17, weight: 12 },
+    { species: 78, min: 14, max: 17, weight: 10 },
+    { species: 93, min: 16, max: 19, weight: 6 },
+    { species: 37, min: 18, max: 20, weight: 2 },
+  ],
+  flyPoint: { x: 3, y: 24, dir: 'droite' },
   theme: 'marigot',
   encounterRate: 0.1,
   encounters: [
@@ -429,6 +434,7 @@ const marigot: Zone = {
 const foret: Zone = {
   id: 'foret',
   name: 'Forêt Sacrée',
+  flyPoint: { x: 5, y: 22, dir: 'haut' },
   theme: 'foret',
   encounterRate: 0.11,
   encounters: [
@@ -514,6 +520,7 @@ const foret: Zone = {
 const piste: Zone = {
   id: 'piste',
   name: 'Piste des Chasseurs Donzos',
+  flyPoint: { x: 4, y: 18, dir: 'haut' },
   theme: 'piste',
   encounterRate: 0.1,
   encounters: [
@@ -590,7 +597,7 @@ const piste: Zone = {
       id: 'gardienFalaise', name: 'Gardien de la Falaise', x: 15, y: 2, dir: 'bas',
       look: { kind: 'personne', look: { skin: '#3a2214', outfit: '#f0ead8', accent: '#c8401a', headwear: 'masque' } },
       script: {
-        kind: 'gardien', condition: 'troisInsignes', flag: 'falaiseOuverte',
+        kind: 'gardien', condition: { insignes: 3 }, flag: 'falaiseOuverte',
         blocked: [
           'Gardien : Halte. Au-delà s’élève la Falaise des Ancêtres et le Panthéon des Légendes.',
           'Gardien : Seul un Initié portant les trois insignes peut gravir ce chemin.',
@@ -612,6 +619,13 @@ const piste: Zone = {
 const falaise: Zone = {
   id: 'falaise',
   name: 'Falaise des Ancêtres',
+  fishing: [
+    { species: 50, min: 37, max: 41, weight: 14 },
+    { species: 44, min: 37, max: 40, weight: 12 },
+    { species: 92, min: 38, max: 41, weight: 8 },
+    { species: 39, min: 40, max: 42, weight: 2 },
+  ],
+  flyPoint: { x: 13, y: 24, dir: 'gauche' },
   theme: 'falaise',
   encounterRate: 0.1,
   encounters: [
@@ -653,9 +667,9 @@ const falaise: Zone = {
     { species: 87, min: 37, max: 40, weight: 8 },
   ],
   map: [
-    '################################',
-    '################################',
-    '########..A.A.A.A.A.A...########',
+    '####:###########################',
+    '####:###########################',
+    '####:###..A.A.A.A.A.A...########',
     '##:::::#................#~...~##',
     '##:::::#................#.....##',
     '##:::::#................#.....##',
@@ -684,7 +698,10 @@ const falaise: Zone = {
     '##########...........###########',
     '###############.################',
   ],
-  warps: [{ x: 15, y: 29, to: 'piste', tx: 15, ty: 1, dir: 'bas' }],
+  warps: [
+    { x: 15, y: 29, to: 'piste', tx: 15, ty: 1, dir: 'bas' },
+    { x: 4, y: 0, to: 'desert', tx: 18, ty: 28, dir: 'haut' },
+  ],
   signs: [{ x: 16, y: 21, text: ['Falaise des Ancêtres', 'Au sommet : le Panthéon des Légendes.'] }],
   npcs: [
     soin('ermite', 12, 24, 'droite', ['Ermite : L’air de la falaise est pur. Que tes Jinémon s’y reposent.'], {
@@ -714,13 +731,29 @@ const falaise: Zone = {
       },
       showFlag: 'dresseur:assa', hideFlag: 'legendaire:bidawa',
     },
+    {
+      id: 'gardienNord', name: 'Gardien du Nord', x: 4, y: 2, dir: 'bas',
+      look: { kind: 'personne', look: { skin: '#3a2214', outfit: '#3a4a9a', accent: '#f0e0a0', headwear: 'turban' } },
+      script: {
+        kind: 'gardien', condition: 'pantheon', flag: 'nordOuvert',
+        blocked: [
+          'Gardien du Nord : Ce passage mène au grand désert, puis jusqu’à Tombouctou.',
+          'Gardien du Nord : Seul celui que la Gardienne du Panthéon a reconnu peut l’emprunter.',
+        ],
+        open: [
+          'Gardien du Nord : La Doyenne Assa t’a reconnu. Le Conseil des Griots de Tombouctou attend les plus grands Initiés.',
+          'Gardien du Nord : Il te faudra huit insignes. Cinq Maîtres de Piste t’attendent sur la route du nord.',
+        ],
+      },
+      hideFlag: 'nordOuvert',
+    },
     objet('falaise-calebasse', 3, 12, 'calebasseAncetres'),
     objet('falaise-calebasse2', 28, 18, 'calebasseAncetres'),
     objet('falaise-kola', 20, 27, 'kola', 2),
   ],
 };
 
-export const ZONES: Record<ZoneId, Zone> = { village, savane, terresRouges, marigot, foret, piste, falaise };
+export const ZONES: Record<ZoneId, Zone> = { village, savane, terresRouges, marigot, foret, piste, falaise, desert, hombori, djenne, cote, masques, tombouctou };
 
 export function getZone(id: ZoneId): Zone {
   return ZONES[id];

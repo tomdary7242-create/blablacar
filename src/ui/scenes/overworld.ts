@@ -18,7 +18,7 @@ import {
 } from '../../data/zones';
 import { MINUTES_PER_SECOND, advance, advanceTo, darknessOf, isNight, nightId, phaseOf, warmthOf } from '../../engine/clock';
 import { createJinemon, displayName } from '../../engine/creature';
-import { addItem, giveStarter, hasBadge, healParty } from '../../engine/gameState';
+import { addItem, giveStarter, hasBadge, healParty, itemCount } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { startTrainerBattle, startWildBattle } from '../battleFlow';
 import { box, PAL, text } from '../draw';
@@ -76,6 +76,12 @@ const ZONE_MUSIC: Record<ZoneId, TrackId> = {
   foret: 'foret',
   piste: 'route',
   falaise: 'falaise',
+  desert: 'desert',
+  hombori: 'grotte',
+  djenne: 'village',
+  cote: 'route',
+  masques: 'grotte',
+  tombouctou: 'conseil',
 };
 
 export class OverworldScene implements Scene, World {
@@ -118,7 +124,7 @@ export class OverworldScene implements Scene, World {
   get music(): TrackId | null {
     const night = isNight(this.game.s.clock);
     if (night && this.haunt && this.haunt.distance() <= 7) return null;
-    if (night) return 'nuit';
+    if (night && !this.zone.dark && this.zone.id !== 'tombouctou') return 'nuit';
     return ZONE_MUSIC[this.zone.id];
   }
 
@@ -143,6 +149,7 @@ export class OverworldScene implements Scene, World {
     this.bannerText = this.zone.name;
     this.npcDirs = new Map(this.zone.npcs.map((n) => [n.id, n.dir]));
     this.npcPos = new Map();
+    this.game.s.flags[`visite:${id}`] = true;
     this.approach = null;
     this.redrawMap();
     this.savePosition();
@@ -257,6 +264,7 @@ export class OverworldScene implements Scene, World {
     const map = this.zone.map;
     if (y < 0 || y >= map.length || x < 0 || x >= map[0].length) return '#';
     if (map[y][x] === 'X' && this.rockBroken(x, y)) return '.';
+    if (map[y][x] === 'Y' && this.game.s.flags[`mirage:${this.zone.id}`]) return ':';
     return map[y][x];
   }
 
@@ -322,7 +330,7 @@ export class OverworldScene implements Scene, World {
   }
 
   /** Un Jinémon de l'équipe connaît-il une attaque du type donné ? */
-  private fieldUser(type: 'Eau' | 'Métal'): { name: string; move: string } | null {
+  private fieldUser(type: 'Eau' | 'Métal' | 'Psy'): { name: string; move: string } | null {
     for (const j of this.game.s.party) {
       const slot = j.moves.find((m) => MOVES[m.id].type === type);
       if (slot) return { name: displayName(j), move: MOVES[slot.id].name };
@@ -507,6 +515,10 @@ export class OverworldScene implements Scene, World {
       this.crackedRock(tx, ty);
     } else if (t === 'w') {
       this.ford();
+    } else if (t === 'Y') {
+      this.mirage();
+    } else if (t === '~' && itemCount(this.game.s, 'nasse') > 0 && this.zone.fishing?.length) {
+      this.fish();
     } else if (DECOR_TEXT[t]) {
       this.game.say([DECOR_TEXT[t]]);
     }
@@ -529,6 +541,48 @@ export class OverworldScene implements Scene, World {
       this.redrawMap();
       this.game.sfx('superCoup');
       this.game.say([`${user.name} utilise ${user.move} ! Le rocher vole en éclats !`], () => this.game.save(true));
+    });
+  }
+
+  /** Insigne du Mirage : un Jinémon Psy dissipe les mirages de la zone. */
+  private mirage(): void {
+    const user = this.fieldUser('Psy');
+    if (!hasBadge(this.game.s, 'mirage') || !user) {
+      this.game.say([
+        'Un rocher tremble dans l’air brûlant… Il a l’air bien réel, pourtant.',
+        hasBadge(this.game.s, 'mirage')
+          ? 'Un Jinémon connaissant une attaque Psy pourrait percer cette illusion.'
+          : "Avec l'Insigne du Mirage, un Jinémon connaissant une attaque Psy pourrait dissiper ce mirage.",
+      ]);
+      return;
+    }
+    this.game.ask(['L’air tremble au-dessus des rochers. Est-ce un mirage ?', `Demander à ${user.name} de le dissiper ?`], ['Oui', 'Non'], (i) => {
+      if (i !== 0) return;
+      this.game.s.flags[`mirage:${this.zone.id}`] = true;
+      this.redrawMap();
+      this.game.sfx('valider');
+      this.game.say([`${user.name} utilise ${user.move} ! Le mirage se dissipe : la route du nord apparaît.`], () => this.game.save(true));
+    });
+  }
+
+  /** La nasse : un Jinémon aquatique mord… ou pas. */
+  private fish(): void {
+    const game = this.game;
+    const table = this.zone.fishing!;
+    game.ask(['L’eau est profonde et calme.', 'Lancer la nasse ?'], ['Oui', 'Non'], (i) => {
+      if (i !== 0) return;
+      game.sfx('pas');
+      const bite = game.rng.next() < 0.75;
+      if (!bite) {
+        game.say(['Vous lancez la nasse…', '… … …', 'Rien ne mord. Les Jinémon du fond se méfient.']);
+        return;
+      }
+      game.say(['Vous lancez la nasse…', '… …', 'Quelque chose s’agite dans la nasse !'], () => {
+        const entry = weightedPick(game.rng, table);
+        const foe = createJinemon(entry.species, randInt(game.rng, entry.min, entry.max), game.rng);
+        this.stepsSinceBattle = 0;
+        startWildBattle(game, foe);
+      });
     });
   }
 
@@ -584,7 +638,8 @@ export class OverworldScene implements Scene, World {
         this.ancien();
         break;
       case 'gardien': {
-        const ok = s.condition === 'starter' ? !!state.flags.starter : state.badges.length >= 3;
+        const c = s.condition;
+        const ok = c === 'starter' ? !!state.flags.starter : c === 'pantheon' ? !!state.flags['dresseur:assa'] : state.badges.length >= c.insignes;
         if (ok) {
           game.say(s.open, () => {
             state.flags[s.flag] = true;
@@ -595,6 +650,18 @@ export class OverworldScene implements Scene, World {
         }
         break;
       }
+      case 'don':
+        if (state.flags[s.flag]) {
+          game.say(s.after);
+          break;
+        }
+        game.say(s.lines, () => {
+          addItem(state, s.item, s.quantity);
+          state.flags[s.flag] = true;
+          game.jingle('objet');
+          game.say([`Vous recevez : ${getItem(s.item).name} !`], () => game.save(true));
+        });
+        break;
       case 'objet': {
         addItem(state, s.item, s.quantity);
         state.flags[s.flag] = true;
@@ -681,9 +748,19 @@ export class OverworldScene implements Scene, World {
       'Au-delà du gué du marigot s’étend la Forêt Sacrée, puis la piste des chasseurs.',
       'Avec trois insignes, la Falaise des Ancêtres t’est ouverte. La Gardienne du Panthéon t’y attend.',
     ];
-    const hint = state.flags['dresseur:assa']
-      ? 'Les griots chantent déjà ton nom. Les Légendes du Panthéon se sont éveillées sur la falaise.'
-      : hints[Math.min(state.badges.length, 3)];
+    const acte2 = [
+      'Au nord de la falaise commence le Désert des Djinns. La Reine des Sables règne sur l’oasis.',
+      'Les mirages dissipés, la route mène aux monts de Hombori. Dogo y garde la Main de Fatma.',
+      'Au-delà de Hombori, Djenné et le Delta. Ténin y parle au dragon du fleuve.',
+      'Le pont du sud mène à la Côte des Alizés. Ndiaga règne sur les vents depuis son phare.',
+      'Le Bois des Masques cache le repaire des Masques Brisés… et le dernier Maître de Piste.',
+      'Huit insignes ! Le Conseil des Griots t’attend à Tombouctou.',
+    ];
+    const hint = state.flags['dresseur:kadyChampion']
+      ? 'Champion du Mandé… Mon enfant, les griots chanteront ton nom pendant des siècles.'
+      : state.flags['dresseur:assa']
+        ? acte2[Math.max(0, Math.min(state.badges.length - 3, 5))]
+        : hints[Math.min(state.badges.length, 3)];
     game.say([`Ancien : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${SPECIES.length}.`, `Ancien : ${hint}`]);
   }
 
@@ -808,10 +885,14 @@ export class OverworldScene implements Scene, World {
   private renderLighting(ctx: CanvasRenderingContext2D, ox: number, oy: number, px: number, py: number, x0: number, y0: number): void {
     const clock = this.game.s.clock;
     const time = this.game.time;
-    const darkness = darknessOf(clock.minute);
-    const warmth = warmthOf(clock.minute);
+    // Dans les grottes, il fait toujours noir : seul un Jinémon Feu éclaire vraiment.
+    const dark = !!this.zone.dark;
+    const darkness = dark ? Math.max(0.9, darknessOf(clock.minute)) : darknessOf(clock.minute);
+    const warmth = dark ? 0 : warmthOf(clock.minute);
     if (darkness < 0.02 && warmth < 0.02) return;
-    const lights: Light[] = [{ x: px + ox + 8, y: py + oy + 6, r: 46 + Math.sin(time * 5) * 1.5 }];
+    const fire = dark && this.game.s.party.some((j) => getSpecies(j.speciesId).types.includes('Feu'));
+    const radius = dark ? (fire ? 74 : 34) : 46;
+    const lights: Light[] = [{ x: px + ox + 8, y: py + oy + 6, r: radius + Math.sin(time * 5) * 1.5 }];
     for (let ty = Math.max(0, y0 - 2); ty < Math.min(this.zone.map.length, y0 + H / TILE + 4); ty++) {
       for (let tx = Math.max(0, x0 - 2); tx < Math.min(this.zone.map[0].length, x0 + W / TILE + 4); tx++) {
         const ch = this.zone.map[ty][tx];

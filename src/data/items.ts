@@ -4,17 +4,25 @@ export type ItemId =
   | 'calebasse'
   | 'calebasseOrnee'
   | 'calebasseAncetres'
+  | 'calebasseRoyale'
   | 'karite'
   | 'bissap'
   | 'painDeSinge'
   | 'moringa'
-  | 'kola';
+  | 'kola'
+  | 'mielSauvage'
+  | 'baumeAnciens'
+  | 'nasse';
 
 export type ItemEffect =
   | { kind: 'capture'; bonus: number }
   | { kind: 'soin'; amount: number }
   | { kind: 'guerison' }
-  | { kind: 'reanimation'; fraction: number };
+  | { kind: 'reanimation'; fraction: number }
+  /** Tous les PV et guérison des altérations. */
+  | { kind: 'restauration' }
+  /** Objet important, utilisé hors du sac (la nasse se lance face à l'eau). */
+  | { kind: 'cle' };
 
 export interface Item {
   id: ItemId;
@@ -37,6 +45,10 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
     name: 'Calebasse des Ancêtres', price: 1200, effect: { kind: 'capture', bonus: 2.5 },
     description: 'Transmise de génération en génération. Même les Jinémon les plus fiers peuvent y entrer.',
   },
+  calebasseRoyale: {
+    name: 'Calebasse Royale', price: 2400, effect: { kind: 'capture', bonus: 3.5 },
+    description: 'Ornée de cauris et de fils d’or, digne des rois du Mandé. Presque aucun Jinémon ne lui résiste.',
+  },
   karite: {
     name: 'Beurre de Karité', price: 100, effect: { kind: 'soin', amount: 20 },
     description: 'Un baume nourrissant. Restaure 20 PV.',
@@ -57,6 +69,18 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
     name: 'Noix de Kola', price: 1000, effect: { kind: 'reanimation', fraction: 0.5 },
     description: "La noix du partage et de l'hospitalité. Ranime un Jinémon K.O. avec la moitié de ses PV.",
   },
+  mielSauvage: {
+    name: 'Miel Sauvage', price: 1800, effect: { kind: 'soin', amount: 9999 },
+    description: 'Récolté au sommet des baobabs par les chasseurs de miel. Restaure tous les PV.',
+  },
+  baumeAnciens: {
+    name: 'Baume des Anciens', price: 3000, effect: { kind: 'restauration' },
+    description: 'Une recette que les guérisseuses se transmettent en secret. Restaure tous les PV et guérit les altérations.',
+  },
+  nasse: {
+    name: 'Nasse du Pêcheur', price: 0, effect: { kind: 'cle' },
+    description: 'Une nasse tressée par les pêcheurs bozos. Face à l’eau, appuyez sur A pour pêcher des Jinémon aquatiques.',
+  },
 };
 
 export const ITEMS: Record<ItemId, Item> = Object.fromEntries(
@@ -67,6 +91,10 @@ export const ITEM_IDS = Object.keys(ITEMS) as ItemId[];
 
 export function getItem(id: ItemId): Item {
   return ITEMS[id];
+}
+
+export function isKeyItem(id: ItemId): boolean {
+  return ITEMS[id].effect.kind === 'cle';
 }
 
 export function isCaptureItem(id: ItemId): boolean {

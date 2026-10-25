@@ -6,7 +6,28 @@
 import type { Theme, Zone } from '../data/zones';
 import { calabash } from './draw';
 import { noise3, shiftColor } from './sculpt';
-import { altarProp, baobabProp, boulderProp, canopyProp, forgeProp, granaryProp, hutProp, signProp, stallProp, termiteProp, treeProp, wellProp, type Prop } from './props';
+import {
+  altarProp,
+  baobabProp,
+  boulderProp,
+  canopyProp,
+  forgeProp,
+  granaryProp,
+  hutProp,
+  lighthouseProp,
+  maskPoleProp,
+  mirageProp,
+  palmProp,
+  pirogueProp,
+  signProp,
+  stallProp,
+  tentProp,
+  termiteProp,
+  toronTowerProp,
+  treeProp,
+  wellProp,
+  type Prop,
+} from './props';
 
 export const TILE = 16;
 
@@ -28,6 +49,29 @@ export const THEMES: Record<Theme, Palette> = {
   foret: { grass: '#4c9a44', path: '#9a8458', ground: '#7a8a4a', tree: '#2e7030', trunk: '#5a3a24', rock: '#6a6a58', round: true },
   piste: { grass: '#b4c05c', path: '#d0a868', ground: '#d4ba78', tree: '#5a8a30', trunk: '#7a5032', rock: '#9a8468', round: false },
   falaise: { grass: '#b0a458', path: '#c8a068', ground: '#c8a070', tree: '#5a7a30', trunk: '#6a4a30', rock: '#a87048', round: false },
+  desert: { grass: '#c8a858', path: '#e0c088', ground: '#e8d098', tree: '#7a9a40', trunk: '#7a5032', rock: '#c08850', round: false },
+  grotte: { grass: '#5e5248', path: '#6a5a4a', ground: '#4e4238', tree: '#3a4a30', trunk: '#4a3424', rock: '#6e5e52', round: true },
+  delta: { grass: '#5cb85a', path: '#c8a070', ground: '#a8b878', tree: '#3a8a3a', trunk: '#6a4a30', rock: '#8a8070', round: true },
+  cote: { grass: '#8cc860', path: '#e0c890', ground: '#d8c890', tree: '#4a9a40', trunk: '#7a5032', rock: '#9a8a78', round: false },
+  masques: { grass: '#3c7a3c', path: '#6a5a40', ground: '#5a5a38', tree: '#1e4a24', trunk: '#3a2a1a', rock: '#5a5a4a', round: true },
+  cite: { grass: '#c8b070', path: '#d8b078', ground: '#e0c890', tree: '#6a8a38', trunk: '#6a4a30', rock: '#b08060', round: false },
+};
+
+/** Sol posé sous les objets du décor, selon le thème. */
+const GROUND: Record<Theme, string> = {
+  village: '"',
+  savane: '"',
+  laterite: 'L',
+  marigot: '"',
+  foret: '.',
+  piste: '"',
+  falaise: '.',
+  desert: ':',
+  grotte: '.',
+  delta: '"',
+  cote: '"',
+  masques: '.',
+  cite: ':',
 };
 
 function hash(x: number, y: number, k = 0): number {
@@ -176,14 +220,14 @@ function tallGrassFringe(ctx: CanvasRenderingContext2D, x: number, y: number, pa
 }
 
 /** Herbes hautes : brins irréguliers en trois rangées, du fond vers l'avant. */
-function tallGrass(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, onlyLower = false): void {
+function tallGrass(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, onlyLower = false, fill = true): void {
   const g = pal.grass;
   const deep = css(shiftColor(g, -0.34));
   const dark = css(shiftColor(g, -0.2));
   const mid = css(shiftColor(g, 0.02));
   const light = css(shiftColor(g, 0.24));
   const tip = css(shiftColor(g, 0.4));
-  if (!onlyLower) {
+  if (!onlyLower && fill) {
     ctx.fillStyle = deep;
     ctx.fillRect(x, y, TILE, TILE);
   }
@@ -215,6 +259,17 @@ function sand(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, t
     return v > 0.42 ? t[0] : v > -0.3 ? t[1] : t[2];
   });
   if (hash(tx, ty, 3) > 0.7) stamp(ctx, ['hs', 'sd'], x + 4 + Math.floor(hash(tx, ty, 1) * 8), y + 4 + Math.floor(hash(ty, tx, 1) * 8), { h: '#f8f0d8', s: '#c8b088', d: '#8a7a60' });
+}
+
+/** Éboulis des grottes : sol sombre jonché de cailloux, où rôdent les Jinémon. */
+function rubble(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, tx: number, ty: number): void {
+  dirtGround(ctx, x, y, pal.ground, tx, ty);
+  const r = tones(pal.grass);
+  for (let i = 0; i < 6; i++) {
+    const sx = x + 1 + Math.floor(hash(tx, ty, i + 40) * 12);
+    const sy = y + 1 + Math.floor(hash(ty, tx, i + 60) * 12);
+    stamp(ctx, i % 2 ? ['.hs', 'hsd', 'sdd'] : ['hs', 'sd'], sx, sy, { h: css(shiftColor(pal.grass, 0.25)), s: css(r[1]), d: css(r[3]) });
+  }
 }
 
 const WATER = '#3c88d0';
@@ -331,7 +386,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
   base.imageSmoothingEnabled = false;
   over.imageSmoothingEnabled = false;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? '' : tileAt(x, y));
-  const groundTheme = zone.theme === 'laterite' ? 'L' : zone.theme === 'foret' || zone.theme === 'falaise' ? '.' : '"';
+  const groundTheme = GROUND[zone.theme];
   // Un rocher isolé (sans voisin rocheux) devient un bloc sculpté plutôt qu'un pan de falaise.
   const lone = (cx: number, cy: number) =>
     at(cx, cy) === '#' && at(cx - 1, cy) !== '#' && at(cx + 1, cy) !== '#' && at(cx, cy - 1) !== '#' && at(cx, cy + 1) !== '#';
@@ -343,13 +398,29 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       const x = tx * TILE;
       const y = ty * TILE;
       // Sous un rocher isolé, on reprend le sol voisin (herbes hautes, terre…).
-      const neighbor = [at(tx, ty + 1), at(tx - 1, ty), at(tx + 1, ty), at(tx, ty - 1)].find((c) => ['"', ',', '.', 'L', ':'].includes(c));
-      const ground = lone(tx, ty) ? (neighbor ?? groundTheme) : ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M'].includes(ch) ? groundTheme : ch;
+      const around = [at(tx, ty + 1), at(tx - 1, ty), at(tx + 1, ty), at(tx, ty - 1)];
+      const neighbor = around.find((c) => ['"', ',', '.', 'L', ':'].includes(c));
+      // Sous un objet, on reprend le sol voisin (sable sous un palmier de plage, herbe ailleurs).
+      const under = around.find((c) => ['"', '.', 'L', ':'].includes(c)) ?? groundTheme;
+      const ground = lone(tx, ty)
+        ? (neighbor ?? groundTheme)
+        : ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I'].includes(ch)
+          ? ['R', 'H', 'D', 'M', 'T'].includes(ch) ? groundTheme : under
+          : ch;
       switch (ground) {
         case '"':
           grassGround(base, x, y, pal, tx, ty);
           break;
         case ',':
+          if (zone.theme === 'grotte') {
+            rubble(base, x, y, pal, tx, ty);
+            break;
+          }
+          if (zone.theme === 'desert' || zone.theme === 'cite') {
+            sand(base, x, y, tx, ty);
+            tallGrass(base, x, y, pal, false, false);
+            break;
+          }
           if (zone.theme === 'laterite') dirtGround(base, x, y, pal.ground, tx, ty);
           tallGrass(base, x, y, pal, false);
           if (at(tx, ty - 1) !== ',') tallGrassFringe(base, x, y, pal);
@@ -415,6 +486,11 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       else if (ch === 'B') groundShadow(base, cx + 3, cy + 1, 13, 4);
       else if (ch === 'R' && at(tx - 1, ty) !== 'R') groundShadow(base, tx * TILE + 26, (ty + 2) * TILE - 2, 22, 4);
       else if (('GUOX'.includes(ch) && ch) || lone(tx, ty)) groundShadow(base, cx + 1, cy + 1, 6, 2);
+      else if (ch === 'V') groundShadow(base, cx + 4, cy + 1, 9, 3);
+      else if (ch === 'N') groundShadow(base, cx + 1, cy + 1, 12, 4);
+      else if (ch === 'Q' || ch === 'I') groundShadow(base, cx + 2, cy + 1, 8, 3);
+      else if (ch === 'J') groundShadow(base, cx, cy + 2, 13, 3);
+      else if (ch === 'Z') groundShadow(base, cx + 1, cy + 1, 4, 2);
     }
   }
   for (let ty = 0; ty < h; ty++) {
@@ -452,6 +528,27 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
           break;
         case 'K':
           place(base, over, forgeProp(), x, y - 1, split);
+          break;
+        case 'V':
+          place(base, over, palmProp(Math.floor(hash(tx, ty, 5) * 4)), x, y, split);
+          break;
+        case 'N':
+          place(base, over, tentProp(), x, y, split);
+          break;
+        case 'Q':
+          place(base, over, toronTowerProp(), x, y, split);
+          break;
+        case 'J':
+          place(base, over, pirogueProp(), x, y - 1, split);
+          break;
+        case 'Z':
+          place(base, over, maskPoleProp(Math.floor(hash(tx, ty, 6) * 3)), x, y, split);
+          break;
+        case 'I':
+          place(base, over, lighthouseProp(), x, y, split);
+          break;
+        case 'Y':
+          place(base, over, mirageProp(), x, y, split);
           break;
         case 'X':
           place(base, over, boulderProp(true, pal.rock), x, y, split);
@@ -502,6 +599,13 @@ export function animateTile(ctx: CanvasRenderingContext2D, ch: string, x: number
     const phase = Math.floor(time * 2 + (x + y) / 16) % 4;
     ctx.fillStyle = ch === 'w' ? '#c8e8f8' : '#7ab8e8';
     ctx.fillRect(x + 2 + phase * 2, y + 8, 3, 1);
+  } else if (ch === 'Y') {
+    // L'air tremble au-dessus du mirage.
+    for (let i = 0; i < 3; i++) {
+      const phase = (time * 3 + i * 1.7 + x * 0.05) % 6;
+      ctx.fillStyle = i % 2 ? 'rgba(255, 248, 220, 0.55)' : 'rgba(255, 236, 180, 0.4)';
+      ctx.fillRect(x + 1 + Math.round(Math.sin(time * 4 + i) * 2), y + 2 + Math.round(phase * 2), 10 + i, 1);
+    }
   } else if (ch === 'K') {
     const f = Math.floor(time * 8) % 3;
     stamp(ctx, f === 0 ? ['..r..', '.ryr.', '.ryyr', 'ryyyr'] : f === 1 ? ['.r...', '.rr.r', 'ryyr.', 'ryyyr'] : ['...r.', 'r.rr.', '.ryyr', 'ryyyr'], x + 5, y + 5, {
@@ -513,6 +617,7 @@ export function animateTile(ctx: CanvasRenderingContext2D, ch: string, x: number
 
 /** Herbe haute dessinée par-dessus les pieds du joueur. */
 export function grassOverlay(ctx: CanvasRenderingContext2D, x: number, y: number, theme: Theme): void {
+  if (theme === 'grotte') return;
   tallGrass(ctx, x, y, THEMES[theme], true);
 }
 

@@ -166,9 +166,9 @@ describe('Dresseurs et objets', () => {
     expect(trainerTeam(TRAINERS.rival2, 7).at(-1)!.species).toBe(5);
   });
 
-  it('remettent les trois insignes des Arènes', () => {
+  it('remettent les huit insignes des Arènes', () => {
     const badges = Object.values(TRAINERS).map((t) => t.badge).filter(Boolean);
-    expect(badges.sort()).toEqual(['enclume', 'pluie', 'traqueur']);
+    expect(badges.sort()).toEqual(['dragon', 'enclume', 'masque', 'mirage', 'pierre', 'pluie', 'traqueur', 'vent']);
   });
 
   it('vendent la Calebasse Sacrée', () => {

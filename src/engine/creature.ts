@@ -212,7 +212,10 @@ export function canUseItem(j: Jinemon, itemId: ItemId): boolean {
       return !isFainted(j) && j.status !== null;
     case 'reanimation':
       return isFainted(j);
+    case 'restauration':
+      return !isFainted(j) && (j.hp < maxHp(j) || j.status !== null);
     case 'capture':
+    case 'cle':
       return false;
   }
 }
@@ -234,7 +237,12 @@ export function applyItem(j: Jinemon, itemId: ItemId): string | null {
     case 'reanimation':
       j.hp = Math.max(1, Math.floor(maxHp(j) * effect.fraction));
       return `${name} reprend connaissance !`;
+    case 'restauration':
+      j.hp = maxHp(j);
+      j.status = null;
+      return `${name} est complètement rétabli !`;
     case 'capture':
+    case 'cle':
       return null;
   }
 }

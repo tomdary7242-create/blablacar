@@ -1,5 +1,5 @@
 // Le sac : calebasses et remèdes. En combat, renvoie l'objet choisi.
-import { ITEM_IDS, getItem, isCaptureItem, type ItemId } from '../../data/items';
+import { ITEM_IDS, getItem, isCaptureItem, isKeyItem, type ItemId } from '../../data/items';
 import { applyItem } from '../../engine/creature';
 import { itemCount, removeItem } from '../../engine/gameState';
 import { PAL, box, calabash, cursor, shade, stamp, text } from '../draw';
@@ -13,8 +13,18 @@ import { TeamScene } from './team';
 /** Icône d'objet en pixel art (calebasse ou pot de remède), centrée sur (x, y). */
 export function remedyIcon(ctx: CanvasRenderingContext2D, item: ItemId, x: number, y: number): void {
   if (isCaptureItem(item)) {
-    const color = item === 'calebasseAncetres' ? '#f0c848' : item === 'calebasseOrnee' ? '#c87038' : '#d8a040';
+    const color = item === 'calebasseRoyale' ? '#9a5ad0' : item === 'calebasseAncetres' ? '#f0c848' : item === 'calebasseOrnee' ? '#c87038' : '#d8a040';
     calabash(ctx, x, y, 2, color);
+    return;
+  }
+  if (item === 'nasse') {
+    stamp(
+      ctx,
+      ['..kkkk..', '.kwkwkk.', 'kwkwkwkk', 'kkwkwkwk', 'kwkwkwkk', '.kkwkwk.', '..kkkk..', '...kk...'],
+      x - 4,
+      y - 4,
+      { k: '#5a3a1a', w: '#d8b070' },
+    );
     return;
   }
   const colors: Partial<Record<ItemId, string>> = {
@@ -23,6 +33,8 @@ export function remedyIcon(ctx: CanvasRenderingContext2D, item: ItemId, x: numbe
     painDeSinge: '#ece4cc',
     moringa: '#58a838',
     kola: '#c86a3a',
+    mielSauvage: '#e8a020',
+    baumeAnciens: '#f0f0e0',
   };
   const c = colors[item] ?? '#cccccc';
   stamp(
@@ -48,7 +60,7 @@ export class BagScene implements Scene {
   }
 
   private items(): ItemId[] {
-    return ITEM_IDS.filter((id) => itemCount(this.game.s, id) > 0);
+    return ITEM_IDS.filter((id) => itemCount(this.game.s, id) > 0 && !(this.mode === 'combat' && isKeyItem(id)));
   }
 
   update(): void {
@@ -72,6 +84,11 @@ export class BagScene implements Scene {
     }
     if (isCaptureItem(item)) {
       this.message = 'Les calebasses se lancent sur les Jinémon sauvages, en combat.';
+      this.game.sfx('erreur');
+      return;
+    }
+    if (isKeyItem(item)) {
+      this.message = getItem(item).description;
       this.game.sfx('erreur');
       return;
     }

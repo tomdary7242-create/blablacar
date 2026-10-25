@@ -32,13 +32,38 @@ const CREDITS = [
   'Merci d’avoir joué !',
 ];
 
+/** Carte de fin de l'Acte I, avant la route de Tombouctou. */
+const ACTE1 = [
+  'FIN DE L’ACTE I',
+  '',
+  'Les trois insignes du Mandé,',
+  'la Gardienne du Panthéon vaincue :',
+  'votre nom est inscrit sur la falaise.',
+  '',
+  'Mais au-delà du grand désert,',
+  'cinq Maîtres de Piste et le',
+  'Conseil des Griots de Tombouctou',
+  'attendent les plus grands Initiés.',
+  '',
+  'ACTE II',
+  'La route de Tombouctou',
+];
+
 export class CreditsScene implements Scene {
   readonly opaque = true;
   private phase: 'pantheon' | 'generique' = 'pantheon';
   private t = 0;
   readonly music = 'titre';
 
-  constructor(private readonly game: Game) {}
+  constructor(
+    private readonly game: Game,
+    /** Fin de l'Acte I (Panthéon) ou fin du jeu (Conseil des Griots). */
+    private readonly mode: 'acte1' | 'final',
+  ) {}
+
+  private get lines(): string[] {
+    return this.mode === 'final' ? CREDITS : ACTE1;
+  }
 
   update(dt: number): void {
     this.t += dt;
@@ -48,14 +73,22 @@ export class CreditsScene implements Scene {
       this.t = 0;
       return;
     }
-    const scrollDone = 240 + CREDITS.length * 16 - this.t * 24 < 0;
+    const scrollDone = 240 + this.lines.length * 16 - this.t * 24 < 0;
     if (this.phase === 'generique' && (scrollDone || input.pressed('a') || input.pressed('b'))) {
       this.game.scenes.pop(this);
       this.game.input.consume();
-      this.game.say([
-        'Le Panthéon garde désormais la mémoire de votre équipe.',
-        'On murmure que deux Légendes se sont éveillées sur les autels de la falaise : le Renard Pâle et le Serpent d’Or…',
-      ]);
+      this.game.say(
+        this.mode === 'final'
+          ? [
+              'Les griots chanteront longtemps l’histoire de votre équipe.',
+              'On raconte que la terre a tremblé dans les monts de Hombori : Aïdohwedo, le serpent qui porte le monde, se serait éveillé…',
+            ]
+          : [
+              'Le Panthéon garde désormais la mémoire de votre équipe.',
+              'On murmure que deux Légendes se sont éveillées sur les autels de la falaise : le Renard Pâle et le Serpent d’Or…',
+              'Et au nord de la falaise, le Gardien du Nord a ouvert la route du désert. Tombouctou vous attend.',
+            ],
+      );
     }
   }
 
@@ -70,8 +103,9 @@ export class CreditsScene implements Scene {
     }
     const s = this.game.s;
     if (this.phase === 'pantheon') {
-      drawOutlinedText(ctx, 'PANTHÉON DES LÉGENDES', W / 2, 6, '#f0c040', PAL.ink, { align: 'center' });
-      text(ctx, `${s.playerName}, Maître des Légendes`, W / 2, 20, { align: 'center', color: PAL.cream });
+      const final = this.mode === 'final';
+      drawOutlinedText(ctx, final ? 'CONSEIL DES GRIOTS' : 'PANTHÉON DES LÉGENDES', W / 2, 6, '#f0c040', PAL.ink, { align: 'center' });
+      text(ctx, final ? `${s.playerName}, Champion du Mandé` : `${s.playerName}, Maître des Légendes`, W / 2, 20, { align: 'center', color: PAL.cream });
       s.party.forEach((j, i) => {
         const x = Math.round(W / 2 + (i - (s.party.length - 1) / 2) * 42);
         const bob = Math.floor(this.t * 2 + i) % 2;
@@ -82,14 +116,14 @@ export class CreditsScene implements Scene {
       box(ctx, 28, 118, 200, 50, 'sombre');
       text(ctx, `Temps de jeu : ${formatPlayTime(s.playTimeMs)}`, W / 2, 122, { align: 'center', color: PAL.cream });
       text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length} capturés`, W / 2, 134, { align: 'center', color: PAL.cream });
-      text(ctx, `Insignes : ${s.badges.length}/3`, W / 2, 146, { align: 'center', color: PAL.cream });
+      text(ctx, `Insignes : ${s.badges.length}/8`, W / 2, 146, { align: 'center', color: PAL.cream });
       if (Math.floor(this.t * 2) % 2 === 0) text(ctx, 'Appuyez sur A', W / 2, 176, { align: 'center', color: '#c8b8a0' });
       return;
     }
-    CREDITS.forEach((line, i) => {
+    this.lines.forEach((line, i) => {
       const y = Math.round(H + i * 13 - this.t * 20);
       if (y < -12 || y > H) return;
-      if (i === 0) drawOutlinedText(ctx, line, W / 2, y, '#f0c040', PAL.ink, { align: 'center' });
+      if (i === 0 || line.startsWith('ACTE')) drawOutlinedText(ctx, line, W / 2, y, '#f0c040', PAL.ink, { align: 'center' });
       else text(ctx, line, W / 2, y, { align: 'center', color: PAL.cream });
     });
   }

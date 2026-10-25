@@ -11,9 +11,12 @@ import { H, W } from '../screen';
 import { menuBackground } from '../widgets';
 import { BagScene } from './bag';
 import { DexScene } from './dex';
+import { FlyScene, flyer } from './fly';
 import { TeamScene } from './team';
 
 const OPTIONS = ['GINÉDEX', 'ÉQUIPE', 'SAC', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'];
+/** Le menu gagne « VOLER » quand un Jinémon Vol peut porter le joueur. */
+const optionsFor = (game: Game) => (flyer(game.s) ? ['GINÉDEX', 'ÉQUIPE', 'SAC', 'VOLER', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'] : OPTIONS);
 
 export class MenuScene implements Scene {
   private index = 0;
@@ -22,12 +25,14 @@ export class MenuScene implements Scene {
 
   update(): void {
     const input = this.game.input;
+    const options = optionsFor(this.game);
+    this.index = Math.min(this.index, options.length - 1);
     if (input.pressed('up')) {
-      this.index = (this.index + OPTIONS.length - 1) % OPTIONS.length;
+      this.index = (this.index + options.length - 1) % options.length;
       this.game.sfx('curseur');
     }
     if (input.pressed('down')) {
-      this.index = (this.index + 1) % OPTIONS.length;
+      this.index = (this.index + 1) % options.length;
       this.game.sfx('curseur');
     }
     if (input.pressed('b') || input.pressed('start')) {
@@ -38,7 +43,10 @@ export class MenuScene implements Scene {
     if (!input.pressed('a')) return;
     this.game.sfx('valider');
     const game = this.game;
-    switch (OPTIONS[this.index]) {
+    switch (options[this.index]) {
+      case 'VOLER':
+        game.scenes.push(new FlyScene(game, () => game.scenes.pop(this)));
+        break;
       case 'GINÉDEX':
         game.scenes.push(new DexScene(game));
         break;
@@ -71,7 +79,7 @@ export class MenuScene implements Scene {
     box(ctx, 2, 2, 124, 78);
     text(ctx, s.playerName, 10, 5, { shadow: PAL.shadow });
     text(ctx, `Cauris : ${s.cauris}`, 10, 18);
-    text(ctx, `Insignes : ${s.badges.length}/3`, 10, 29);
+    text(ctx, `Insignes : ${s.badges.length}/8`, 10, 29);
     text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length}`, 10, 40);
     // Heure du monde, avec un soleil ou une lune.
     const phase = phaseOf(s.clock.minute);
@@ -79,8 +87,9 @@ export class MenuScene implements Scene {
     stamp(ctx, night ? ['.ww.', 'ww..', 'ww..', '.ww.'] : ['.yy.', 'yyyy', 'yyyy', '.yy.'], 10, 54, { w: '#e8e4c0', y: '#f0b030' });
     text(ctx, `Jour ${s.clock.day} · ${formatClock(s.clock)}`, 18, 51, { color: night ? PAL.indigo : PAL.ink });
     text(ctx, `Temps : ${formatPlayTime(s.playTimeMs)}`, 10, 63, { color: PAL.grey });
-    box(ctx, 150, 2, 104, OPTIONS.length * 12 + 12);
-    menuList(ctx, OPTIONS, 156, 7, this.index);
+    const options = optionsFor(this.game);
+    box(ctx, 150, 2, 104, options.length * 12 + 12);
+    menuList(ctx, options, 156, 7, this.index);
   }
 }
 
@@ -141,6 +150,11 @@ export function drawBadge(ctx: CanvasRenderingContext2D, id: BadgeId, x: number,
     enclume: ['#########', '#########', '..#####..', '...###...', '..#####..', '.#######.'],
     pluie: ['....#....', '...###...', '..#####..', '.#######.', '.#######.', '..#####..', '...###...'],
     traqueur: ['.......##', '......###', '.....##..', '....##...', '.#.##....', '..##.....', '.#..#....', '#........'],
+    mirage: ['...###...', '..#####..', '...###...', '.........', '..##..##.', '.####.###', '#########'],
+    pierre: ['.#.#.#.#.', '.#.#.#.#.', '.#######.', '#########', '.#######.', '..#####..'],
+    dragon: ['..####...', '.##..##..', '.##......', '..####...', '.....##..', '.##..##..', '..####...'],
+    vent: ['.###.....', '#...#....', '....#.##.', '.###.#..#', '.....#..#', '..##..##.'],
+    masque: ['#.......#', '##.....##', '.###.###.', '...###...', '..#####..', '..#.#.#..', '..#####..', '...###...'],
   };
   const rows = glyph[id];
   stamp(ctx, rows, x - Math.floor(rows[0].length / 2), y - Math.floor(rows.length / 2), { '#': mark });
@@ -148,11 +162,18 @@ export function drawBadge(ctx: CanvasRenderingContext2D, id: BadgeId, x: number,
 
 export class BadgesScene implements Scene {
   readonly opaque = true;
+  private index = 0;
 
   constructor(private readonly game: Game) {}
 
   update(): void {
-    if (this.game.input.pressed('a') || this.game.input.pressed('b')) {
+    const input = this.game.input;
+    const before = this.index;
+    if (input.pressed('left')) this.index = (this.index + 7) % 8;
+    if (input.pressed('right')) this.index = (this.index + 1) % 8;
+    if (input.pressed('up') || input.pressed('down')) this.index = (this.index + 4) % 8;
+    if (before !== this.index) this.game.sfx('curseur');
+    if (input.pressed('a') || input.pressed('b')) {
       this.game.sfx('retour');
       this.game.scenes.pop(this);
     }
@@ -160,19 +181,24 @@ export class BadgesScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
+    const owned = this.game.s.badges;
     text(ctx, 'INSIGNES DES MAÎTRES DE PISTE', 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    text(ctx, `${owned.length}/8`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
     BADGE_ORDER.forEach((id, i) => {
-      const badge = BADGES[id];
-      const owned = this.game.s.badges.includes(id);
-      const y = 15 + i * 59;
-      box(ctx, 2, y, 252, 57);
-      drawBadge(ctx, id, 22, y + 28, owned);
-      text(ctx, owned ? badge.name : '???', 42, y + 4, { shadow: PAL.shadow });
-      text(ctx, badge.arena, 42, y + 15, { color: PAL.rust });
-      const body = owned ? badge.description : 'Battez le Maître de Piste de cette Arène.';
-      wrapText(body, 204)
-        .slice(0, 3)
-        .forEach((row, r) => text(ctx, row, 42, y + 27 + r * 9, { color: owned ? PAL.ink : PAL.grey }));
+      const x = 4 + (i % 4) * 62;
+      const y = 15 + Math.floor(i / 4) * 52;
+      box(ctx, x, y, 60, 50, i === this.index ? 'actif' : 'papier');
+      drawBadge(ctx, id, x + 30, y + 21, owned.includes(id));
+      text(ctx, `${i + 1}`, x + 6, y + 37, { color: i === this.index ? PAL.rust : PAL.grey });
     });
+    const id = BADGE_ORDER[this.index];
+    const badge = BADGES[id];
+    const has = owned.includes(id);
+    box(ctx, 2, 120, 252, 70);
+    text(ctx, has ? badge.name : '???', 10, 124, { shadow: PAL.shadow });
+    text(ctx, badge.arena, 10, 136, { color: PAL.rust });
+    wrapText(has ? badge.description : 'Battez le Maître de Piste de cette Arène.', 236)
+      .slice(0, 3)
+      .forEach((row, r) => text(ctx, row, 10, 149 + r * 12, { color: has ? PAL.ink : PAL.grey }));
   }
 }

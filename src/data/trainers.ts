@@ -1,7 +1,8 @@
 // Dresseurs, rivale et Maîtres de Piste (les Arènes).
 import type { MoveId } from './moves';
+import { ACTE2_TRAINERS } from './trainersActe2';
 
-export type BadgeId = 'enclume' | 'pluie' | 'traqueur';
+export type BadgeId = 'enclume' | 'pluie' | 'traqueur' | 'mirage' | 'pierre' | 'dragon' | 'vent' | 'masque';
 
 export interface Badge {
   id: BadgeId;
@@ -24,9 +25,29 @@ export const BADGES: Record<BadgeId, Badge> = {
     id: 'traqueur', name: 'Insigne du Traqueur', arena: 'La Piste des Chasseurs Donzos', color: '#b5733a',
     description: 'Prouve votre valeur aux yeux des chasseurs. Avec trois insignes, la Falaise des Ancêtres vous est ouverte.',
   },
+  mirage: {
+    id: 'mirage', name: 'Insigne du Mirage', arena: "L'Oasis de Tin-Hinan", color: '#e0a830',
+    description: 'Permet à un Jinémon connaissant une attaque Psy de dissiper les mirages du désert.',
+  },
+  pierre: {
+    id: 'pierre', name: 'Insigne de la Pierre', arena: 'La Main de Fatma (Hombori)', color: '#8a7a6a',
+    description: 'Les guides de Hombori reconnaissent votre valeur : la route du Delta vous est ouverte.',
+  },
+  dragon: {
+    id: 'dragon', name: 'Insigne du Dragon', arena: 'Le Fleuve de Djenné', color: '#2a9a7a',
+    description: 'Les passeurs du fleuve acceptent de vous conduire jusqu’à la Côte des Alizés.',
+  },
+  vent: {
+    id: 'vent', name: 'Insigne du Vent', arena: 'Le Phare des Alizés', color: '#5ab8e0',
+    description: 'Un Jinémon connaissant une attaque Vol peut vous porter vers les lieux de soin déjà visités (menu → Voler).',
+  },
+  masque: {
+    id: 'masque', name: 'Insigne du Masque', arena: 'Le Bois des Masques', color: '#7a3a9a',
+    description: 'Avec les huit insignes, les portes du Conseil des Griots de Tombouctou s’ouvrent à vous.',
+  },
 };
 
-export const BADGE_ORDER: BadgeId[] = ['enclume', 'pluie', 'traqueur'];
+export const BADGE_ORDER: BadgeId[] = ['enclume', 'pluie', 'traqueur', 'mirage', 'pierre', 'dragon', 'vent', 'masque'];
 
 export interface CharacterLook {
   skin: string;
@@ -60,8 +81,8 @@ export interface Trainer {
   look: CharacterLook;
   /** IA : « malin » choisit l'attaque la plus adaptée, « simple » joue plus au hasard. */
   ai: 'simple' | 'malin';
-  /** Le premier Jinémon du dresseur dépend du starter du joueur (rivale). */
-  rivalStage?: 1 | 2;
+  /** Le Jinémon n° 0 de l'équipe est le starter de la rivale, plus ou moins évolué selon l'étape. */
+  rivalStage?: 1 | 2 | 3 | 4 | 5;
   /** Portée du regard en cases (0 : attend qu'on vienne lui parler). Par défaut, 4, ou 0 pour un Maître. */
   sight?: number;
 }
@@ -75,7 +96,7 @@ export function rivalStarter(playerStarter: number): number {
 
 const RIVAL_LOOK: CharacterLook = { skin: '#8a5a3a', outfit: '#e8a030', accent: '#3a6ab8', headwear: 'foulard' };
 
-const LIST: Trainer[] = [
+const ACTE1: Trainer[] = [
   // ── Rivale ──
   {
     id: 'rival1', name: 'Kady', title: 'Rivale', rivalStage: 1, ai: 'simple', reward: 300,
@@ -301,11 +322,17 @@ const LIST: Trainer[] = [
     defeat: [
       'Assa : … Les ancêtres ont parlé. Ton nom sera chanté par les griots.',
       'Assa : Tu es désormais un Maître des Légendes.',
+      'Assa : Mais ton voyage ne s’arrête pas ici. Au nord, par-delà le désert, le Conseil des Griots de Tombouctou attend les plus grands Initiés.',
     ],
-    after: ['Assa : Les Légendes du Panthéon se sont éveillées. Le Renard Pâle et le Serpent d’Or t’attendent sur les autels.'],
+    after: [
+      'Assa : Les Légendes du Panthéon se sont éveillées. Le Renard Pâle et le Serpent d’Or t’attendent sur les autels.',
+      'Assa : Le Gardien du Nord te laissera passer. Huit insignes t’ouvriront les portes du Conseil des Griots.',
+    ],
     look: { skin: '#3a2214', outfit: '#f0e8d8', accent: '#e85a8f', headwear: 'turban' },
   },
 ];
+
+const LIST: Trainer[] = [...ACTE1, ...ACTE2_TRAINERS];
 
 export const TRAINERS: Record<string, Trainer> = Object.fromEntries(LIST.map((t) => [t.id, t]));
 
@@ -320,7 +347,8 @@ export function trainerTeam(trainer: Trainer, playerStarter: number): TrainerMon
   return trainer.team.map((mon) => {
     if (mon.species !== 0) return mon;
     const base = rivalStarter(playerStarter);
-    const species = trainer.rivalStage === 2 ? base + 1 : base;
+    const stage = trainer.rivalStage ?? 1;
+    const species = base + (stage >= 3 ? 2 : stage === 2 ? 1 : 0);
     return { ...mon, species };
   });
 }

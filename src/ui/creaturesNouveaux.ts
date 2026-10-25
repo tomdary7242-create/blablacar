@@ -2,6 +2,7 @@
 // Les quadrupèdes réutilisent le plan commun (creatures.ts) avec des réglages
 // et des finitions ; les autres familles ont chacune leur propre modèle.
 import type { QuadFrame, QuadShape } from './creatures';
+import { ACTE2_DESIGNS, ACTE2_QUAD_EXTRAS, ACTE2_QUAD_TUNING } from './creaturesActe2';
 import { shade } from './draw';
 import type { V3 } from './sculpt';
 import {
@@ -31,6 +32,7 @@ const scales = (color: string, scale = 2.6, amount = 0.2) => ({ kind: 'ecailles'
 const calico = { kind: 'taches' as const, color: '#3a3030', scale: 6, amount: 0.38 };
 
 export const NEW_QUAD_TUNING: Record<number, Partial<QuadShape>> = {
+  ...ACTE2_QUAD_TUNING,
   // Pangolins : dos arqué couvert d'écailles, longue queue, petite tête pointue.
   74: { len: 10, girth: 6.5, width: 5.5, legLen: 5.5, legR: 2.2, neck: 2.5, neckAngle: 12, headR: 4.6, snout: 5.5, snoutR: 1.4, snoutDrop: 0.45, ears: 'aucune', tail: 'aucune', fur: 0, slope: -1.5, eyeScale: 1.25, skin: { pattern: scales('#5a3a24'), belly: '#f0d8b0' } },
   75: { len: 13, girth: 8, width: 7, legLen: 7, legR: 2.8, neck: 3, neckAngle: 12, headR: 5.5, snout: 6, snoutR: 1.8, snoutDrop: 0.45, ears: 'aucune', tail: 'aucune', fur: 0, slope: -2, eye: 'feroce', skin: { gloss: true, pattern: scales('#3a3028', 3.2), belly: '#d8c0a0' } },
@@ -163,6 +165,7 @@ function griffonHead(b: Build, f: QuadFrame): void {
 }
 
 export const QUAD_EXTRAS: Record<number, (b: Build, f: QuadFrame) => void> = {
+  ...ACTE2_QUAD_EXTRAS,
   74: (b, f) => pangolinTail(b, f, 1),
   75: (b, f) => pangolinTail(b, f, 1.3),
   78: (b, f) => hippoFace(b, f, false),
@@ -896,6 +899,7 @@ function obayifo(b: Build): void {
 }
 
 export const NEW_DESIGNS: Partial<Record<number, (b: Build) => void>> = {
+  ...ACTE2_DESIGNS,
   76: (b) => chameleon(b, false),
   77: (b) => chameleon(b, true),
   82: (b) => scorpion(b, false),
