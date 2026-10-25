@@ -62,6 +62,8 @@ export interface Trainer {
   ai: 'simple' | 'malin';
   /** Le premier Jinémon du dresseur dépend du starter du joueur (rivale). */
   rivalStage?: 1 | 2;
+  /** Portée du regard en cases (0 : attend qu'on vienne lui parler). Par défaut, 4, ou 0 pour un Maître. */
+  sight?: number;
 }
 
 /** Starter choisi par la rivale : celui qui a l'avantage sur le vôtre. */
@@ -282,7 +284,7 @@ const LIST: Trainer[] = [
     look: { skin: '#b07a50', outfit: '#3ab05a', accent: '#e8403a', headwear: 'foulard' },
   },
   {
-    id: 'assa', name: 'Doyenne Assa', title: 'Gardienne du Panthéon', ai: 'malin', reward: 8000,
+    id: 'assa', name: 'Doyenne Assa', title: 'Gardienne du Panthéon', ai: 'malin', reward: 8000, sight: 0,
     team: [
       { species: 23, level: 43 },
       { species: 42, level: 44 },

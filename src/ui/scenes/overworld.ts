@@ -53,6 +53,20 @@ const DECOR_TEXT: Record<string, string> = {
   '~': "L'eau est profonde ici. Mieux vaut ne pas s'y aventurer.",
 };
 
+/** Portée du regard des dresseurs, en cases. */
+const SIGHT = 4;
+
+/** Bulle « ! » au-dessus d'un dresseur qui vous a repéré. */
+function exclamation(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  ctx.fillStyle = PAL.ink;
+  ctx.fillRect(x, y, 9, 12);
+  ctx.fillStyle = '#fff8e8';
+  ctx.fillRect(x + 1, y + 1, 7, 10);
+  ctx.fillStyle = '#d83020';
+  ctx.fillRect(x + 3, y + 2, 3, 5);
+  ctx.fillRect(x + 3, y + 8, 3, 2);
+}
+
 /** Thème musical de chaque zone. */
 const ZONE_MUSIC: Record<ZoneId, TrackId> = {
   village: 'village',
@@ -74,6 +88,10 @@ export class OverworldScene implements Scene, World {
   private moving: { fromX: number; fromY: number; t: number; duration: number } | null = null;
   private stepFrame = 0;
   private npcDirs = new Map<string, Dir>();
+  /** Position des PNJ qui se sont déplacés (dresseurs venus à votre rencontre). */
+  private npcPos = new Map<string, { x: number; y: number }>();
+  /** Dresseur qui vous a repéré : « ! », puis il marche jusqu'à vous. */
+  private approach: { npc: Npc; t: number; from: { x: number; y: number }; walk: number } | null = null;
   private banner = 0;
   private bannerText = '';
   private stepsSinceBattle = 0;
@@ -124,6 +142,8 @@ export class OverworldScene implements Scene, World {
     this.banner = 2.5;
     this.bannerText = this.zone.name;
     this.npcDirs = new Map(this.zone.npcs.map((n) => [n.id, n.dir]));
+    this.npcPos = new Map();
+    this.approach = null;
     this.redrawMap();
     this.savePosition();
     this.haunt = null;
@@ -248,7 +268,57 @@ export class OverworldScene implements Scene, World {
   }
 
   private npcAt(x: number, y: number): Npc | undefined {
-    return this.zone.npcs.find((n) => n.x === x && n.y === y && this.npcVisible(n));
+    return this.zone.npcs.find((n) => {
+      const p = this.posOf(n);
+      return p.x === x && p.y === y && this.npcVisible(n);
+    });
+  }
+
+  private posOf(npc: Npc): { x: number; y: number } {
+    return this.npcPos.get(npc.id) ?? { x: npc.x, y: npc.y };
+  }
+
+  /** Dresseur pas encore battu dont le regard croise le joueur. */
+  private spottedBy(): Npc | undefined {
+    const flags = this.game.s.flags;
+    for (const npc of this.zone.npcs) {
+      if (npc.script.kind !== 'dresseur' || !this.npcVisible(npc)) continue;
+      const trainer = getTrainer(npc.script.trainer);
+      const sight = trainer.sight ?? (trainer.badge ? 0 : SIGHT);
+      if (!sight || flags[`dresseur:${trainer.id}`]) continue;
+      const p = this.posOf(npc);
+      const { dx, dy } = DIR_DELTA[this.npcDirs.get(npc.id) ?? npc.dir];
+      for (let k = 1; k <= sight; k++) {
+        const x = p.x + dx * k;
+        const y = p.y + dy * k;
+        if (x === this.x && y === this.y) return npc;
+        if (SOLID_TILES.has(this.tile(x, y)) || this.npcAt(x, y)) break;
+      }
+    }
+    return undefined;
+  }
+
+  private updateApproach(dt: number): void {
+    const a = this.approach!;
+    a.t += dt;
+    if (a.t < 0.75) return;
+    const p = this.posOf(a.npc);
+    if (a.walk < 1) {
+      a.walk = Math.min(1, a.walk + dt / 0.22);
+      return;
+    }
+    if (Math.abs(p.x - this.x) + Math.abs(p.y - this.y) > 1) {
+      const { dx, dy } = DIR_DELTA[this.npcDirs.get(a.npc.id) ?? a.npc.dir];
+      a.from = p;
+      a.walk = 0;
+      this.npcPos.set(a.npc.id, { x: p.x + dx, y: p.y + dy });
+      return;
+    }
+    // Face à face, puis le défi.
+    const toPlayer = this.npcDirs.get(a.npc.id) ?? a.npc.dir;
+    this.dir = OPPOSITE[toPlayer];
+    this.approach = null;
+    this.runNpc(a.npc);
   }
 
   /** Un Jinémon de l'équipe connaît-il une attaque du type donné ? */
@@ -277,6 +347,10 @@ export class OverworldScene implements Scene, World {
     if (this.ambush >= 0) {
       this.ambush += dt;
       if (this.ambush >= 0.75 && this.ambush - dt < 0.75) this.launchAmbush();
+      return;
+    }
+    if (this.approach) {
+      this.updateApproach(dt);
       return;
     }
     this.tickClock(dt);
@@ -380,6 +454,12 @@ export class OverworldScene implements Scene, World {
           this.game.scenes.push(new RevealScene(this.game));
         }),
       );
+      return;
+    }
+    const spotter = this.spottedBy();
+    if (spotter) {
+      this.approach = { npc: spotter, t: 0, from: this.posOf(spotter), walk: 1 };
+      this.game.sfx('surprise');
       return;
     }
     if (this.tile(this.x, this.y) === GRASS_TILE && this.stepsSinceBattle > 2 && this.zone.encounters.length) {
@@ -654,14 +734,21 @@ export class OverworldScene implements Scene, World {
     };
     for (const npc of this.zone.npcs) {
       if (!this.npcVisible(npc)) continue;
-      const nx = npc.x * TILE + ox;
-      const ny = npc.y * TILE + oy;
+      const p = this.posOf(npc);
+      const a = this.approach?.npc === npc ? this.approach : null;
+      const walking = a && a.walk < 1;
+      const wx = walking ? a.from.x + (p.x - a.from.x) * a.walk : p.x;
+      const wy = walking ? a.from.y + (p.y - a.from.y) * a.walk : p.y;
+      const nx = Math.round(wx * TILE) + ox;
+      const ny = Math.round(wy * TILE) + oy;
       drawables.push({
-        y: npc.y * TILE,
+        y: wy * TILE,
         draw: () => {
           if (npc.look.kind === 'personne') {
             shadow(nx, ny);
-            ctx.drawImage(characterSprite(npc.look.look, this.npcDirs.get(npc.id) ?? npc.dir, 0), nx, ny - 8);
+            const frame = walking && a.walk < 0.6 ? 1 + ((p.x + p.y) % 2) : 0;
+            ctx.drawImage(characterSprite(npc.look.look, this.npcDirs.get(npc.id) ?? npc.dir, frame), nx, ny - 8);
+            if (a && a.t < 0.75) exclamation(ctx, nx + 4, ny - 21 - Math.round(Math.max(0, 0.15 - a.t) * 40));
           } else if (npc.look.kind === 'creature') {
             const bob = Math.floor(time * 2) % 2;
             shadow(nx, ny);

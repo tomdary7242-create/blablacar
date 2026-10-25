@@ -18,7 +18,8 @@ export type Sfx =
   | 'grincement'
   | 'cri'
   | 'battement'
-  | 'nuit';
+  | 'nuit'
+  | 'surprise';
 
 type Note = [freq: number, duration: number, type?: OscillatorType];
 
@@ -42,6 +43,8 @@ const SOUNDS: Record<Sfx, Note[]> = {
   battement: [[58, 0.08, 'sine'], [1, 0.06, 'sine'], [52, 0.11, 'sine']],
   // Tombée de la nuit : trois notes descendantes.
   nuit: [[392, 0.18, 'triangle'], [330, 0.18, 'triangle'], [262, 0.35, 'triangle']],
+  // Un dresseur vous a repéré.
+  surprise: [[1320, 0.05, 'square'], [1760, 0.1, 'square']],
 };
 
 /** Timbre du cri selon le type principal. */
