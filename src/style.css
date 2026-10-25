@@ -66,6 +66,14 @@ body.tactile #manette {
   justify-content: space-between;
 }
 
+/* Téléphone à la verticale : l'écran en haut, sur toute la largeur, comme une console portable. */
+@media (orientation: portrait) {
+  body.tactile #cadre {
+    align-items: flex-start;
+    padding: 12px 4px 8px;
+  }
+}
+
 #manette button {
   font: inherit;
   color: var(--creme);
@@ -136,7 +144,7 @@ body.tactile #manette {
   flex: none;
 }
 
-.actions button {
+#manette .actions button {
   width: 72px;
   height: 72px;
   border-radius: 50%;
