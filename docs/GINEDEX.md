@@ -2,9 +2,9 @@
 
 > Document généré à partir de `src/data/ginedex.ts` et `src/data/moves.ts`, qui restent la source de vérité.
 
-## Bestiaire (128 espèces)
+## Bestiaire (137 espèces)
 
-☾ : ne se montre que la nuit (20 h – 5 h) dans les hautes herbes. ✦ : Hantise, visible sur la carte la nuit.
+☾ : ne se montre que la nuit (20 h – 5 h). ✦ : Hantise, visible sur la carte la nuit. ★ : Légende.
 
 | N° | Nom | Types | Évolution | Talent | Origine |
 |---|---|---|---|---|---|
@@ -77,8 +77,8 @@
 | 067 | **Xolombre** | Spectre / Normal |  | Prestance du Chasseur | Aztèque (Mexique) — Xolotl et le xoloitzcuintle, chien qui guide les âmes vers le Mictlan. |
 | 068 | **Coatlplume** | Dragon / Vol |  | Écailles Antiques | Mésoamérique — le serpent à plumes, maître des vents et des pluies. |
 | 069 | **Lechivert** | Plante / Psy |  |  | Slave (Russie, Ukraine, Pologne) — le leshy, seigneur changeant de la forêt. |
-| 070 | **Yurugal** | Psy / Ténèbres |  | Ruse du Conteur | Dogon (Mali) — Yurugu, le Renard Pâle, maître du désordre et de la divination. |
-| 071 | **Bidawa** | Dragon / Terre |  | Écailles Antiques | Soninké (Empire du Ghana, Wagadou) — Bida, le serpent qui faisait pleuvoir l’or. |
+| 070 | **Yurugal** ★ | Psy / Ténèbres |  | Ruse du Conteur | Dogon (Mali) — Yurugu, le Renard Pâle, maître du désordre et de la divination. |
+| 071 | **Bidawa** ★ | Dragon / Terre |  | Écailles Antiques | Soninké (Empire du Ghana, Wagadou) — Bida, le serpent qui faisait pleuvoir l’or. |
 | 072 | **Mandragorin** | Plante | → Mandracri (niv. 24) |  | Europe (Méditerranée, Moyen Âge) — la mandragore, racine à forme humaine dont le cri est redouté. |
 | 073 | **Mandracri** | Plante / Spectre |  |  | Europe (Méditerranée, Moyen Âge) — la mandragore, racine à forme humaine dont le cri est redouté. |
 | 074 | **Pangolou** | Terre | → Pangolarmure (niv. 28) | Carapace | Afrique de l’Ouest et centrale — le pangolin, porte-bonheur que l’on dit capable de chasser les mauvais esprits. |
@@ -136,6 +136,15 @@
 | 126 | **Nkondiclou** ✦ | Spectre / Métal |  | Carapace | Kongo (RDC, Angola) — le nkisi nkondi, statue de bois hérissée de clous qui traque les parjures. |
 | 127 | **Nopperabô** ✦ | Spectre / Psy |  |  | Japon — le nopperabō, fantôme qui prend l’apparence d’un passant avant de révéler un visage lisse comme un œuf. |
 | 128 | **Obayifeu** ✦ | Feu / Spectre |  | Lévitation | Akan (Ghana) — l’obayifo, sorcière qui quitte son corps la nuit sous la forme d’une boule de lumière. |
+| 129 | **Fennécho** | Normal | → Fennemirage (niv. 32) |  | Sahara — le fennec, petit renard des sables aux oreilles immenses, que les nomades disent capable d’entendre les djinns. |
+| 130 | **Fennemirage** | Psy / Normal |  | Œil Vigilant | Sahara — le fennec et les mirages, que les caravaniers attribuent aux djinns facétieux. |
+| 131 | **Addaxile** | Terre / Normal |  | Prestance du Chasseur | Sahara (Touareg) — l’addax, antilope aux cornes spiralées qui peut vivre sans boire, surnommée « le fantôme blanc des dunes ». |
+| 132 | **Kelessouf** ☾ | Ténèbres / Esprit |  | Ruse du Conteur | Touareg (Sahara) — les Kel Essuf, esprits de la solitude et du vide, qui visitent les voyageurs restés seuls la nuit. |
+| 133 | **Tellemite** | Roche / Esprit | → Tellemancien (niv. 40) |  | Pays dogon (Mali) — les Tellem, peuple des falaises d’avant les Dogon, dont on dit qu’ils savaient voler jusqu’à leurs greniers. |
+| 134 | **Tellemancien** | Roche / Esprit |  | Carapace | Pays dogon (Mali) — les statues tellem aux bras levés, couvertes d’une patine de libations millénaires. |
+| 135 | **Kanagou** | Esprit / Vol |  | Lévitation | Pays dogon (Mali) — le masque kanaga, en forme d’oiseau aux ailes déployées ou de main du dieu créateur, danse aux funérailles. |
+| 136 | **Faro** ★ | Eau / Esprit |  | Bénédiction Pluvieuse | Bambara et Bozo (Mali) — Faro, génie du Niger, qui mit de l’ordre dans le monde, apporta la pluie et enseigna la parole aux hommes. |
+| 137 | **Aïdohwedo** ★ | Dragon / Esprit |  | Écailles Antiques | Fon (Bénin) — Aïdo-Hwédo, le serpent arc-en-ciel qui porta la créatrice Mawu et s’enroule sous la terre pour la soutenir. |
 
 ## Hantises
 

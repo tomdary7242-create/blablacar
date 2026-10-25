@@ -1,7 +1,7 @@
 // Résumé d'un Jinémon : statistiques, talent, expérience et origine folklorique.
 import { MAX_LEVEL, dexNumber, getSpecies } from '../../data/ginedex';
 import { TALENTS } from '../../data/talents';
-import { displayName, getStats, isFainted, xpForLevel, xpProgress, type Jinemon } from '../../engine/creature';
+import { displayName, getStats, isFainted, isShiny, xpForLevel, xpProgress, type Jinemon } from '../../engine/creature';
 import { PAL, bar, box, statusBadge, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
@@ -48,7 +48,8 @@ export class SummaryScene implements Scene {
     wrapText(species.category, 84)
       .slice(0, 2)
       .forEach((row, i) => text(ctx, row, 10, 26 + i * 10, { color: PAL.grey }));
-    drawCreature(ctx, species.id, 52, 112, 64, { alpha: isFainted(j) ? 0.5 : 1 });
+    drawCreature(ctx, species.id, 52, 112, 64, { alpha: isFainted(j) ? 0.5 : 1, shiny: isShiny(j) });
+    if (isShiny(j)) text(ctx, '★ Chatoyant', 10, 46, { color: '#c8901a' });
     species.types.forEach((t, i) => typeBadge(ctx, t, 8 + i * 44, 114, 42));
     text(ctx, `Niveau ${j.level}`, 10, 127, { shadow: PAL.shadow });
     if (isFainted(j)) text(ctx, 'K.O.', 92, 127, { align: 'right', color: PAL.hpRed });

@@ -326,6 +326,19 @@ const terresRouges: Zone = {
       'Mineur : Ces rochers fissurés bloquent la route du Marigot.',
       'Mineur : Seul un Jinémon maîtrisant le Métal pourrait les briser… avec la permission du Maître Sirafa et son Insigne de l’Enclume.',
     ]),
+    {
+      id: 'griotteVoyageuse', name: 'Griotte voyageuse', x: 20, y: 7, dir: 'bas',
+      look: { kind: 'personne', look: { skin: '#5a3420', outfit: '#e85a8f', accent: '#f0c040', headwear: 'foulard' } },
+      script: {
+        kind: 'don', item: 'amulettePartage', quantity: 1, flag: 'don:amulette',
+        lines: [
+          'Griotte : Tu as battu Sirafa ? Les griots chantent déjà ta victoire !',
+          'Griotte : Prends cette amulette. Ceux qui restent en réserve apprendront aussi de tes combats.',
+        ],
+        after: ['Griotte : Une équipe forte, c’est une équipe où chacun grandit. Pas seulement le plus fort.'],
+      },
+      showFlag: 'dresseur:sirafa',
+    },
     dresseur('bakary', 23, 15, 'haut', T('bakary')),
     dresseur('sirafa', 23, 19, 'haut', T('sirafa')),
     objet('tr-moringa', 3, 19, 'moringa'),
@@ -754,6 +767,21 @@ const falaise: Zone = {
 };
 
 export const ZONES: Record<ZoneId, Zone> = { village, savane, terresRouges, marigot, foret, piste, falaise, desert, hombori, djenne, cote, masques, tombouctou };
+
+/** Lieux où l'on rencontre une espèce (« Savane des Termitières (nuit) »…). */
+export function habitats(speciesId: number): string[] {
+  const out: string[] = [];
+  for (const z of Object.values(ZONES)) {
+    const kinds: string[] = [];
+    const day = z.encounters.some((e) => e.species === speciesId);
+    const night = z.nightEncounters?.some((e) => e.species === speciesId);
+    if (day && !night && z.nightEncounters?.length) kinds.push('jour');
+    if (night && !day) kinds.push('nuit');
+    if (z.fishing?.some((e) => e.species === speciesId)) kinds.push('pêche');
+    if (day || night || kinds.length) out.push(kinds.length ? `${z.name} (${kinds.join(', ')})` : z.name);
+  }
+  return out;
+}
 
 export function getZone(id: ZoneId): Zone {
   return ZONES[id];

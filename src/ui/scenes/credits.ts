@@ -1,6 +1,6 @@
 // Panthéon des Légendes : l'équipe victorieuse est inscrite, puis le générique défile.
 import { SPECIES } from '../../data/ginedex';
-import { displayName } from '../../engine/creature';
+import { displayName, isShiny } from '../../engine/creature';
 import { formatPlayTime } from '../../engine/gameState';
 import { PAL, box, text } from '../draw';
 import { drawOutlinedText } from '../font';
@@ -109,7 +109,7 @@ export class CreditsScene implements Scene {
       s.party.forEach((j, i) => {
         const x = Math.round(W / 2 + (i - (s.party.length - 1) / 2) * 42);
         const bob = Math.floor(this.t * 2 + i) % 2;
-        drawCreature(ctx, j.speciesId, x, 84 - bob, 32);
+        drawCreature(ctx, j.speciesId, x, 84 - bob, 32, { shiny: isShiny(j) });
         text(ctx, displayName(j).slice(0, 8), x, 88, { align: 'center', color: PAL.cream });
         text(ctx, `N.${j.level}`, x, 98, { align: 'center', color: '#c8b8a0' });
       });

@@ -1,6 +1,8 @@
 // Le Ginédex : liste des espèces vues et capturées, avec fiche détaillée.
 import { SPECIES, dexNumber, getSpecies, preEvolution } from '../../data/ginedex';
 import { TALENTS } from '../../data/talents';
+import { HAUNTS } from '../../data/hantises';
+import { ZONES, habitats } from '../../data/zones';
 import { PAL, bar, box, calabash, cursor, fillEllipse, stamp, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
@@ -150,6 +152,20 @@ export class DexEntryScene implements Scene {
         : 'N’évolue pas.';
     text(ctx, evo, 10, y, { color: PAL.indigo });
     y += 12;
+    const where = habitats(s.id);
+    const haunt = HAUNTS.find((h) => h.species === s.id);
+    const habitat = haunt
+      ? `Habitat : rôde la nuit, ${ZONES[haunt.zone].name}. Hantise : elle vous traque sur la carte.`
+      : s.legendary
+        ? 'Habitat : inconnu. On dit qu’il ne se montre qu’aux plus grands Initiés.'
+        : where.length
+          ? `Habitat : ${where.join(' · ')}`
+          : 'Habitat : par évolution uniquement.';
+    for (const row of wrapText(habitat, 236).slice(0, 2)) {
+      text(ctx, row, 10, y, { color: '#3a7a3a' });
+      y += 10;
+    }
+    y += 2;
     if (caught && s.talent) {
       text(ctx, `Talent : ${TALENTS[s.talent].name}`, 10, y, { color: PAL.rust });
       y += 12;

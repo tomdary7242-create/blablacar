@@ -71,6 +71,8 @@ export interface CombatOptions {
   ai?: 'simple' | 'malin';
   /** Message d'apparition d'un Jinémon sauvage (Légendes, rencontres scénarisées). */
   intro?: string;
+  /** Amulette du Partage : les Jinémon restés en réserve gagnent la moitié de l'expérience. */
+  xpShare?: boolean;
 }
 
 interface Volatile {
@@ -177,6 +179,7 @@ export class Combat {
   readonly foe: Jinemon[];
   readonly trainerName?: string;
   private readonly intro?: string;
+  private readonly xpShare: boolean;
   playerIndex: number;
   foeIndex = 0;
   phase: Phase = 'choix';
@@ -201,6 +204,7 @@ export class Combat {
     this.foe = opts.foe;
     this.trainerName = opts.trainerName;
     this.intro = opts.intro;
+    this.xpShare = opts.xpShare ?? false;
     this.rng = opts.rng ?? mathRng;
     this.ai = opts.ai ?? (opts.kind === 'dresseur' ? 'malin' : 'simple');
     this.playerIndex = opts.player.findIndex((j) => !isFainted(j));
@@ -750,14 +754,25 @@ export class Combat {
   }
 
   private awardXp(foe: Jinemon): void {
-    const receivers = [...this.participants].filter((j) => !isFainted(j) && j.level < MAX_LEVEL);
+    const fighters = [...this.participants].filter((j) => !isFainted(j) && j.level < MAX_LEVEL);
     this.participants = new Set(isFainted(this.playerActive) ? [] : [this.playerActive]);
-    if (receivers.length === 0) return;
-    const share = Math.max(1, Math.floor(xpYield(foe, this.kind === 'dresseur') / receivers.length));
-    for (const j of receivers) {
+    const total = xpYield(foe, this.kind === 'dresseur');
+    const gains = new Map<Jinemon, number>();
+    if (fighters.length) for (const j of fighters) gains.set(j, Math.max(1, Math.floor(total / fighters.length)));
+    if (this.xpShare) {
+      for (const j of this.player) {
+        if (!gains.has(j) && !isFainted(j) && j.level < MAX_LEVEL) gains.set(j, Math.max(1, Math.floor(total / 2)));
+      }
+    }
+    let shared = false;
+    for (const [j, share] of gains) {
       const index = this.player.indexOf(j);
       const report = gainXp(j, share);
-      this.say(`${displayName(j)} gagne ${share} points d'expérience !`);
+      if (fighters.includes(j)) this.say(`${displayName(j)} gagne ${share} points d'expérience !`);
+      else if (!shared) {
+        shared = true;
+        this.say('L’Amulette du Partage fait profiter le reste de l’équipe de l’expérience !');
+      }
       this.emit({ type: 'xp', index, xp: j.xp });
       for (const level of report.levels) {
         this.emit({ type: 'niveau', index, level });

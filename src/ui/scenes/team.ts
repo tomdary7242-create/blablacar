@@ -1,7 +1,7 @@
 // Écran d'équipe : consultation, changement en combat, remplacement forcé et usage d'objets.
 import { getItem, type ItemId } from '../../data/items';
 import type { Combat } from '../../engine/combat';
-import { canUseItem, displayName, isFainted, maxHp } from '../../engine/creature';
+import { canUseItem, displayName, isFainted, isShiny, maxHp } from '../../engine/creature';
 import { PAL, box, hpBar, menuList, statusBadge, text } from '../draw';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
@@ -160,7 +160,7 @@ export class TeamScene implements Scene {
         ctx.fillRect(x + 2, y + 2, 120, 1);
         ctx.fillRect(x + 2, y + 45, 120, 1);
       }
-      drawCreature(ctx, j.speciesId, x + 18, y + 38, 32, { alpha: isFainted(j) ? 0.45 : 1 });
+      drawCreature(ctx, j.speciesId, x + 18, y + 38, 32, { alpha: isFainted(j) ? 0.45 : 1, shiny: isShiny(j) });
       text(ctx, displayName(j), x + 34, y + 3, { shadow: PAL.shadow });
       text(ctx, `N.${j.level}`, x + 118, y + 3, { align: 'right' });
       hpBar(ctx, x + 34, y + 19, 84, j.hp / maxHp(j));

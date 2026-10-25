@@ -22,13 +22,52 @@ function tint(src: HTMLCanvasElement, color: string): HTMLCanvasElement {
   return c;
 }
 
+/** Version chatoyante : teintes décalées sur le cercle chromatique, contours et ombres conservés. */
+function shiny(src: HTMLCanvasElement, speciesId: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(src, 0, 0);
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  const shift = 0.22 + ((speciesId * 37) % 50) / 100;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const r = d[i] / 255;
+    const g = d[i + 1] / 255;
+    const b = d[i + 2] / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    if (delta < 0.08) continue;
+    let h = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+    h = (h / 6 + shift + 1) % 1;
+    const sat = delta / max;
+    const k = (n: number) => (n + h * 6) % 6;
+    const f = (n: number) => max - max * sat * Math.max(0, Math.min(k(n), 4 - k(n), 1));
+    d[i] = Math.round(f(5) * 255);
+    d[i + 1] = Math.round(f(3) * 255);
+    d[i + 2] = Math.round(f(1) * 255);
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
 /** Sprite d'un Jinémon, carré de `size` pixels : de trois quarts face (tourné vers la gauche) ou de dos. */
-export function creatureSprite(speciesId: number, size = 64, variant: 'normal' | 'silhouette' | 'blanc' = 'normal', pose: Pose = 'face'): HTMLCanvasElement {
+export function creatureSprite(
+  speciesId: number,
+  size = 64,
+  variant: 'normal' | 'silhouette' | 'blanc' | 'chatoyant' = 'normal',
+  pose: Pose = 'face',
+): HTMLCanvasElement {
   const key = `${speciesId}:${size}:${variant}:${pose}`;
   const cached = creatureCache.get(key);
   if (cached) return cached;
   let canvas: HTMLCanvasElement;
-  if (variant !== 'normal') {
+  if (variant === 'chatoyant') {
+    canvas = shiny(creatureSprite(speciesId, size, 'normal', pose), speciesId);
+  } else if (variant !== 'normal') {
     canvas = tint(creatureSprite(speciesId, size, 'normal', pose), variant === 'silhouette' ? '#201828' : '#ffffff');
   } else {
     const img = renderCreature(speciesId, size, pose);
@@ -60,7 +99,7 @@ export function drawCreature(
   x: number,
   y: number,
   size = 64,
-  opts: { flip?: boolean; back?: boolean; silhouette?: boolean; alpha?: number; white?: number; scale?: number } = {},
+  opts: { flip?: boolean; back?: boolean; silhouette?: boolean; alpha?: number; white?: number; scale?: number; shiny?: boolean } = {},
 ): void {
   const scale = opts.scale ?? 1;
   const w = size * scale;
@@ -79,7 +118,7 @@ export function drawCreature(
     }
     ctx.restore();
   };
-  blit(creatureSprite(speciesId, size, opts.silhouette ? 'silhouette' : 'normal', pose), opts.alpha ?? 1);
+  blit(creatureSprite(speciesId, size, opts.silhouette ? 'silhouette' : opts.shiny ? 'chatoyant' : 'normal', pose), opts.alpha ?? 1);
   if (opts.white && opts.white > 0) blit(creatureSprite(speciesId, size, 'blanc', pose), Math.min(1, opts.white));
 }
 

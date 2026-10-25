@@ -40,6 +40,8 @@ export type TrackId =
   | 'ville'
   | 'desert'
   | 'grotte'
+  | 'cote'
+  | 'masques'
   | 'nuit'
   | 'conseil'
   | 'combat'
@@ -147,6 +149,8 @@ const VILLE_CH = ['Am', 'G', 'Am', 'Em', 'F', 'G', 'Am', 'E'];
 const DESERT_CH = ['Dm', 'Dm', 'C', 'Dm', 'Bb', 'C', 'Dm|A', 'Dm'];
 const GROTTE_CH = ['Em', 'F', 'Am', 'G|Em', 'Em', 'F|Am', 'Dm|G', 'Em'];
 const CONSEIL_CH = ['Cm', 'Ab', 'Bb', 'G', 'Cm', 'Fm', 'G', 'Cm|G'];
+const COTE_CH = ['F', 'C', 'G', 'Am', 'F', 'C', 'Dm|G', 'C'];
+const MASQUES_CH = ['Em', 'Em', 'C', 'B', 'Em', 'Em', 'Am|B', 'Em'];
 const COMBAT_CH = ['Em', 'C', 'Em', 'D|Em', 'C', 'D', 'Am', 'B'];
 const DRESSEUR_CH = ['Am', 'Dm', 'Am', 'Am|C', 'F', 'Dm|E', 'Am|C', 'E'];
 const MAITRE_CH = ['Dm', 'Dm', 'Bb', 'Dm|A', 'F', 'Bb|C', 'C', 'A'];
@@ -280,6 +284,34 @@ export const TRACKS: Record<TrackId, TrackDef> = {
       { inst: 'balafon', notes: arp(GROTTE_CH, '0...3...2...1...', 5), gain: 0.5 },
     ],
     drums: '....T.......h...',
+  },
+  // Côte des Alizés : flûte légère, vent du large et pirogues.
+  cote: {
+    bpm: 112,
+    loop: true,
+    voices: [
+      { inst: 'flute', notes: bars(
+        'A5:4 G5:2 F5:2 C5:4 F5:4', 'E5:4 D5:2 C5:2 G4:8', 'B4:2 C5:2 D5:4 G5:4 F5:2 D5:2', 'E5:6 C5:2 A4:8',
+        'F5:2 G5:2 A5:4 C6:4 A5:2 F5:2', 'G5:4 E5:2 C5:2 E5:8', 'F5:4 D5:2 A4:2 B4:4 D5:4', 'C5:12 .:4',
+      ) },
+      { inst: 'kora', notes: arp(COTE_CH, '0.2.3.2.1.2.3.2.', 4), gain: 0.65 },
+      { inst: 'basse', notes: bass(COTE_CH, 'R...F...R.R.F...') },
+    ],
+    drums: 'B..hT.h.B..hT.hh',
+  },
+  // Bois des Masques : tambours rituels, ostinato sombre.
+  masques: {
+    bpm: 104,
+    loop: true,
+    voices: [
+      { inst: 'pulse12', notes: bars(
+        'E5:2 .:2 E5:2 G5:2 F#5:4 E5:4', 'B4:8 .:8', 'C5:2 .:2 C5:2 E5:2 D#5:4 C5:4', 'B4:12 .:4',
+        'G5:2 F#5:2 E5:2 D#5:2 E5:4 B4:4', 'C5:4 B4:4 A4:4 G4:4', 'A4:2 C5:2 E5:4 D#5:4 B4:4', 'E4:12 .:4',
+      ), gain: 0.9 },
+      { inst: 'drone', notes: bass(MASQUES_CH, 'R---------------', 2), gain: 0.8 },
+      { inst: 'basse', notes: bass(MASQUES_CH, 'R..R..R.R..O..R.') },
+    ],
+    drums: 'B.TBS.T.B.TBS.TT',
   },
   // La nuit : boîte à musique et bourdon, un cœur qui bat au loin.
   nuit: {

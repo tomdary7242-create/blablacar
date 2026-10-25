@@ -12,7 +12,8 @@ export type ItemId =
   | 'kola'
   | 'mielSauvage'
   | 'baumeAnciens'
-  | 'nasse';
+  | 'nasse'
+  | 'amulettePartage';
 
 export type ItemEffect =
   | { kind: 'capture'; bonus: number }
@@ -76,6 +77,10 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
   baumeAnciens: {
     name: 'Baume des Anciens', price: 3000, effect: { kind: 'restauration' },
     description: 'Une recette que les guérisseuses se transmettent en secret. Restaure tous les PV et guérit les altérations.',
+  },
+  amulettePartage: {
+    name: 'Amulette du Partage', price: 0, effect: { kind: 'cle' },
+    description: 'Un gri-gri de cauris tressés. Les Jinémon restés en réserve gagnent la moitié de l’expérience des combats.',
   },
   nasse: {
     name: 'Nasse du Pêcheur', price: 0, effect: { kind: 'cle' },

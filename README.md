@@ -6,8 +6,13 @@ nature et des légendes : d’abord celles d’Afrique de l’Ouest (traditions 
 mandingue, akan…), puis celles venues d’ailleurs avec les caravanes : dragons d’Europe et de Chine, esprits du Japon,
 spectres du Nord, serpent à plumes de Mésoamérique, sphinx d’Égypte, feux follets, mandragores…
 
-MVP conforme au GDD v1.0 : TypeScript + Vite, rendu Canvas 2D sans moteur externe, sauvegarde dans le LocalStorage,
-déploiement sur GitHub Pages. Aucune image externe : sprites, décors et sons sont générés par le code.
+Construit à partir du GDD v1.0 puis étendu : TypeScript + Vite, rendu Canvas 2D sans moteur externe, sauvegarde dans
+le LocalStorage, déploiement sur GitHub Pages. Aucune image ni aucun son externe : sprites, décors, musique et bruitages
+sont générés par le code.
+
+L’aventure se joue en deux actes : l’**Acte I** (trois Arènes et le Panthéon des Légendes, fidèle au GDD), puis
+l’**Acte II**, la route de Tombouctou : cinq nouvelles Arènes, la Confrérie des Masques Brisés, le Conseil des Griots
+et la Championne du Mandé.
 
 ## Graphismes
 
@@ -23,6 +28,9 @@ Le jeu est dessiné en pixel art dans un écran natif de 256×192 pixels, agrand
   ondulée), fonds de combat propres à chaque décor (savane, terres rouges, marigot, forêt, falaise de Bandiagara…),
   écran titre en contre-jour.
 - **Effets d’attaque** en particules, un par type élémentaire.
+- **Musique chiptune** composée pour le jeu et synthétisée en direct (kora, balafon, flûte peule, djembé, ondes
+  pulsées) : un thème par région, combats sauvages, de dresseur, de Maître de Piste, de Hantise et de Légende, jingles
+  de soin, de capture, d’insigne et d’évolution. Chaque Jinémon a son propre cri.
 - Les personnages (16×24) et la police bitmap accentuée sont dessinés à la main.
 
 ## Jouer
@@ -45,8 +53,10 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 
 ## Contenu
 
-- **128 Jinémon** répartis en 84 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
-  Termitox, Rochard) et deux Légendes du Panthéon (Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou).
+- **137 Jinémon** répartis en 91 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
+  Termitox, Rochard) et quatre Légendes : Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou ; Faro, génie
+  du Niger ; Aïdohwedo, le serpent arc-en-ciel des Fon. Environ un Jinémon sauvage sur 512 est **chatoyant**
+  (couleurs rares).
   Le bestiaire puise surtout dans les contes d’Afrique de l’Ouest, mais aussi d’Afrique centrale et australe, d’Égypte,
   d’Europe, d’Asie, d’Océanie et des Amériques. Fiche complète : [`docs/GINEDEX.md`](docs/GINEDEX.md).
 - **100 attaques** réparties sur les 14 types, en quatre paliers (base, élémentaire, statut, divin), avec altérations,
@@ -54,15 +64,22 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Bassins d’attaques** d’environ 15 attaques par lignée, apprises du niveau 1 au niveau 70 ; au-delà de 4 attaques,
   le jeu propose d’en oublier une. Depuis l’équipe, on peut à tout moment remplacer une attaque par une autre déjà
   apprise.
-- **7 zones** : Village des Greniers, Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
-  Piste des Chasseurs Donzos et Falaise des Ancêtres (Panthéon des Légendes).
-- **3 Arènes** du GDD et leurs insignes (Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos),
-  une rivale, 15 dresseurs et la Gardienne du Panthéon en fin de partie.
-- **Techniques hors combat** : l’Insigne de l’Enclume permet à un Jinémon Métal de briser les rochers fissurés,
-  l’Insigne de la Pluie permet à un Jinémon Eau de franchir le gué ; les trois insignes ouvrent la Falaise.
-- Calebasses de capture (Sacrée, Ornée, des Ancêtres), remèdes (karité, bissap, pain de singe, moringa, noix de
-  kola), marché en cauris, Grenier pour les Jinémon en surplus, Ginédex, évolutions animées (annulables avec B),
-  générique de fin.
+- **13 zones** : Village des Greniers, Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
+  Piste des Chasseurs Donzos, Falaise des Ancêtres (Panthéon des Légendes), puis Désert des Djinns, Monts de Hombori
+  (grottes obscures), Djenné et le Delta, Côte des Alizés, Bois des Masques et Tombouctou.
+- **8 Arènes et leurs insignes** : Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos, Oasis
+  de Tin-Hinan, Main de Fatma, Fleuve de Djenné, Phare des Alizés, Bois des Masques ; puis le **Conseil des Griots**
+  (quatre griots à affronter d’affilée) et la Championne. Plus de 50 dresseurs, une rivale qui grandit avec vous, une
+  organisation de pillards et son chef.
+- **Les dresseurs vous repèrent** : un « ! » apparaît, ils marchent jusqu’à vous et lancent le défi.
+- **Techniques hors combat** : briser les rochers fissurés (Insigne de l’Enclume + Jinémon Métal), franchir les gués
+  (Insigne de la Pluie + Jinémon Eau), dissiper les mirages (Insigne du Mirage + Jinémon Psy), éclairer les grottes
+  (un Jinémon Feu dans l’équipe), **voler** vers les lieux de soin visités (Insigne du Vent + Jinémon Vol, menu
+  « Voler »), **pêcher** face à l’eau avec la Nasse du Pêcheur.
+- Calebasses de capture (Sacrée, Ornée, des Ancêtres, Royale), remèdes (karité, bissap, pain de singe, miel sauvage,
+  baume des Anciens, moringa, noix de kola), Amulette du Partage (l’expérience profite à toute l’équipe), marché en
+  cauris, Grenier pour les Jinémon en surplus, Ginédex avec habitats, évolutions animées (annulables avec B), Panthéon
+  des vainqueurs et générique.
 
 ## Jour, nuit et Hantises
 
@@ -117,7 +134,10 @@ src/
     talents.ts          Talents passifs
     items.ts            Calebasses et remèdes
     trainers.ts         Dresseurs, rivale, Maîtres de Piste, insignes
-    zones.ts            Cartes ASCII, PNJ, rencontres de jour et de nuit, téléporteurs
+    zones.ts            Cartes ASCII de l’Acte I, PNJ, rencontres de jour, de nuit et de pêche, téléporteurs
+    zonesActe2.ts       Les six zones de l’Acte II
+    zoneKit.ts          Fabriques de PNJ (guérisseuses, marchands, dresseurs, objets…)
+    trainersActe2.ts    Maîtres de Piste, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
   engine/               Logique pure, testée sans navigateur
     combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience)
@@ -131,13 +151,17 @@ src/
     sculptKit.ts        Pièces de modelage partagées (squelettes, ailes, cornes, flammes…)
     creatures.ts        Modelage des Jinémon 001 à 073 (un plan corporel par famille, réglé par espèce)
     creaturesNouveaux.ts Modelage des Jinémon 074 à 128, dont les six Hantises
+    creaturesActe2.ts   Modelage des Jinémon 129 à 137
+    musicScore.ts       Partitions (notation compacte, grilles d’accords) des musiques et jingles
+    music.ts            Séquenceur WebAudio : instruments synthétisés, écho, boucles et jingles
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
     props.ts            Objets du décor sculptés
     tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
     backdrops.ts        Fonds de combat, titre, case de l’Ancien, halo d’évolution
     effects.ts          Effets d’attaque par type
-tests/                  Tests Vitest : données, cartes, moteur de combat, simulations, sauvegarde, sprites
+tests/                  Tests Vitest : données, cartes, progression complète, moteur de combat, simulations,
+                        sauvegarde, sprites, musique
 ```
 
 Le moteur de combat est synchrone : `start()`, `submit(action)` et `submitReplacement(index)` résolvent un tour
@@ -158,8 +182,10 @@ npm run preview    # sert le build localement
 
 Le workflow `.github/workflows/deploy.yml` lance les tests et le build à chaque push et pull request, puis publie
 `dist/` sur GitHub Pages pour les pushes sur la branche par défaut. À faire une seule fois dans le dépôt :
-**Settings → Pages → Build and deployment → Source : GitHub Actions**. Le build utilise des chemins relatifs et
-fonctionne quel que soit le nom du dépôt.
+**Settings → Pages → Build and deployment → Source : GitHub Actions**, puis relancer le dernier workflow (onglet
+Actions → « Re-run all jobs »). Sur un compte GitHub gratuit, Pages n’est disponible que pour les dépôts **publics**.
+Le jeu est alors servi à l’adresse `https://<utilisateur>.github.io/<dépôt>/`. Le build utilise des chemins relatifs
+et fonctionne quel que soit le nom du dépôt.
 
 ## Choix d’adaptation par rapport au GDD
 

@@ -50,6 +50,14 @@ export function maxHp(j: Jinemon): number {
   return getStats(j).hp;
 }
 
+/**
+ * Jinémon chatoyant (couleurs rares) : comme dans les jeux d'autrefois, c'est une
+ * combinaison précise de potentiels qui le décide (environ 1 sur 512).
+ */
+export function isShiny(j: Pick<Jinemon, 'ivs'>): boolean {
+  return j.ivs.defense === 10 && j.ivs.speed === 10 && j.ivs.attack % 4 >= 2;
+}
+
 export function displayName(j: Jinemon): string {
   return j.nickname ?? getSpecies(j.speciesId).name;
 }

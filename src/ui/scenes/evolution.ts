@@ -1,6 +1,6 @@
 // Évolution d'un Jinémon (annulable avec B pendant l'animation).
 import { getSpecies } from '../../data/ginedex';
-import { displayName, evolve, type Jinemon } from '../../engine/creature';
+import { displayName, evolve, isShiny, type Jinemon } from '../../engine/creature';
 import { markCaught } from '../../engine/gameState';
 import { evolutionGlow } from '../backdrops';
 import { PAL, box, continueMarker, stamp, text } from '../draw';
@@ -86,7 +86,7 @@ export class EvolutionScene implements Scene {
       }
       drawCreature(ctx, showNew ? this.to : this.j.speciesId, W / 2, 138, 64, { white: 1, scale: 2 });
     } else {
-      drawCreature(ctx, this.shownSpecies, W / 2, 138, 64, { scale: 2 });
+      drawCreature(ctx, this.shownSpecies, W / 2, 138, 64, { scale: 2, shiny: isShiny(this.j) });
     }
     box(ctx, 2, 144, 252, 46);
     wrapText(this.message, 232)

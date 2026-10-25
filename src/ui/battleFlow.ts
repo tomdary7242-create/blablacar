@@ -3,7 +3,7 @@ import { getSpecies } from '../data/ginedex';
 import { BADGES, getTrainer, trainerTeam, type Trainer } from '../data/trainers';
 import { Combat, type Outcome } from '../engine/combat';
 import { createJinemon, evolutionTarget, type Jinemon } from '../engine/creature';
-import { addJinemon, healParty, markSeen } from '../engine/gameState';
+import { addJinemon, healParty, itemCount, markSeen } from '../engine/gameState';
 import type { Game } from './game';
 import type { TrackId } from './musicScore';
 import { BattleScene } from './scenes/battle';
@@ -37,6 +37,7 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}
     foe: [foe],
     rng: game.rng,
     intro: opts.intro ?? (species.legendary ? `La Légende ${species.name} se dresse devant vous !` : undefined),
+    xpShare: itemCount(state, 'amulettePartage') > 0,
   });
   game.scenes.push(
     new CoverScene(game, 'combat', () => {
@@ -88,6 +89,7 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
     rng: game.rng,
     trainerName: `${trainer.title} ${trainer.name}`,
     ai: trainer.ai,
+    xpShare: itemCount(state, 'amulettePartage') > 0,
   });
   game.scenes.push(
     new CoverScene(game, 'combat', () => {

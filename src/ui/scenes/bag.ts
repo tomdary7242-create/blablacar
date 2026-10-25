@@ -17,6 +17,10 @@ export function remedyIcon(ctx: CanvasRenderingContext2D, item: ItemId, x: numbe
     calabash(ctx, x, y, 2, color);
     return;
   }
+  if (item === 'amulettePartage') {
+    stamp(ctx, ['..kkkk..', '.k....k.', 'k......k', 'k......k', '.k....k.', '..kwwk..', '..wyyw..', '...ww...'], x - 4, y - 4, { k: '#f0ecdc', w: '#c8a040', y: '#c8401a' });
+    return;
+  }
   if (item === 'nasse') {
     stamp(
       ctx,

@@ -1,5 +1,5 @@
 // Grenier des Jinémon : dépôt et retrait entre l'équipe et la réserve.
-import { displayName, isFainted, maxHp, type Jinemon } from '../../engine/creature';
+import { displayName, isFainted, isShiny, maxHp, type Jinemon } from '../../engine/creature';
 import { PARTY_SIZE } from '../../engine/gameState';
 import { PAL, box, cursor, hpColor, menuList, text } from '../draw';
 import type { Game } from '../game';
@@ -104,7 +104,7 @@ export class StorageScene implements Scene {
       ctx.fillRect(x - 2, y - 1, 120, 18);
       cursor(ctx, x, y + 4);
     }
-    drawCreature(ctx, j.speciesId, x + 17, y + 18, 24);
+    drawCreature(ctx, j.speciesId, x + 17, y + 18, 24, { shiny: isShiny(j) });
     text(ctx, displayName(j), x + 30, y, { shadow: PAL.shadow });
     text(ctx, `N.${j.level}`, x + 116, y, { align: 'right' });
     const ratio = j.hp / maxHp(j);

@@ -7,7 +7,7 @@ import type { ElementType } from '../../data/types';
 import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
 import { isNight } from '../../engine/clock';
-import { displayName, xpForLevel } from '../../engine/creature';
+import { displayName, isShiny, xpForLevel } from '../../engine/creature';
 import { removeItem } from '../../engine/gameState';
 import { PAL, bar, box, calabash, cursor, fillEllipse, hpBar, stamp, statusBadge, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
@@ -31,6 +31,10 @@ interface SideView {
   maxHp: number;
   status: StatusKind | null;
   visible: boolean;
+  /** Couleurs rares : scintille à son entrée. */
+  shiny: boolean;
+  /** Temps écoulé depuis l'entrée (pour l'éclat chatoyant). */
+  since: number;
 }
 
 type Anim = { kind: 'entree' | 'sortie' | 'elan' | 'touche' | 'ko' | 'stat'; side: Side; t: number; duration: number; up?: boolean };
@@ -96,6 +100,7 @@ export class BattleScene implements Scene {
     this.anims = this.anims.filter((a) => (a.t += dt / a.duration) < 1 || this.finishAnim(a));
     this.effects = this.effects.filter((e) => (e.t += dt / e.duration) < 1);
     this.animateBars(dt);
+    for (const view of Object.values(this.views)) if (view) view.since += dt;
     if (this.capture) this.updateCapture(dt);
     if (this.intro < 1 || this.busy) return;
 
@@ -168,7 +173,10 @@ export class BattleScene implements Scene {
           maxHp: event.maxHp,
           status: event.status,
           visible: true,
+          shiny: isShiny(j),
+          since: 0,
         };
+        if (isShiny(j)) setTimeout(() => this.game.sfx('niveau'), 380);
         if (event.side === 'joueur') {
           this.lastXp = j.xp;
           this.xpShown = this.xpTarget = this.xpRatio(j.xp, event.level);
@@ -495,7 +503,18 @@ export class BattleScene implements Scene {
           break;
       }
     }
-    drawCreature(ctx, view.speciesId, Math.round(x), Math.round(y), player ? 72 : 64, { back: player, alpha, white });
+    drawCreature(ctx, view.speciesId, Math.round(x), Math.round(y), player ? 72 : 64, { back: player, alpha, white, shiny: view.shiny });
+    if (view.shiny && view.since > 0.3 && view.since < 1.4) {
+      // Étoiles qui jaillissent autour du Jinémon chatoyant.
+      const t = (view.since - 0.3) / 1.1;
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2 + t * 2;
+        const r = 10 + t * 26;
+        const sx = Math.round(x + Math.cos(ang) * r);
+        const sy = Math.round(y - 24 + Math.sin(ang) * r * 0.7);
+        stamp(ctx, ['..#..', '..#..', '#####', '..#..', '..#..'], sx - 2, sy - 2, { '#': i % 2 ? '#fff8c0' : '#ffffff' });
+      }
+    }
     if (a?.kind === 'stat') {
       const t = Math.min(1, a.t);
       const color = a.up ? '#f87838' : '#4890f8';

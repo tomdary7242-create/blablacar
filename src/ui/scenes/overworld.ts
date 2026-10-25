@@ -79,8 +79,8 @@ const ZONE_MUSIC: Record<ZoneId, TrackId> = {
   desert: 'desert',
   hombori: 'grotte',
   djenne: 'village',
-  cote: 'route',
-  masques: 'grotte',
+  cote: 'cote',
+  masques: 'masques',
   tombouctou: 'conseil',
 };
 
