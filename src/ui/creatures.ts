@@ -312,14 +312,16 @@ function quadrupede(b: Build): void {
     const n = has('queues9') ? 9 : 3;
     const tail = m(c1, { fur: 0.8 });
     const tip = m(c2, { fur: 0.8 });
-    const len = n > 3 ? 20 : 14;
+    const len = n > 3 ? 19 : 14;
     for (let i = 0; i < n; i++) {
-      const th = rad(n > 3 ? 12 + (i / (n - 1)) * 156 : 50 + i * 40);
-      const d: V3 = [0.55, Math.sin(th), Math.cos(th) * 0.95];
-      const mid: V3 = [tb[0] + d[0] * len * 0.5 + 1.5, tb[1] + d[1] * len * 0.5, d[2] * len * 0.5];
-      const end: V3 = [tb[0] + d[0] * len + 0.5, tb[1] + d[1] * len, d[2] * len];
-      s.tube([tb, mid, end], n > 3 ? [1, 2.2, 0.9] : [1.4, 3.2, 1.5], tail, { k: 1, amp: 0.5, freq: 0.6 });
-      s.paint(end, n > 3 ? [2.2, 2.2, 2.2] : [2.8, 2.8, 2.8], tip);
+      const th = rad(n > 3 ? 14 + (i / (n - 1)) * 152 : 50 + i * 40);
+      const d: V3 = [0.5, Math.sin(th), Math.cos(th) * 0.95];
+      // Chaque queue s'évase puis se recourbe vers le haut, pointe claire.
+      const p1: V3 = [tb[0] + d[0] * len * 0.35 + 1, tb[1] + d[1] * len * 0.3, d[2] * len * 0.35];
+      const p2: V3 = [tb[0] + d[0] * len * 0.75 + 1.5, tb[1] + d[1] * len * 0.65 + 2, d[2] * len * 0.7];
+      const end: V3 = [tb[0] + d[0] * len * 0.85, tb[1] + d[1] * len * 0.8 + 5, d[2] * len * 0.8];
+      s.tube([tb, p1, p2, end], n > 3 ? [0.9, 2, 2.2, 1] : [1.2, 2.8, 3, 1.4], tail, { k: 1, amp: 0.5, freq: 0.6 });
+      s.paint(end, n > 3 ? [2.4, 2.6, 2.4] : [3, 3, 3], tip);
     }
   }
 
@@ -978,7 +980,7 @@ function serpent(b: Build): void {
   const lung = has('moustaches');
   const feathered = id === 68;
   const skin = m(c1, {
-    belly: lung ? c2 : shade(c2 === '#2a5a4a' ? c1 : c2, 0.25),
+    belly: lung ? c2 : feathered ? '#e8d870' : shade(c2 === '#2a5a4a' ? c1 : c2, 0.25),
     gloss: !lung && !feathered,
     pattern: feathered ? { kind: 'plumes', color: shade(c1, -0.22), scale: 2.2 } : { kind: 'ecailles', color: shade(c1, -0.2), scale: 1.6 },
   });
@@ -1060,28 +1062,35 @@ function serpent(b: Build): void {
   if (has('crete')) {
     const crest = m(id === 68 ? c2 : c3, { edge: true });
     if (id === 68) {
-      for (let i = 0; i < 5; i++) leaf(b, [head[0] + hr * 0.5, head[1] + hr * 0.4, head[2]], 50 + i * 22, 0, 7 + (i % 2) * 2, crest, 0.28);
+      // Collerette de plumes du serpent à plumes, rouges et vertes en alternance.
+      const green = m('#4ac868', { edge: true });
+      const base: V3 = [head[0] + hr * 0.9, head[1], head[2]];
+      for (let i = 0; i < 9; i++) {
+        const th = rad(-100 + i * 25);
+        const tip: V3 = [base[0] + 3, base[1] + Math.sin(th + Math.PI / 2) * 8.5, base[2] + Math.cos(th + Math.PI / 2) * 8.5];
+        s.cone(base, tip, 1.8, 0.5, i % 2 ? green : crest, { k: 0.3 });
+      }
     } else {
       for (let i = 0; i < 3; i++) leaf(b, [head[0] + hr * 0.2 + i * 1.5, head[1] + hr * 0.5, head[2]], 75 - i * 15, 0, 6 - i, crest, 0.4);
     }
   }
   if (has('couronne')) {
-    const gold = m(id === 57 ? '#c84a3a' : '#f0c040', { gloss: true, edge: true });
-    const top: V3 = [head[0] + hr * 0.1, head[1] + hr * 0.65, head[2]];
-    s.cone([top[0], top[1] - 0.5, top[2]], [top[0], top[1] + 1.2, top[2]], hr * 0.75, hr * 0.8, gold);
-    for (let i = 0; i < 5; i++) {
-      const ang = (i / 5) * Math.PI * 2;
-      const p: V3 = [top[0] + Math.cos(ang) * hr * 0.7, top[1] + 1, top[2] + Math.sin(ang) * hr * 0.7];
-      s.cone(p, [p[0], p[1] + 2.5, p[2]], 0.8, 0.2, gold);
+    const gold = m('#f0c040', { gloss: true, edge: true });
+    const top: V3 = [head[0] + hr * 0.1, head[1] + hr * 0.6, head[2]];
+    s.capped([top[0], top[1] - 0.8, top[2]], [top[0], top[1] + 1.2, top[2]], hr * 0.62, hr * 0.7, gold, { round: 0.3 });
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2;
+      const p: V3 = [top[0] + Math.cos(ang) * hr * 0.6, top[1] + 1, top[2] + Math.sin(ang) * hr * 0.6];
+      s.cone(p, [p[0] + Math.cos(ang) * 0.6, p[1] + 3.2, p[2] + Math.sin(ang) * 0.6], 0.9, 0.25, gold);
     }
-    s.sphere([top[0] - hr * 0.75, top[1] + 0.8, top[2]], 0.9, m(c3, { gloss: true }));
+    s.sphere([top[0] - hr * 0.65, top[1] + 0.4, top[2]], 1, m(id === 57 ? '#e83a3a' : c3, { gloss: true }));
   }
   if (has('gemme')) s.sphere([head[0] - hr * 0.35, head[1] + hr * 0.7, head[2]], hr * 0.32, m(c3, { gloss: true }));
   if (has('ailes')) {
     const root: V3 = [neckTop[0] + 9, neckTop[1] - 9, 0];
     for (const side of SIDES) {
-      if (id === 68) featherWing(b, [root[0], root[1], side * R], side, 20, c2 === '#e8403a' ? '#3ab05a' : c2, { up: 60, tip: c2 });
-      else batWing(b, [root[0], root[1], side * R], side, 20, shade(c1, -0.1), c2, 50);
+      if (id === 68) featherWing(b, [root[0], root[1], side * R], side, 18, '#3ab05a', { up: 55, tip: c2, spread: 30 });
+      else batWing(b, [root[0] + 1, root[1] + 1, side * R], side, 16, shade(c1, -0.15), shade(c2, -0.1), 62);
     }
   }
   if (has('yeux')) a.eyeKind = 'lueur';

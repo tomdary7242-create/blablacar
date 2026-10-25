@@ -5,7 +5,8 @@
 // (cimes des arbres, toits) passe devant eux pour donner de la profondeur.
 import type { Theme, Zone } from '../data/zones';
 import { calabash, shade } from './draw';
-import { Painter } from './pixel';
+import { noise3, shiftColor } from './sculpt';
+import { altarProp, baobabProp, boulderProp, canopyProp, forgeProp, granaryProp, hutProp, signProp, stallProp, termiteProp, treeProp, wellProp, type Prop } from './props';
 
 export const TILE = 16;
 
@@ -50,42 +51,108 @@ function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: numb
 }
 
 // ── Sols ─────────────────────────────────────────────────────────────────
+//
+// Les sols sont peints pixel par pixel à partir d'un bruit en coordonnées du
+// monde : les plaques de tons se prolongent d'une tuile à l'autre sans couture,
+// et une trame ordonnée adoucit leurs frontières.
+
+type RGB = [number, number, number];
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const toneCache = new Map<string, RGB[]>();
+
+/** Quatre tons d'un sol : clair, base, sombre, profond. */
+function tones(hex: string): RGB[] {
+  let t = toneCache.get(hex);
+  if (!t) {
+    t = [shiftColor(hex, 0.12), shiftColor(hex, 0), shiftColor(hex, -0.1), shiftColor(hex, -0.2)];
+    toneCache.set(hex, t);
+  }
+  return t;
+}
+
+const css = ([r, g, b]: RGB) => `rgb(${r},${g},${b})`;
+
+/** Remplit une tuile pixel par pixel. */
+function pixels(ctx: CanvasRenderingContext2D, x: number, y: number, color: (wx: number, wy: number) => RGB): void {
+  const img = ctx.createImageData(TILE, TILE);
+  for (let py = 0; py < TILE; py++) {
+    for (let px = 0; px < TILE; px++) {
+      const [r, g, b] = color(x + px, y + py);
+      const i = (py * TILE + px) * 4;
+      img.data[i] = r;
+      img.data[i + 1] = g;
+      img.data[i + 2] = b;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, x, y);
+}
+
+/** Valeur de plaque (−1 à 1) tramée, pour choisir un ton de sol. */
+function patch(wx: number, wy: number, scale: number, seed: number): number {
+  const n = noise3(wx * scale, wy * scale, seed) * 0.65 + noise3(wx * scale * 2.8, wy * scale * 2.8, seed + 7) * 0.35;
+  return n + (BAYER4[(wy & 3) * 4 + (wx & 3)] / 16 - 0.47) * 0.2;
+}
+
+const BLADES = [
+  ['L.L', 'DLD', '.D.'],
+  ['.L.', 'LDL', 'D.D'],
+  ['L..', 'DL.', '.D.'],
+  ['..L', '.LD', '.D.'],
+];
 
 function grassGround(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, tx: number, ty: number): void {
-  const g = pal.grass;
-  ctx.fillStyle = g;
-  ctx.fillRect(x, y, TILE, TILE);
-  const colors = { h: shade(g, 0.22), d: shade(g, -0.2) };
-  // Petites touffes en « v » disposées de façon irrégulière mais stable.
-  for (let i = 0; i < 4; i++) {
+  const t = tones(pal.grass);
+  pixels(ctx, x, y, (wx, wy) => {
+    const v = patch(wx, wy, 0.07, 1.7);
+    return v > 0.34 ? t[0] : v > -0.14 ? t[1] : v > -0.46 ? t[2] : t[3];
+  });
+  const colors = { L: css(shiftColor(pal.grass, 0.24)), D: css(t[3]) };
+  const n = 3 + Math.floor(hash(tx, ty, 4) * 3);
+  for (let i = 0; i < n; i++) {
     const gx = Math.floor(hash(tx, ty, i) * 13);
     const gy = Math.floor(hash(ty, tx, i + 9) * 13);
-    stamp(ctx, ['h.h', '.d.'], x + gx, y + gy + 1, colors);
+    stamp(ctx, BLADES[Math.floor(hash(tx + i, ty, 2) * BLADES.length)], x + gx, y + gy, colors);
   }
-  if (hash(tx, ty, 77) > 0.7) px(ctx, x + Math.floor(hash(tx, ty, 5) * 15), y + Math.floor(hash(tx, ty, 6) * 15), colors.h);
+  const extra = hash(tx, ty, 77);
+  if (extra > 0.86) {
+    // Caillou
+    const sx = x + 2 + Math.floor(hash(tx, ty, 5) * 11);
+    const sy = y + 2 + Math.floor(hash(tx, ty, 6) * 11);
+    stamp(ctx, ['.hs', 'ssd', '.dd'], sx, sy, { h: '#d8d0c0', s: '#a89c88', d: '#6e6658' });
+  } else if (extra > 0.78) {
+    const sx = x + 2 + Math.floor(hash(tx, ty, 5) * 11);
+    const sy = y + 2 + Math.floor(hash(tx, ty, 6) * 11);
+    stamp(ctx, ['.w.', 'wyw', '.g.'], sx, sy, { w: hash(tx, ty, 8) > 0.5 ? '#ffffff' : '#f8d848', y: '#f0a020', g: css(t[3]) });
+  }
 }
 
 function dirtGround(ctx: CanvasRenderingContext2D, x: number, y: number, base: string, tx: number, ty: number): void {
-  ctx.fillStyle = base;
-  ctx.fillRect(x, y, TILE, TILE);
-  for (let i = 0; i < 5; i++) {
-    const gx = Math.floor(hash(tx, ty, i + 20) * 15);
-    const gy = Math.floor(hash(ty, tx, i + 30) * 15);
-    px(ctx, x + gx, y + gy, shade(base, i % 2 ? -0.16 : 0.14));
-    if (i === 0) px(ctx, x + gx + 1, y + gy, shade(base, -0.16));
+  const t = tones(base);
+  pixels(ctx, x, y, (wx, wy) => {
+    const v = patch(wx, wy, 0.09, 4.2);
+    return v > 0.4 ? t[0] : v > -0.3 ? t[1] : t[2];
+  });
+  // Gravillons
+  for (let i = 0; i < 3; i++) {
+    const gx = Math.floor(hash(tx, ty, i + 20) * 14);
+    const gy = Math.floor(hash(ty, tx, i + 30) * 14);
+    if (hash(tx, ty, i + 50) > 0.5) stamp(ctx, ['hs', 'sd'], x + gx, y + gy, { h: css(shiftColor(base, 0.3)), s: css(t[1]), d: css(t[3]) });
+    else stamp(ctx, ['h', 'd'], x + gx, y + gy, { h: css(t[0]), d: css(t[3]) });
   }
 }
 
-/** Bordure irrégulière d'herbe sur un côté d'une tuile de terre (transition douce). */
+/** Bordure irrégulière d'herbe sur un côté d'une tuile de terre, avec son ombre. */
 function grassFringe(ctx: CanvasRenderingContext2D, x: number, y: number, side: 'n' | 's' | 'e' | 'w', pal: Palette, base: string, tx: number, ty: number): void {
-  const g = pal.grass;
-  const dark = shade(base, -0.18);
+  const g = tones(pal.grass);
+  const shadow = css(tones(base)[3]);
   for (let i = 0; i < TILE; i++) {
-    const depth = 1 + (hash(tx * 31 + i, ty, side.charCodeAt(0)) > 0.55 ? 1 : 0);
+    const r = hash(tx * 31 + i, ty * 17, side.charCodeAt(0));
+    const depth = 1 + (r > 0.45 ? 1 : 0) + (r > 0.85 ? 1 : 0);
     for (let d = 0; d <= depth; d++) {
-      const color = d < depth ? g : dark;
+      const color = d === depth ? shadow : css(d === depth - 1 ? g[2] : g[1]);
       if (side === 'n') px(ctx, x + i, y + d, color);
-      if (side === 's') px(ctx, x + i, y + TILE - 1 - d, color);
+      if (side === 's') px(ctx, x + i, y + TILE - 1 - d, d === depth ? shadow : css(g[d === 0 ? 2 : 1]));
       if (side === 'w') px(ctx, x + d, y + i, color);
       if (side === 'e') px(ctx, x + TILE - 1 - d, y + i, color);
     }
@@ -97,9 +164,9 @@ const TUFT = ['...U....', '..UTK...', '.UTTKUK.', 'UTTVKTTK', 'UTVVKTVK', 'TVVK.
 
 function tallGrass(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, onlyLower = false): void {
   const g = pal.grass;
-  const colors = { U: shade(g, 0.3), T: shade(g, 0.05), V: shade(g, -0.22), K: shade(g, -0.5) };
+  const colors = { U: css(shiftColor(g, 0.3)), T: css(shiftColor(g, 0.05)), V: css(shiftColor(g, -0.2)), K: css(shiftColor(g, -0.45)) };
   if (!onlyLower) {
-    ctx.fillStyle = shade(g, -0.3);
+    ctx.fillStyle = css(shiftColor(g, -0.3));
     ctx.fillRect(x, y, TILE, TILE);
   }
   const positions: Array<[number, number]> = onlyLower
@@ -117,47 +184,36 @@ function tallGrass(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Pal
 }
 
 function sand(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, ty: number): void {
-  dirtGround(ctx, x, y, '#ecd8a0', tx, ty);
-  const r = shade('#ecd8a0', -0.12);
-  for (let i = 0; i < 6; i++) px(ctx, x + 2 + i, y + 5, r);
-  for (let i = 0; i < 5; i++) px(ctx, x + 9 + i, y + 11, r);
+  const t = tones('#ecd8a0');
+  pixels(ctx, x, y, (wx, wy) => {
+    // Rides de sable obliques.
+    const ripple = Math.sin(wx * 0.5 + wy * 0.9 + noise3(wx * 0.1, wy * 0.1, 2) * 3);
+    const v = patch(wx, wy, 0.08, 6) + (ripple > 0.85 ? -0.5 : 0);
+    return v > 0.42 ? t[0] : v > -0.3 ? t[1] : t[2];
+  });
+  if (hash(tx, ty, 3) > 0.7) stamp(ctx, ['hs', 'sd'], x + 4 + Math.floor(hash(tx, ty, 1) * 8), y + 4 + Math.floor(hash(ty, tx, 1) * 8), { h: '#f8f0d8', s: '#c8b088', d: '#8a7a60' });
 }
 
 const WATER = '#3c88d0';
 
-function water(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, ty: number, land: { n: boolean; s: boolean; e: boolean; w: boolean }, shallow = false): void {
-  const base = shallow ? '#68b0e0' : WATER;
-  ctx.fillStyle = base;
-  ctx.fillRect(x, y, TILE, TILE);
-  const light = shade(base, 0.3);
-  for (let i = 0; i < 2; i++) {
-    const wx = Math.floor(hash(tx, ty, i + 40) * 10);
-    const wy = 3 + i * 7 + Math.floor(hash(ty, tx, i) * 3);
-    for (let k = 0; k < 4; k++) px(ctx, x + wx + k, y + wy, light);
-  }
-  // Rive : écume claire et eau plus sombre au bord.
-  const foam = '#e0f4ff';
-  const deep = shade(base, -0.18);
-  for (let i = 0; i < TILE; i++) {
-    const d = hash(tx * 7 + i, ty) > 0.5 ? 1 : 0;
-    if (land.n) {
-      px(ctx, x + i, y, foam);
-      if (d) px(ctx, x + i, y + 1, foam);
-      px(ctx, x + i, y + 1 + d, deep);
-    }
-    if (land.s) {
-      px(ctx, x + i, y + TILE - 1, foam);
-      px(ctx, x + i, y + TILE - 2, deep);
-    }
-    if (land.w) {
-      px(ctx, x, y + i, foam);
-      if (d) px(ctx, x + 1, y + i, foam);
-    }
-    if (land.e) {
-      px(ctx, x + TILE - 1, y + i, foam);
-      if (d) px(ctx, x + TILE - 2, y + i, foam);
-    }
-  }
+function water(ctx: CanvasRenderingContext2D, x: number, y: number, land: { n: boolean; s: boolean; e: boolean; w: boolean }, shallow = false): void {
+  const t = tones(shallow ? '#68b0e0' : WATER);
+  const foam: RGB = [232, 246, 255];
+  const light = shiftColor(shallow ? '#68b0e0' : WATER, 0.3);
+  pixels(ctx, x, y, (wx, wy) => {
+    const lx = wx - x;
+    const ly = wy - y;
+    // Distance à la rive la plus proche (dans la tuile), légèrement ondulée.
+    const wob = hash(wx, wy, 1) > 0.5 ? 1 : 0;
+    const shore = Math.min(land.n ? ly : 99, land.s ? TILE - 1 - ly : 99, land.w ? lx : 99, land.e ? TILE - 1 - lx : 99) - wob * 0.5;
+    if (shore < 1) return foam;
+    if (shore < 2.5) return light;
+    if (shore < 4) return t[0];
+    const ripple = Math.abs(noise3(wx * 0.09, wy * 0.24, 3.3));
+    if (ripple < 0.045) return light;
+    const v = patch(wx, wy, 0.05, 8.8);
+    return v > 0.3 ? t[1] : v > -0.2 ? t[2] : t[3];
+  });
   if (shallow) {
     for (const [sx, sy] of [[3, 8], [10, 3], [11, 11]]) {
       stamp(ctx, ['.ss.', 'sSSs', '.ss.'], x + sx - 1, y + sy - 1, { s: '#8a8070', S: '#b0a490' });
@@ -213,164 +269,28 @@ function flowers(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number
   }
 }
 
-// ── Objets peints (ombrés comme les créatures) ───────────────────────────
+// ── Objets sculptés ──────────────────────────────────────────────────────
 
-const objectCache = new Map<string, HTMLCanvasElement>();
-
-function painted(key: string, w: number, h: number, draw: (p: Painter) => void): HTMLCanvasElement {
-  const cached = objectCache.get(key);
-  if (cached) return cached;
-  const p = new Painter(w, h);
-  draw(p);
-  const canvas = p.render();
-  objectCache.set(key, canvas);
-  return canvas;
+/** Ombre portée au sol, ellipse pixel nette assombrissant le sol. */
+function groundShadow(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number): void {
+  ctx.fillStyle = 'rgba(16, 24, 8, 0.22)';
+  for (let y = -ry; y <= ry; y++) {
+    const half = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
+    ctx.fillRect(Math.round(cx - half), Math.round(cy + y), half * 2 + 1, 1);
+  }
 }
 
-/** Arbre (acacia à cime plate ou arbre feuillu), 22×30, pied en bas au centre. */
-function treeImage(pal: Palette, variant: number): HTMLCanvasElement {
-  return painted(`arbre:${pal.tree}:${pal.round}:${variant}`, 22, 30, (p) => {
-    p.setTransform(11, 29, 1);
-    p.line([0, 0, 0, -9], pal.trunk, 3.2);
-    if (pal.round) {
-      p.ell(0, -16, 9.5, 9, shade(pal.tree, -0.08));
-      p.ell(-3, -18, 6, 6, pal.tree);
-      p.ell(3.5, -14, 5.5, 5, pal.tree);
-      p.ell(-1, -21, 5, 4.5, shade(pal.tree, 0.1));
-    } else {
-      // Acacia : branches en V et large ombrelle plate.
-      p.line([0, -7, -5, -13], pal.trunk, 1.8);
-      p.line([0, -7, 5, -14], pal.trunk, 1.8);
-      p.ell(0, -17, 10.5, 4.5 + (variant % 2), shade(pal.tree, -0.05));
-      p.ell(-3, -19, 6, 3, pal.tree, 0, false);
-      p.ell(4, -18, 5, 2.5, shade(pal.tree, 0.12), 0, false);
-    }
-  });
-}
-
-/** Cime dense pour l'intérieur d'une forêt (arbre entouré d'autres arbres). */
-function canopyImage(pal: Palette): HTMLCanvasElement {
-  return painted(`canopee:${pal.tree}`, 20, 24, (p) => {
-    p.setTransform(10, 22, 1);
-    p.ell(0, -11, 10, 11, shade(pal.tree, -0.1));
-    p.ell(-3, -14, 6, 6, pal.tree);
-    p.ell(4, -9, 5, 5, pal.tree);
-  });
-}
-
-function baobabImage(): HTMLCanvasElement {
-  return painted('baobab', 40, 44, (p) => {
-    p.setTransform(20, 43, 1);
-    p.poly([-8, 0, -6, -6, -5, -22, -2, -26, 2, -26, 5, -22, 6, -6, 9, 0], '#8a7464');
-    p.line([-4, -24, -11, -31, -15, -30], '#8a7464', 2.4);
-    p.line([3, -25, 10, -33, 15, -32], '#8a7464', 2.4);
-    p.line([0, -26, 0, -36], '#8a7464', 2.2);
-    for (const [x, y, rx] of [[-15, -32, 6], [15, -34, 6], [0, -38, 7], [-6, -36, 4], [7, -38, 4]] as const) {
-      p.ell(x, y, rx, rx * 0.6, '#5a9a38');
-    }
-    p.inkLine([-3, -20, -3, -4], '#6a5446');
-    p.inkLine([3, -18, 3, -3], '#6a5446');
-  });
-}
-
-/** Case ronde en banco coiffée d'un toit conique de chaume (48×44). */
-function hutImage(): HTMLCanvasElement {
-  return painted('case', 48, 44, (p) => {
-    p.setTransform(24, 43, 1);
-    p.rect(-19, -18, 38, 18, '#c08058');
-    p.inkLine([-18, -10, 18, -10], '#a06844');
-    p.rect(-4, -14, 8, 14, '#4a2c18');
-    p.inkLine([-3, -14, 3, -14], '#2a180c');
-    p.poly([-24, -16, 0, -42, 24, -16, 18, -13, -18, -13], '#d8b060');
-    for (let i = -18; i <= 18; i += 4) p.inkLine([i * 0.12, -40, i, -15], '#b08838');
-    p.inkLine([-22, -16, 22, -16], '#a07830');
-    p.ell(0, -41, 2.5, 2, '#b08838');
-  });
-}
-
-function granaryImage(): HTMLCanvasElement {
-  return painted('grenier', 18, 30, (p) => {
-    p.setTransform(9, 29, 1);
-    p.rect(-6, -14, 12, 14, '#b87850');
-    p.rect(-2, -10, 4, 5, '#5a3420');
-    p.poly([-9, -12, 0, -27, 9, -12], '#d8b060');
-    p.inkLine([0, -26, -5, -13], '#b08838');
-    p.inkLine([0, -26, 4, -13], '#b08838');
-  });
-}
-
-function termiteImage(): HTMLCanvasElement {
-  return painted('termitiere', 18, 30, (p) => {
-    p.setTransform(9, 29, 1);
-    p.poly([-8, 0, -5, -12, -3, -22, 0, -27, 2, -20, 4, -14, 8, 0], '#b06a3a');
-    p.poly([2, -16, 5, -21, 6, -8], '#a05c32');
-    p.inkLine([-2, -18, -3, -4], '#8a4a28');
-    p.ink(2, -10, '#5a2c14');
-    p.ink(-4, -6, '#5a2c14');
-  });
-}
-
-function boulderImage(cracked: boolean, pal: Palette): HTMLCanvasElement {
-  return painted(`rocher:${cracked}:${pal.rock}`, 16, 16, (p) => {
-    p.setTransform(8, 15, 1);
-    p.ell(0, -6, 7, 6, cracked ? '#a8704c' : pal.rock);
-    if (cracked) {
-      p.inkLine([-3, -11, -1, -7, -3, -3], '#3a2014');
-      p.inkLine([-1, -7, 3, -6], '#3a2014');
-    }
-  });
-}
-
-function wellImage(): HTMLCanvasElement {
-  return painted('puits', 16, 20, (p) => {
-    p.setTransform(8, 18, 1);
-    p.line([-6, -6, -6, -16], '#7a5032', 1.6);
-    p.line([6, -6, 6, -16], '#7a5032', 1.6);
-    p.line([-7, -16, 7, -16], '#7a5032', 1.6);
-    p.ell(0, -4, 7.5, 4.5, '#9a9488');
-    p.ell(0, -5, 5, 2.5, '#28486a', 0, false);
-  });
-}
-
-function altarImage(): HTMLCanvasElement {
-  return painted('autel', 16, 16, (p) => {
-    p.setTransform(8, 15, 1);
-    p.rect(-7, -8, 14, 8, '#9a9080');
-    p.rect(-6, -10, 3, 2, '#c84020');
-    p.ell(3, -10, 2.5, 1.5, '#f0e8c8');
-  });
-}
-
-function stallImage(): HTMLCanvasElement {
-  return painted('etal', 16, 22, (p) => {
-    p.setTransform(8, 21, 1);
-    p.line([-7, 0, -7, -18], '#6a4024', 1.4);
-    p.line([7, 0, 7, -18], '#6a4024', 1.4);
-    p.rect(-8, -8, 16, 4, '#8a5a32');
-    p.ell(-4, -9, 2.5, 1.6, '#e85a2a');
-    p.ell(1, -9, 2.5, 1.6, '#f0c040');
-    p.ell(5, -9, 2, 1.6, '#5fa83a');
-    p.poly([-9, -20, 9, -20, 8, -15, -8, -15], '#3a86c8');
-    for (let i = -7; i <= 7; i += 4) p.rect(i, -20, 2, 5, '#f0f0f0', false);
-  });
-}
-
-function signImage(): HTMLCanvasElement {
-  return painted('panneau', 16, 16, (p) => {
-    p.setTransform(8, 15, 1);
-    p.line([0, 0, 0, -6], '#6a4024', 1.6);
-    p.rect(-6, -12, 12, 7, '#c8a060');
-    p.inkLine([-4, -10, 4, -10], '#7a5a30');
-    p.inkLine([-4, -8, 2, -8], '#7a5a30');
-  });
-}
-
-function forgeImage(): HTMLCanvasElement {
-  return painted('forge', 16, 16, (p) => {
-    p.setTransform(8, 15, 1);
-    p.ell(0, -4, 7, 4, '#6a6060');
-    p.ell(0, -5, 4.5, 2, '#2a1a14', 0, false);
-  });
+/**
+ * Pose un objet dont le pied tombe en (x, y) : ce qui dépasse au-dessus de la
+ * ligne `split` passe sur la couche « dessus », devant les personnages.
+ */
+function place(base: CanvasRenderingContext2D, over: CanvasRenderingContext2D, prop: Prop, x: number, y: number, split: number): void {
+  const left = x - prop.ax;
+  const top = y - prop.ay;
+  const { img } = prop;
+  const cut = Math.max(0, Math.min(img.height, split - top));
+  if (cut > 0) over.drawImage(img, 0, 0, img.width, cut, left, top, img.width, cut);
+  if (cut < img.height) base.drawImage(img, 0, cut, img.width, img.height - cut, left, top + cut, img.width, img.height - cut);
 }
 
 // ── Rendu des cartes ─────────────────────────────────────────────────────
@@ -381,24 +301,6 @@ const WATERY = new Set(['~', 'w', 'P']);
 export interface ZoneLayers {
   base: HTMLCanvasElement;
   over: HTMLCanvasElement;
-}
-
-/** Dessine une image d'objet : la partie dans la case va au sol, le dépassement vers le haut à la couche « dessus ». */
-function placeObject(
-  base: CanvasRenderingContext2D,
-  over: CanvasRenderingContext2D,
-  img: HTMLCanvasElement,
-  tileX: number,
-  tileY: number,
-  rowsInTile = TILE,
-): void {
-  const left = tileX * TILE + Math.round((TILE - img.width) / 2);
-  const bottom = (tileY + 1) * TILE;
-  const top = bottom - img.height;
-  const split = bottom - rowsInTile;
-  if (top < split) over.drawImage(img, 0, 0, img.width, split - top, left, top, img.width, split - top);
-  const h = Math.min(img.height, rowsInTile);
-  base.drawImage(img, 0, img.height - h, img.width, h, left, bottom - h, img.width, h);
 }
 
 export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => string): ZoneLayers {
@@ -456,11 +358,11 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
         case '~':
         case 'w': {
           const land = (c: string) => !WATERY.has(c) && c !== '';
-          water(base, x, y, tx, ty, { n: land(at(tx, ty - 1)), s: land(at(tx, ty + 1)), e: land(at(tx + 1, ty)), w: land(at(tx - 1, ty)) }, ground === 'w');
+          water(base, x, y, { n: land(at(tx, ty - 1)), s: land(at(tx, ty + 1)), e: land(at(tx + 1, ty)), w: land(at(tx - 1, ty)) }, ground === 'w');
           break;
         }
         case 'P': {
-          water(base, x, y, tx, ty, { n: false, s: false, e: false, w: false });
+          water(base, x, y, { n: false, s: false, e: false, w: false });
           base.fillStyle = '#9a6a3a';
           base.fillRect(x + 2, y, 12, TILE);
           for (let i = 0; i < 4; i++) {
@@ -486,72 +388,82 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
     }
   }
 
-  // 2. Objets, du haut vers le bas pour que les plus proches recouvrent les plus lointains.
+  // 2. Ombres portées, puis objets du haut vers le bas pour que les plus proches recouvrent les plus lointains.
   for (let ty = 0; ty < h; ty++) {
     for (let tx = 0; tx < w; tx++) {
       const ch = at(tx, ty);
+      const cx = tx * TILE + 8;
+      const cy = ty * TILE + 12;
+      if (ch === 'T') groundShadow(base, cx + 2, cy + 1, pal.round ? 8 : 11, 3);
+      else if (ch === 'B') groundShadow(base, cx + 3, cy + 1, 13, 4);
+      else if (ch === 'R' && at(tx - 1, ty) !== 'R') groundShadow(base, tx * TILE + 26, (ty + 2) * TILE - 2, 22, 4);
+      else if ('GUOX'.includes(ch) && ch) groundShadow(base, cx + 1, cy + 1, 6, 2);
+    }
+  }
+  for (let ty = 0; ty < h; ty++) {
+    for (let tx = 0; tx < w; tx++) {
+      const ch = at(tx, ty);
+      const x = tx * TILE + 8;
+      const y = ty * TILE + 12;
+      const split = ty * TILE;
       switch (ch) {
         case 'T': {
           const surrounded = at(tx, ty + 1) === 'T' && at(tx - 1, ty) === 'T' && at(tx + 1, ty) === 'T' && pal.round;
-          placeObject(base, over, surrounded ? canopyImage(pal) : treeImage(pal, (tx + ty) % 3), tx, ty);
+          place(base, over, surrounded ? canopyProp(pal) : treeProp(pal, Math.floor(hash(tx, ty, 3) * 3)), x, y + (surrounded ? 2 : 0), split);
           break;
         }
         case 'B':
-          placeObject(base, over, baobabImage(), tx, ty);
+          place(base, over, baobabProp(), x, y, split);
           break;
         case 'G':
-          placeObject(base, over, granaryImage(), tx, ty);
+          place(base, over, granaryProp(), x, y, split);
           break;
         case 'U':
-          placeObject(base, over, termiteImage(), tx, ty);
+          place(base, over, termiteProp(), x, y, split);
           break;
         case 'O':
-          placeObject(base, over, wellImage(), tx, ty);
+          place(base, over, wellProp(), x, y - 1, split);
           break;
         case 'A':
-          placeObject(base, over, altarImage(), tx, ty);
+          place(base, over, altarProp(), x, y, split);
           break;
         case 'E':
-          placeObject(base, over, stallImage(), tx, ty);
+          place(base, over, stallProp(), x, y, split);
           break;
         case 'S':
-          placeObject(base, over, signImage(), tx, ty);
+          place(base, over, signProp(), x, y, split);
           break;
         case 'K':
-          placeObject(base, over, forgeImage(), tx, ty);
+          place(base, over, forgeProp(), x, y - 1, split);
           break;
         case 'X':
-          placeObject(base, over, boulderImage(true, pal), tx, ty);
+          place(base, over, boulderProp(true, pal.rock), x, y, split);
           break;
         case 'M': {
           // Mur d'enceinte en banco avec chaperon clair.
-          const x = tx * TILE;
-          const y = ty * TILE;
+          const mx = tx * TILE;
+          const my = ty * TILE;
           base.fillStyle = '#b8784a';
-          base.fillRect(x, y + 3, TILE, TILE - 3);
-          base.fillStyle = '#e0a878';
-          base.fillRect(x, y, TILE, 4);
-          base.fillStyle = '#8a5432';
-          base.fillRect(x, y + TILE - 2, TILE, 2);
-          for (let i = 0; i < 3; i++) {
-            base.fillStyle = '#a06840';
-            base.fillRect(x + Math.floor(hash(tx, ty, i) * 13), y + 6 + i * 3, 3, 1);
+          base.fillRect(mx, my + 3, TILE, TILE - 3);
+          for (let i = 0; i < 9; i++) {
+            const bx = mx + Math.floor(hash(tx, ty, i) * 14);
+            const by = my + 5 + Math.floor(hash(ty, tx, i + 3) * 8);
+            base.fillStyle = i % 3 ? '#a06840' : '#c88a5a';
+            base.fillRect(bx, by, 2 + (i % 2), 1);
           }
+          base.fillStyle = '#e0a878';
+          base.fillRect(mx, my, TILE, 4);
+          base.fillStyle = '#f0c094';
+          base.fillRect(mx, my + 1, TILE, 1);
+          base.fillStyle = '#8a5432';
+          base.fillRect(mx, my + TILE - 2, TILE, 2);
           base.fillStyle = '#20140c';
-          base.fillRect(x, y, TILE, 1);
+          base.fillRect(mx, my, TILE, 1);
           break;
         }
         case 'R':
           // Une case ronde occupe trois tuiles de toit (R) au-dessus de trois tuiles de mur (H D H).
-          if (at(tx - 1, ty) !== 'R') {
-            const img = hutImage();
-            const left = tx * TILE;
-            const bottom = (ty + 2) * TILE;
-            const top = bottom - img.height;
-            const split = ty * TILE;
-            over.drawImage(img, 0, 0, img.width, split - top, left, top, img.width, split - top);
-            base.drawImage(img, 0, split - top, img.width, bottom - split, left, split, img.width, bottom - split);
-          }
+          if (at(tx - 1, ty) !== 'R') place(base, over, hutProp(), tx * TILE + 24, (ty + 2) * TILE - 3, split);
           break;
       }
     }

@@ -38,6 +38,10 @@ export interface MaterialDef {
   fur?: number;
   /** Trait sombre aux frontières avec les autres matières (plaques, armures). */
   edge?: boolean;
+  /** Pas de contour sombre autour (nuages, brume). */
+  bare?: boolean;
+  /** Ton le plus sombre autorisé (0 = reflet … 4 = ombre profonde). */
+  maxTone?: number;
 }
 
 export interface PrimOpts {
@@ -159,21 +163,52 @@ function hueToward(h: number, target: number, deg: number): number {
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-/** Cinq tons (reflet → ombre profonde) puis deux couleurs de trait (clair, sombre). */
-function buildRamp(hex: string): RGB[] {
+/** Éclaircit en réchauffant (amt > 0) ou assombrit en refroidissant (amt < 0), comme les rampes de tons. */
+export function shiftColor(hex: string, amt: number): [number, number, number] {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
-  // Les couleurs désaturées gardent leur teinte : on décale moins.
   const k = Math.min(1, s * 1.6);
+  if (amt >= 0) return hslToRgb([hueToward(h, 52, 40 * amt * k), s * (1 - amt * 0.3), l + (1 - l) * amt]);
+  return hslToRgb([hueToward(h, 252, -50 * amt * k), clamp01(s * (1 - amt * 0.2)), l * (1 + amt)]);
+}
+
+function rgbToHsv([r, g, b]: RGB): RGB {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  const h = d === 0 ? 0 : max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, max === 0 ? 0 : d / max, max];
+}
+
+function hsvToRgb([h, s, v]: RGB): RGB {
+  const c = v * s;
+  const hp = (((h % 360) + 360) % 360) / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  const [r, g, b] = hp < 1 ? [c, x, 0] : hp < 2 ? [x, c, 0] : hp < 3 ? [0, c, x] : hp < 4 ? [0, x, c] : hp < 5 ? [x, 0, c] : [c, 0, x];
+  const m = v - c;
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+/**
+ * Cinq tons (reflet → ombre profonde) puis deux couleurs de trait (clair, sombre).
+ * Calcul en TSV : on assombrit la valeur en saturant un peu et en glissant la
+ * teinte vers le bleu ; les reflets se désaturent et glissent vers le jaune.
+ */
+function buildRamp(hex: string): RGB[] {
+  const [h, s, v] = rgbToHsv(hexToRgb(hex));
+  // Les gris gardent leur teinte : on décale moins.
+  const k = Math.min(1, s * 2);
   const warm = 52;
   const cool = 252;
   return [
-    hslToRgb([hueToward(h, warm, 16 * k), s * 0.85, l + (1 - l) * 0.5]),
-    hslToRgb([hueToward(h, warm, 7 * k), s * 0.95, l + (1 - l) * 0.22]),
-    hslToRgb([h, s, l]),
-    hslToRgb([hueToward(h, cool, 10 * k), clamp01(s * 1.05 + 0.04), l * 0.74]),
-    hslToRgb([hueToward(h, cool, 20 * k), clamp01(s * 1.0 + 0.06), l * 0.52]),
-    hslToRgb([hueToward(h, cool, 22 * k), clamp01(s * 0.95 + 0.05), l * 0.4]),
-    hslToRgb([hueToward(h, cool, 30 * k), clamp01(s * 0.8 + 0.1), Math.min(0.2, l * 0.28) + 0.03]),
+    hsvToRgb([hueToward(h, warm, 14 * k), s * 0.55, v + (1 - v) * 0.65]),
+    hsvToRgb([hueToward(h, warm, 6 * k), s * 0.8, v + (1 - v) * 0.35]),
+    [...hexToRgb(hex)] as RGB,
+    hsvToRgb([hueToward(h, cool, 10 * k), clamp01(s * 1.12 + 0.05), v * 0.78]),
+    hsvToRgb([hueToward(h, cool, 20 * k), clamp01(s * 1.2 + 0.1), v * 0.58]),
+    hsvToRgb([hueToward(h, cool, 24 * k), clamp01(s * 1.15 + 0.12), v * 0.46]),
+    hsvToRgb([hueToward(h, cool, 30 * k), clamp01(s * 0.9 + 0.2), Math.min(0.24, v * 0.3) + 0.04]),
   ];
 }
 
@@ -333,6 +368,57 @@ class RoundCone extends Prim {
   }
 }
 
+/** Cône tronqué à bases plates (murs, toits, margelles), arrondi de `r`. */
+class CappedCone extends Prim {
+  private readonly a: V3;
+  private readonly ba: V3;
+  private readonly baba: number;
+  private readonly ra: number;
+  private readonly rb: number;
+  constructor(
+    mat: number,
+    a: V3,
+    b: V3,
+    ra: number,
+    rb: number,
+    private readonly r: number,
+  ) {
+    super(mat);
+    // L'arrondi gonfle la forme : on raccourcit l'axe d'autant pour garder la hauteur voulue.
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) || 1;
+    const k = Math.min(r, len / 2 - 1e-3) / len;
+    const d: V3 = [(b[0] - a[0]) * k, (b[1] - a[1]) * k, (b[2] - a[2]) * k];
+    this.a = [a[0] + d[0], a[1] + d[1], a[2] + d[2]];
+    b = [b[0] - d[0], b[1] - d[1], b[2] - d[2]];
+    this.ba = [b[0] - this.a[0], b[1] - this.a[1], b[2] - this.a[2]];
+    this.baba = Math.max(1e-6, this.ba[0] ** 2 + this.ba[1] ** 2 + this.ba[2] ** 2);
+    this.ra = Math.max(0, ra - r);
+    this.rb = Math.max(0, rb - r);
+    this.cx = (a[0] + b[0]) / 2;
+    this.cy = (a[1] + b[1]) / 2;
+    this.cz = (a[2] + b[2]) / 2;
+    this.br = Math.sqrt(this.baba) / 2 + Math.max(ra, rb) + r;
+  }
+  d(x: number, y: number, z: number): number {
+    const { ba, baba, ra, rb } = this;
+    const pax = x - this.a[0];
+    const pay = y - this.a[1];
+    const paz = z - this.a[2];
+    const rba = rb - ra;
+    const papa = pax * pax + pay * pay + paz * paz;
+    const paba = (pax * ba[0] + pay * ba[1] + paz * ba[2]) / baba;
+    const xx = Math.sqrt(Math.max(0, papa - paba * paba * baba));
+    const cax = Math.max(0, xx - (paba < 0.5 ? ra : rb));
+    const cay = Math.abs(paba - 0.5) - 0.5;
+    const k = rba * rba + baba;
+    const f = Math.max(0, Math.min(1, (rba * (xx - ra) + paba * baba) / k));
+    const cbx = xx - ra - f * rba;
+    const cby = paba - f;
+    const sgn = cbx < 0 && cay < 0 ? -1 : 1;
+    return sgn * Math.sqrt(Math.min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba)) - this.r;
+  }
+}
+
 class RoundBox extends Prim {
   private readonly m: M3;
   constructor(
@@ -372,6 +458,8 @@ export interface View {
 
 export interface RenderOpts {
   size: number;
+  /** Hauteur de l'image si elle n'est pas carrée. */
+  height?: number;
   /** Pixels par unité du modèle. */
   scale: number;
   /** Ligne du sprite où tombe le sol (y = 0). */
@@ -463,6 +551,11 @@ export class Sculpt {
     this.add(new RoundCone(mat, a, b, ra, rb), o);
   }
 
+  /** Cône tronqué à bases plates entre `a` et `b` (rayons `ra`, `rb`), bords arrondis de `round`. */
+  capped(a: V3, b: V3, ra: number, rb: number, mat: number, o: PrimOpts & { round?: number } = {}): void {
+    this.add(new CappedCone(mat, a, b, ra, rb, o.round ?? 0.5), o);
+  }
+
   box(c: V3, half: V3, round: number, mat: number, o: PrimOpts & { rot?: V3 } = {}): void {
     this.add(new RoundBox(mat, c, half, round, o.rot ?? [0, 0, 0]), o);
   }
@@ -481,9 +574,17 @@ export class Sculpt {
   }
 
   // Champ de distance de la scène (union lisse dans l'ordre de création).
+  /** Parties retenues pour le rayon en cours (celles qui se projettent près de lui). */
+  private active: Prim[] = [];
+  /** Marge de sélection des parties autour d'un rayon (unités). */
+  private margin = Infinity;
+
   private map(x: number, y: number, z: number): number {
+    return this.mapList(this.prims, x, y, z);
+  }
+
+  private mapList(prims: Prim[], x: number, y: number, z: number): number {
     let d = 1e9;
-    const prims = this.prims;
     for (let i = 0; i < prims.length; i++) {
       const p = prims[i];
       const bx = x - p.cx;
@@ -501,10 +602,14 @@ export class Sculpt {
     return d;
   }
 
-  private materialAt(x: number, y: number, z: number): number {
+  private materialAt(x: number, y: number, z: number, prims: Prim[]): number {
     let best = 1e9;
     let mat = 0;
-    for (const p of this.prims) {
+    for (const p of prims) {
+      const bx = x - p.cx;
+      const by = y - p.cy;
+      const bz = z - p.cz;
+      if (Math.sqrt(bx * bx + by * by + bz * bz) - p.br > best + 0.15) continue;
       let di = p.d(x, y, z);
       if (p.amp > 0) di += p.amp * noise3(x * p.freq, (y * p.freq) / p.stretch, z * p.freq);
       // Les parties ajoutées plus tard l'emportent à égalité (détails par-dessus).
@@ -562,10 +667,13 @@ export class Sculpt {
       }
       if (t0 > t1) return null;
       let t = t0;
+      // Les parties écartées sont à plus de `margin` du rayon : le pas ne doit pas dépasser cette marge.
+      const maxStep = this.margin * 0.9;
+      const list = this.margin === Infinity ? this.prims : this.active;
       for (let step = 0; step < 96 && t <= t1; step++) {
-        const d = this.map(o[0] + dir[0] * t, o[1] + dir[1] * t, o[2] + dir[2] * t);
+        const d = this.mapList(list, o[0] + dir[0] * t, o[1] + dir[1] * t, o[2] + dir[2] * t);
         if (d < 0.04) return [o[0] + dir[0] * t, o[1] + dir[1] * t, o[2] + dir[2] * t];
-        t += Math.max(d * 0.8, 0.02);
+        t += Math.min(maxStep, Math.max(d * 0.8, 0.02));
       }
       return null;
     };
@@ -582,7 +690,7 @@ export class Sculpt {
           const [cx, cy] = toCam([x, y, z]);
           [ax, bx, ay, by] = [Math.min(ax, cx), Math.max(bx, cx), Math.min(ay, cy), Math.max(by, cy)];
         }
-    const N = 40;
+    const N = 30;
     const step = Math.max(bx - ax, by - ay) / N;
     let [x0, x1, y0, y1] = [1e9, -1e9, 1e9, -1e9];
     for (let sy = ay; sy <= by; sy += step) {
@@ -598,7 +706,7 @@ export class Sculpt {
   render(opts: RenderOpts): SculptImage {
     const { size, scale, ground, view } = opts;
     const w = size;
-    const h = size;
+    const h = opts.height ?? size;
     const center = opts.center ?? 0;
     const { toCam, cast } = this.camera(view);
 
@@ -610,13 +718,15 @@ export class Sculpt {
     const palette: string[] = [];
     const glowKeys = new Set<number>();
     const edgeMat = new Int16Array(n).fill(-1);
-    const keyOf = (hex: string, glow: boolean) => {
-      const name = glow ? `g${hex}` : hex;
+    const bareKeys = new Set<number>();
+    const keyOf = (hex: string, glow: boolean, bare: boolean) => {
+      const name = `${glow ? 'g' : bare ? 'b' : 'n'}${hex}`;
       let i = palette.indexOf(name);
       if (i < 0) {
         palette.push(name);
         i = palette.length - 1;
         if (glow) glowKeys.add(i);
+        if (bare) bareKeys.add(i);
       }
       return i;
     };
@@ -627,20 +737,43 @@ export class Sculpt {
       return v.map((c) => c / m);
     })();
     const pixel = 1 / scale;
+    // Projection des sphères englobantes : chaque rayon ne teste que les parties proches.
+    const screen = new Float64Array(this.prims.length * 3);
+    let maxK = 0;
+    this.prims.forEach((p, k) => {
+      const [cx, cy] = toCam([p.cx, p.cy, p.cz]);
+      screen[k * 3] = cx;
+      screen[k * 3 + 1] = cy;
+      screen[k * 3 + 2] = p.br;
+      maxK = Math.max(maxK, p.k);
+    });
+    const margin = maxK + 2;
+    const active = this.active;
+    this.margin = margin;
 
     for (let py = 0; py < h; py++) {
       for (let px = 0; px < w; px++) {
-        const hitPoint = cast((px + 0.5 - w / 2) * pixel + center, (ground - py - 0.5) * pixel);
+        const sx = (px + 0.5 - w / 2) * pixel + center;
+        const sy = (ground - py - 0.5) * pixel;
+        active.length = 0;
+        for (let k = 0; k < this.prims.length; k++) {
+          const dx = sx - screen[k * 3];
+          const dy = sy - screen[k * 3 + 1];
+          const r = screen[k * 3 + 2] + margin;
+          if (dx * dx + dy * dy < r * r) active.push(this.prims[k]);
+        }
+        if (!active.length) continue;
+        const hitPoint = cast(sx, sy);
         if (!hitPoint) continue;
         const [x, y, z] = hitPoint;
         const i = py * w + px;
 
         // Normale (tétraèdre) puis passage en repère caméra.
         const e = 0.12;
-        const d1 = this.map(x + e, y - e, z - e);
-        const d2 = this.map(x - e, y - e, z + e);
-        const d3 = this.map(x - e, y + e, z - e);
-        const d4 = this.map(x + e, y + e, z + e);
+        const d1 = this.mapList(active, x + e, y - e, z - e);
+        const d2 = this.mapList(active, x - e, y - e, z + e);
+        const d3 = this.mapList(active, x - e, y + e, z - e);
+        const d4 = this.mapList(active, x + e, y + e, z + e);
         let nx = d1 - d2 - d3 + d4;
         let ny = -d1 - d2 + d3 + d4;
         let nz = -d1 + d2 - d3 + d4;
@@ -653,19 +786,19 @@ export class Sculpt {
         // Occlusion ambiante : creux entre les membres, sous le ventre, au cou.
         let occ = 0;
         let sca = 1;
-        for (let k = 1; k <= 5; k++) {
-          const hk = 0.6 + 1.4 * k;
+        for (let k = 1; k <= 4; k++) {
+          const hk = 0.4 + 1.75 * k;
           occ += (hk - this.map(x + nx * hk, y + ny * hk, z + nz * hk)) * sca;
           sca *= 0.7;
         }
         const ao = clamp01(1 - occ * 0.06);
 
-        const matIndex = this.materialAt(x, y, z);
+        const matIndex = this.materialAt(x, y, z, active);
         const mat = this.mats[matIndex];
         let color = mat.color;
         if (mat.belly && ny < -0.2 + 0.25 * noise3(x * 0.4, y * 0.4, z * 0.4)) color = mat.belly;
         if (mat.pattern && this.patternAt(mat.pattern, x, y, z)) color = mat.pattern.color;
-        keys[i] = keyOf(color, !!mat.glow);
+        keys[i] = keyOf(color, !!mat.glow, !!mat.bare);
         if (mat.edge) edgeMat[i] = matIndex;
         depth[i] = toCam([x, y, z])[2];
         facing[i] = cnz;
@@ -688,9 +821,11 @@ export class Sculpt {
             if (rz > 0.93) tone = 0;
           }
         }
-        tones[i] = tone;
+        tones[i] = Math.min(tone, mat.maxTone ?? 4);
       }
     }
+
+    this.margin = Infinity;
 
     // Nettoyage : pixels isolés retirés, encoches comblées.
     const has = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && keys[y * w + x] >= 0;
@@ -730,7 +865,7 @@ export class Sculpt {
     const img = new SculptImage(w, h, depth, facing, toCam, opts);
     const colorOf = (key: number, tone: number): RGB => {
       const name = palette[key];
-      return glowKeys.has(key) ? glowRamp(name.slice(1))[tone] : ramp(name)[tone];
+      return glowKeys.has(key) ? glowRamp(name.slice(1))[tone] : ramp(name.slice(1))[tone];
     };
     // Seuil de rupture de profondeur pour les traits intérieurs (en unités).
     const gap = 3.2;
@@ -743,7 +878,7 @@ export class Sculpt {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           if (!has(px + dx, py + dy)) continue;
           const j = (py + dy) * w + px + dx;
-          if (depth[j] - depth[i] > gap) {
+          if (depth[j] - depth[i] > gap && !bareKeys.has(keys[j])) {
             rgb = colorOf(keys[j], glowKeys.has(keys[j]) ? 4 : 5);
             break;
           }
@@ -766,7 +901,7 @@ export class Sculpt {
             if (best < 0 || depth[j] > depth[best]) best = j;
           }
         }
-        if (best < 0) continue;
+        if (best < 0 || bareKeys.has(keys[best])) continue;
         const lit = tones[best] <= 1 && !glowKeys.has(keys[best]);
         img.put(px, py, colorOf(keys[best], glowKeys.has(keys[best]) ? 4 : lit ? 5 : 6));
       }

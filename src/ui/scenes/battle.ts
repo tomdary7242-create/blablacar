@@ -7,13 +7,13 @@ import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
 import { displayName, xpForLevel } from '../../engine/creature';
 import { removeItem } from '../../engine/gameState';
-import { PAL, bandGradient, bar, box, calabash, cursor, fillEllipse, hpBar, rect, shade, stamp, statusBadge, text, typeBadge } from '../draw';
+import { PAL, bar, box, calabash, cursor, fillEllipse, hpBar, stamp, statusBadge, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
+import { battleBackdrop } from '../backdrops';
 import { PLAYER_LOOK, characterSprite, drawCreature } from '../sprites';
-import { THEMES } from '../tiles';
 import { BagScene } from './bag';
 import { promptLearnMove } from './learnMove';
 import { TeamScene } from './team';
@@ -419,41 +419,7 @@ export class BattleScene implements Scene {
   }
 
   private renderBackground(ctx: CanvasRenderingContext2D): void {
-    const pal = THEMES[this.opts.theme];
-    const night = this.opts.theme === 'foret' || this.opts.theme === 'falaise';
-    bandGradient(
-      ctx,
-      0,
-      0,
-      W,
-      80,
-      night ? ['#283058', '#3a4478', '#58609a', '#7a78b0', '#a090c0'] : ['#f0a058', '#f4b468', '#f8c87c', '#fadc98', '#fcecc0'],
-    );
-    // Collines lointaines et acacias en silhouette
-    const far = shade(pal.tree, night ? -0.55 : -0.4);
-    for (let x = 0; x < W; x++) {
-      const h = 10 + Math.round(Math.sin(x * 0.045) * 5 + Math.sin(x * 0.11) * 2);
-      rect(ctx, x, 80 - h, 1, h, far);
-    }
-    for (const tx of [26, 112, 230]) {
-      rect(ctx, tx, 54, 2, 16, far);
-      rect(ctx, tx - 9, 52, 20, 3, far);
-      rect(ctx, tx - 6, 50, 14, 2, far);
-    }
-    // Sol en bandes
-    bandGradient(ctx, 0, 80, W, 64, [shade(pal.grass, 0.1), pal.grass, shade(pal.grass, -0.06), shade(pal.grass, -0.12)]);
-    for (const [cx, cy, rx, ry] of [
-      [186, 84, 44, 9],
-      [66, 140, 52, 10],
-    ] as const) {
-      fillEllipse(ctx, cx, cy + 1, rx, ry, shade(pal.grass, -0.35));
-      fillEllipse(ctx, cx, cy, rx, ry, shade(pal.ground, -0.05));
-      fillEllipse(ctx, cx - 4, cy - 2, rx - 10, ry - 4, shade(pal.ground, 0.12));
-      // Touffes d'herbe sur le bord du socle
-      for (let i = -rx + 6; i < rx - 6; i += 9) {
-        stamp(ctx, ['g.g', 'gGg'], cx + i, cy + ry - 2, { g: shade(pal.grass, -0.15), G: shade(pal.grass, -0.3) });
-      }
-    }
+    ctx.drawImage(battleBackdrop(this.opts.theme), 0, 0);
     if (this.opts.trainer && !this.views.adversaire) {
       ctx.drawImage(characterSprite(this.opts.trainer.look, 'bas', 0), 170, 38, 32, 48);
     }

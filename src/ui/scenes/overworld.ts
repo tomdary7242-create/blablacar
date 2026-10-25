@@ -25,6 +25,7 @@ import type { Game, World } from '../game';
 import type { Button } from '../input';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
+import { battleBackdrop } from '../backdrops';
 import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
 import { TILE, animateTile, grassOverlay, itemBall, renderZoneLayers, type ZoneLayers } from '../tiles';
 import { MenuScene } from './menu';
@@ -89,6 +90,13 @@ export class OverworldScene implements Scene, World {
     this.npcDirs = new Map(this.zone.npcs.map((n) => [n.id, n.dir]));
     this.redrawMap();
     this.savePosition();
+    // Fond de combat et Jinémon sauvages de la zone, préparés pendant la promenade.
+    const zone = this.zone;
+    setTimeout(() => {
+      if (this.zone !== zone) return;
+      battleBackdrop(zone.theme);
+      prewarmCreatures(zone.encounters.map((e): [number, number] => [e.species, 64]));
+    }, 600);
   }
 
   private redrawMap(): void {

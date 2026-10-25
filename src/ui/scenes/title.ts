@@ -1,11 +1,12 @@
 // Écran titre, saisie du nom et démarrage de la partie.
 import { newGameState } from '../../engine/gameState';
 import { hasSave, loadGame } from '../../engine/saveManager';
-import { PAL, bandGradient, box, fillEllipse, menuList, stamp, text } from '../draw';
+import { titleBackdrop } from '../backdrops';
+import { PAL, box, menuList, text } from '../draw';
 import { drawOutlinedText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
-import { H, W } from '../screen';
+import { W } from '../screen';
 import { drawCreature } from '../sprites';
 import { OverworldScene } from './overworld';
 import { RevealScene } from './transition';
@@ -13,54 +14,8 @@ import { RevealScene } from './transition';
 const SUGGESTIONS = ['Sékou', 'Aïssata', 'Moussa', 'Awa', 'Kofi', 'Mariam', 'Oumar', 'Ama', 'Yacouba', 'Fatou', 'Salif', 'Nana'];
 
 /** Paysage sahélien au coucher du soleil (titre et saisie du nom). */
-function sahelBackdrop(ctx: CanvasRenderingContext2D, time: number): void {
-  bandGradient(ctx, 0, 0, W, 150, ['#2a1c40', '#4a2448', '#7a3048', '#b04838', '#d86a38', '#ee9448', '#f6b860', '#fad488']);
-  // Soleil couchant, avec bandes horizontales de brume.
-  fillEllipse(ctx, W / 2, 118, 34, 34, '#ffe08a');
-  fillEllipse(ctx, W / 2 - 4, 112, 26, 26, '#fff0b8');
-  for (let y = 100; y < 150; y += 6) {
-    ctx.fillStyle = '#f6b860';
-    ctx.fillRect(W / 2 - 40, y + Math.floor(time * 2) % 2, 80, 1);
-  }
-  // Falaise de Bandiagara et greniers dogon en silhouette
-  const cliff = '#3a1c18';
-  for (let x = 0; x < 120; x++) {
-    const h = 30 + Math.round(Math.sin(x * 0.07) * 6 + Math.sin(x * 0.23) * 2) - Math.max(0, x - 80);
-    ctx.fillStyle = cliff;
-    ctx.fillRect(x, 150 - h, 1, h);
-  }
-  for (const gx of [30, 44, 58]) {
-    stamp(ctx, ['...#...', '..###..', '.#####.', '#######', '.#####.', '.#####.', '.#####.', '.#####.'], gx, 104, { '#': '#2a1210' });
-  }
-  ctx.fillStyle = '#24100c';
-  ctx.fillRect(0, 148, W, H - 148);
-  // Baobab
-  stamp(
-    ctx,
-    [
-      '..##.......##.......##..',
-      '...##.....##.......##...',
-      '....##...##.#.....##....',
-      '.....##.##...#...##.....',
-      '......####....#.##......',
-      '.......####....###......',
-      '........#####.###.......',
-      '.........#######........',
-      '.........#######........',
-      '........########........',
-      '........#########.......',
-      '........#########.......',
-      '.......##########.......',
-      '.......###########......',
-      '......############......',
-      '......#############.....',
-    ],
-    194,
-    118,
-    { '#': '#24100c' },
-    1,
-  );
-  for (const [x, y] of [[194, 114], [212, 112], [232, 115], [204, 110], [222, 109]]) fillEllipse(ctx, x, y, 7, 3, '#24100c');
+function sahelBackdrop(ctx: CanvasRenderingContext2D): void {
+  ctx.drawImage(titleBackdrop(), 0, 0);
 }
 
 export class TitleScene implements Scene {
@@ -106,7 +61,7 @@ export class TitleScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    sahelBackdrop(ctx, this.game.time);
+    sahelBackdrop(ctx);
     drawOutlinedText(ctx, 'GINÉMON', W / 2 + 2, 14, '#7a3010', PAL.ink, { align: 'center', scale: 3 });
     drawOutlinedText(ctx, 'GINÉMON', W / 2, 12, '#f8c840', PAL.ink, { align: 'center', scale: 3 });
     text(ctx, 'Légendes du Sahel et d’ailleurs', W / 2, 46, { align: 'center', color: PAL.cream, shadow: PAL.ink });
@@ -159,7 +114,7 @@ export class NameScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    sahelBackdrop(ctx, this.game.time);
+    sahelBackdrop(ctx);
     box(ctx, 14, 36, 228, 92);
     text(ctx, 'Comment t’appelles-tu, jeune Initié ?', W / 2, 42, { align: 'center', shadow: PAL.shadow });
     box(ctx, 58, 58, 140, 26, 'sombre');
