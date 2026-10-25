@@ -4,7 +4,7 @@
 // La couche « sol » est dessinée sous les personnages ; la couche « dessus »
 // (cimes des arbres, toits) passe devant eux pour donner de la profondeur.
 import type { Theme, Zone } from '../data/zones';
-import { calabash, shade } from './draw';
+import { calabash } from './draw';
 import { noise3, shiftColor } from './sculpt';
 import { altarProp, baobabProp, boulderProp, canopyProp, forgeProp, granaryProp, hutProp, signProp, stallProp, termiteProp, treeProp, wellProp, type Prop } from './props';
 
@@ -244,42 +244,30 @@ function water(ctx: CanvasRenderingContext2D, x: number, y: number, land: { n: b
   }
 }
 
-function cliff(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, tx: number, ty: number, open: { n: boolean; s: boolean; e: boolean; w: boolean }): void {
-  const r = pal.rock;
-  ctx.fillStyle = r;
-  ctx.fillRect(x, y, TILE, TILE);
-  const dark = shade(r, -0.25);
-  const light = shade(r, 0.2);
-  // Strates et fissures
-  for (let row = 4; row < TILE; row += 5) {
-    for (let i = 0; i < TILE; i++) if (hash(tx * 16 + i, ty * 3 + row) > 0.2) px(ctx, x + i, y + row, dark);
-  }
-  for (let i = 0; i < 3; i++) {
-    const cx = Math.floor(hash(tx, ty, i + 60) * 14);
-    const cy = Math.floor(hash(ty, tx, i + 61) * 12);
-    px(ctx, x + cx, y + cy, light);
-    px(ctx, x + cx + 1, y + cy, light);
-    px(ctx, x + cx, y + cy + 1, dark);
-  }
-  if (open.n) {
-    ctx.fillStyle = pal.grass;
-    ctx.fillRect(x, y, TILE, 2);
-    for (let i = 0; i < TILE; i++) if (hash(tx * 9 + i, ty) > 0.5) px(ctx, x + i, y + 2, pal.grass);
-    ctx.fillStyle = light;
-    ctx.fillRect(x, y + 3, TILE, 1);
-  }
-  if (open.s) {
-    ctx.fillStyle = shade(r, -0.45);
-    ctx.fillRect(x, y + TILE - 2, TILE, 2);
-  }
-  if (open.w) {
-    ctx.fillStyle = light;
-    ctx.fillRect(x, y, 1, TILE);
-  }
-  if (open.e) {
-    ctx.fillStyle = shade(r, -0.4);
-    ctx.fillRect(x + TILE - 1, y, 1, TILE);
-  }
+/** Paroi rocheuse : strates ondulées, fissures, rebord herbeux éclairé et pied dans l'ombre. */
+function cliff(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, ty: number, open: { n: boolean; s: boolean; e: boolean; w: boolean }): void {
+  const t = tones(pal.rock);
+  const g = tones(pal.grass);
+  const lit = shiftColor(pal.rock, 0.3);
+  const deep = shiftColor(pal.rock, -0.38);
+  pixels(ctx, x, y, (wx, wy) => {
+    const lx = wx - x;
+    const ly = wy - y;
+    if (open.n) {
+      const lip = 2 + (hash(wx, ty, 3) > 0.5 ? 1 : 0);
+      if (ly < lip) return ly === lip - 1 ? g[2] : g[1];
+      if (ly === lip) return lit;
+    }
+    if (open.s && ly >= TILE - 2) return ly === TILE - 1 ? deep : t[3];
+    if (open.w && lx === 0) return lit;
+    if (open.e && lx === TILE - 1) return t[3];
+    const strata = Math.sin(wy * 0.8 + noise3(wx * 0.07, wy * 0.04, 11) * 3.2);
+    if (Math.abs(noise3(wx * 0.15, wy * 0.035, 13)) < 0.045) return t[3];
+    if (strata > 0.88) return t[2];
+    if (strata < -0.92) return t[0];
+    const v = patch(wx, wy, 0.11, 12);
+    return v > 0.4 ? t[0] : v > -0.3 ? t[1] : t[2];
+  });
 }
 
 function flowers(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, ty: number): void {
@@ -344,6 +332,9 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
   over.imageSmoothingEnabled = false;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? '' : tileAt(x, y));
   const groundTheme = zone.theme === 'laterite' ? 'L' : zone.theme === 'foret' || zone.theme === 'falaise' ? '.' : '"';
+  // Un rocher isolé (sans voisin rocheux) devient un bloc sculpté plutôt qu'un pan de falaise.
+  const lone = (cx: number, cy: number) =>
+    at(cx, cy) === '#' && at(cx - 1, cy) !== '#' && at(cx + 1, cy) !== '#' && at(cx, cy - 1) !== '#' && at(cx, cy + 1) !== '#';
 
   // 1. Sols
   for (let ty = 0; ty < h; ty++) {
@@ -351,7 +342,9 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       const ch = at(tx, ty);
       const x = tx * TILE;
       const y = ty * TILE;
-      const ground = ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M'].includes(ch) ? groundTheme : ch;
+      // Sous un rocher isolé, on reprend le sol voisin (herbes hautes, terre…).
+      const neighbor = [at(tx, ty + 1), at(tx - 1, ty), at(tx + 1, ty), at(tx, ty - 1)].find((c) => ['"', ',', '.', 'L', ':'].includes(c));
+      const ground = lone(tx, ty) ? (neighbor ?? groundTheme) : ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M'].includes(ch) ? groundTheme : ch;
       switch (ground) {
         case '"':
           grassGround(base, x, y, pal, tx, ty);
@@ -402,7 +395,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
         }
         case '#': {
           const c = (cx: number, cy: number) => at(cx, cy) === '#' || at(cx, cy) === '';
-          cliff(base, x, y, pal, tx, ty, { n: !c(tx, ty - 1), s: !c(tx, ty + 1), e: !c(tx + 1, ty), w: !c(tx - 1, ty) });
+          cliff(base, x, y, pal, ty, { n: !c(tx, ty - 1), s: !c(tx, ty + 1), e: !c(tx + 1, ty), w: !c(tx - 1, ty) });
           break;
         }
         default:
@@ -421,7 +414,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       if (ch === 'T') groundShadow(base, cx + 2, cy + 1, pal.round ? 8 : 11, 3);
       else if (ch === 'B') groundShadow(base, cx + 3, cy + 1, 13, 4);
       else if (ch === 'R' && at(tx - 1, ty) !== 'R') groundShadow(base, tx * TILE + 26, (ty + 2) * TILE - 2, 22, 4);
-      else if ('GUOX'.includes(ch) && ch) groundShadow(base, cx + 1, cy + 1, 6, 2);
+      else if (('GUOX'.includes(ch) && ch) || lone(tx, ty)) groundShadow(base, cx + 1, cy + 1, 6, 2);
     }
   }
   for (let ty = 0; ty < h; ty++) {
@@ -463,26 +456,34 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
         case 'X':
           place(base, over, boulderProp(true, pal.rock), x, y, split);
           break;
+        case '#':
+          if (lone(tx, ty)) place(base, over, boulderProp(false, pal.rock), x, y, split);
+          break;
         case 'M': {
-          // Mur d'enceinte en banco avec chaperon clair.
+          // Mur d'enceinte en banco : chaperon clair en haut du mur seulement, ombre au pied.
           const mx = tx * TILE;
           const my = ty * TILE;
-          base.fillStyle = '#b8784a';
-          base.fillRect(mx, my + 3, TILE, TILE - 3);
-          for (let i = 0; i < 9; i++) {
-            const bx = mx + Math.floor(hash(tx, ty, i) * 14);
-            const by = my + 5 + Math.floor(hash(ty, tx, i + 3) * 8);
-            base.fillStyle = i % 3 ? '#a06840' : '#c88a5a';
-            base.fillRect(bx, by, 2 + (i % 2), 1);
+          const above = at(tx, ty - 1) === 'M';
+          const below = at(tx, ty + 1) === 'M';
+          const banco = tones('#b8784a');
+          pixels(base, mx, my, (wx, wy) => {
+            const ly = wy - my;
+            if (!above && ly < 4) return ly === 0 ? [32, 20, 12] : ly === 1 ? shiftColor('#e0a878', 0.2) : shiftColor('#e0a878', 0);
+            if (!below && ly >= TILE - 2) return banco[3];
+            // Enduit irrégulier et briques de banco à peine marquées.
+            const brick = (wy % 6 === 0 || (wx + Math.floor(wy / 6) * 5) % 11 === 0) && hash(wx, wy, 4) > 0.3;
+            if (brick) return banco[2];
+            const v = patch(wx, wy, 0.15, 21);
+            return v > 0.35 ? banco[0] : banco[1];
+          });
+          if (at(tx - 1, ty) !== 'M') {
+            base.fillStyle = css(shiftColor('#e0a878', 0.1));
+            base.fillRect(mx, my, 1, TILE);
           }
-          base.fillStyle = '#e0a878';
-          base.fillRect(mx, my, TILE, 4);
-          base.fillStyle = '#f0c094';
-          base.fillRect(mx, my + 1, TILE, 1);
-          base.fillStyle = '#8a5432';
-          base.fillRect(mx, my + TILE - 2, TILE, 2);
-          base.fillStyle = '#20140c';
-          base.fillRect(mx, my, TILE, 1);
+          if (at(tx + 1, ty) !== 'M') {
+            base.fillStyle = css(banco[3]);
+            base.fillRect(mx + TILE - 1, my, 1, TILE);
+          }
           break;
         }
         case 'R':

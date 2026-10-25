@@ -7,7 +7,23 @@ mandingue, akan…), puis celles venues d’ailleurs avec les caravanes : dragon
 spectres du Nord, serpent à plumes de Mésoamérique, sphinx d’Égypte, feux follets, mandragores…
 
 MVP conforme au GDD v1.0 : TypeScript + Vite, rendu Canvas 2D sans moteur externe, sauvegarde dans le LocalStorage,
-déploiement sur GitHub Pages. Aucune image externe : sprites, tuiles et sons sont générés par le code.
+déploiement sur GitHub Pages. Aucune image externe : sprites, décors et sons sont générés par le code.
+
+## Graphismes
+
+Le jeu est dessiné en pixel art dans un écran natif de 256×192 pixels, agrandi d’un facteur entier à l’affichage.
+
+- **Jinémon et objets du décor sculptés en volume.** Chaque créature est modelée en 3D avec des primitives à champ
+  de distance (sphères, ellipsoïdes, cônes arrondis ou tronqués) fondues entre elles, puis rendue par lancer de
+  rayons et convertie en pixel art : tons quantifiés et décalés en teinte, occlusion ambiante, motifs posés sur le
+  volume (taches, rayures, écailles, plumes), traits intérieurs aux ruptures de profondeur et contour teinté.
+  Les Jinémon sont vus de trois quarts face, et de dos côté joueur en combat. Les arbres, baobabs, cases, greniers et
+  termitières de la carte passent par le même sculpteur, en vue plongeante.
+- **Décors peints.** Sols texturés par un bruit en coordonnées du monde (plaques d’herbe tramées, gravillons, eau
+  ondulée), fonds de combat propres à chaque décor (savane, terres rouges, marigot, forêt, falaise de Bandiagara…),
+  écran titre en contre-jour.
+- **Effets d’attaque** en particules, un par type élémentaire.
+- Les personnages (16×24) et la police bitmap accentuée sont dessinés à la main.
 
 ## Jouer
 
@@ -84,7 +100,13 @@ src/
     saveManager.ts      Sauvegarde automatique dans le LocalStorage (avec validation)
     rng.ts              Aléatoire injectable (déterministe dans les tests)
   ui/                   Rendu Canvas et scènes (titre, exploration, combat, menus…)
-tests/                  Tests Vitest : données, cartes, moteur de combat, simulations, sauvegarde
+    sculpt.ts           Sculpteur de volumes et conversion en pixel art
+    creatures.ts        Modelage des 73 Jinémon (un plan corporel par famille, réglé par espèce)
+    props.ts            Objets du décor sculptés
+    tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
+    backdrops.ts        Fonds de combat, titre, case de l’Ancien, halo d’évolution
+    effects.ts          Effets d’attaque par type
+tests/                  Tests Vitest : données, cartes, moteur de combat, simulations, sauvegarde, sprites
 ```
 
 Le moteur de combat est synchrone : `start()`, `submit(action)` et `submitReplacement(index)` résolvent un tour
