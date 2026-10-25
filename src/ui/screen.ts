@@ -1,33 +1,45 @@
-// Écran logique 320×240, mis à l'échelle pour remplir la fenêtre en restant net.
+// Écran en pixel art : tout est dessiné dans un tampon de 256×192 pixels,
+// puis agrandi d'un facteur entier (en pixels physiques) pour rester parfaitement net.
 
-export const W = 320;
-export const H = 240;
+export const W = 256;
+export const H = 192;
 
 export class Screen {
-  readonly canvas: HTMLCanvasElement;
+  /** Tampon basse résolution dans lequel dessinent toutes les scènes. */
+  readonly buffer: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
-  scale = 1;
+  private readonly display: CanvasRenderingContext2D;
+  private factor = 1;
 
-  constructor(canvas: HTMLCanvasElement, private readonly container: HTMLElement) {
-    this.canvas = canvas;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas 2D indisponible');
-    this.ctx = ctx;
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly container: HTMLElement,
+  ) {
+    this.buffer = document.createElement('canvas');
+    this.buffer.width = W;
+    this.buffer.height = H;
+    this.ctx = this.buffer.getContext('2d')!;
+    this.ctx.imageSmoothingEnabled = false;
+    this.display = canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
 
   resize(): void {
     const rect = this.container.getBoundingClientRect();
-    const fit = Math.min(rect.width / W, rect.height / H);
-    // Échelle entière quand c'est possible (pixels réguliers), libre sur petit écran.
-    this.scale = fit >= 2 ? Math.floor(fit) : Math.max(0.5, fit);
     const dpr = window.devicePixelRatio || 1;
-    this.canvas.style.width = `${Math.round(W * this.scale)}px`;
-    this.canvas.style.height = `${Math.round(H * this.scale)}px`;
-    this.canvas.width = Math.round(W * this.scale * dpr);
-    this.canvas.height = Math.round(H * this.scale * dpr);
-    this.ctx.setTransform(this.scale * dpr, 0, 0, this.scale * dpr, 0, 0);
-    this.ctx.imageSmoothingEnabled = false;
+    // Plus grand facteur entier qui tient dans la place disponible, en pixels physiques.
+    this.factor = Math.max(1, Math.floor(Math.min((rect.width * dpr) / W, (rect.height * dpr) / H)));
+    this.canvas.width = W * this.factor;
+    this.canvas.height = H * this.factor;
+    this.canvas.style.width = `${(W * this.factor) / dpr}px`;
+    this.canvas.style.height = `${(H * this.factor) / dpr}px`;
+    this.display.imageSmoothingEnabled = false;
+  }
+
+  /** Recopie le tampon à l'écran. */
+  present(): void {
+    this.display.imageSmoothingEnabled = false;
+    this.display.drawImage(this.buffer, 0, 0, this.canvas.width, this.canvas.height);
   }
 }

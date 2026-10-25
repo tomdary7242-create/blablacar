@@ -2,7 +2,8 @@
 import { getSpecies } from '../../data/ginedex';
 import { displayName, evolve, type Jinemon } from '../../engine/creature';
 import { markCaught } from '../../engine/gameState';
-import { box, continueMarker, text } from '../draw';
+import { PAL, bandGradient, box, continueMarker, stamp, text } from '../draw';
+import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
@@ -65,28 +66,26 @@ export class EvolutionScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    const g = ctx.createRadialGradient(W / 2, 90, 10, W / 2, 90, 200);
-    g.addColorStop(0, '#f8e0a8');
-    g.addColorStop(1, '#3a2414');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    bandGradient(ctx, 0, 0, W, H, ['#2a1a10', '#4a2c18', '#7a5030', '#a87848', '#7a5030', '#4a2c18']);
     if (this.phase === 'animation') {
       // Alternance de plus en plus rapide entre les deux formes.
       const p = this.t / DURATION;
       const freq = 2 + p * 14;
       const showNew = Math.sin(this.t * freq * Math.PI) > 0;
-      ctx.fillStyle = `rgba(255,255,255,${0.2 + p * 0.5})`;
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2 + this.t * 2;
-        ctx.fillRect(W / 2 + Math.cos(a) * (70 - p * 40), 90 + Math.sin(a) * (50 - p * 30), 3, 3);
+        const r = 70 - p * 40;
+        stamp(ctx, ['.#.', '###', '.#.'], Math.round(W / 2 + Math.cos(a) * r), Math.round(76 + Math.sin(a) * r * 0.7), { '#': '#fff4c0' });
       }
-      drawCreature(ctx, showNew ? this.to : this.j.speciesId, W / 2, 140, 110, { white: 1 });
+      drawCreature(ctx, showNew ? this.to : this.j.speciesId, W / 2, 138, 64, { white: 1, scale: 2 });
     } else {
-      drawCreature(ctx, this.shownSpecies, W / 2, 140, 110);
+      drawCreature(ctx, this.shownSpecies, W / 2, 138, 64, { scale: 2 });
     }
-    box(ctx, 4, 178, 312, 58);
-    text(ctx, this.message, 16, 192, { size: 10 });
-    if (this.phase === 'fin') continueMarker(ctx, 300, 224, this.game.time);
-    if (this.phase === 'animation') text(ctx, 'B : interrompre', 304, 222, { size: 7, align: 'right', color: '#8a7a68' });
+    box(ctx, 2, 144, 252, 46);
+    wrapText(this.message, 232)
+      .slice(0, 3)
+      .forEach((row, i) => text(ctx, row, 12, 149 + i * 12, { shadow: PAL.shadow }));
+    if (this.phase === 'fin') continueMarker(ctx, 240, 180, this.game.time);
+    if (this.phase === 'animation') text(ctx, 'B : interrompre', 246, 176, { align: 'right', color: PAL.grey });
   }
 }

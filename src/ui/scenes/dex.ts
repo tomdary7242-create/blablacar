@@ -1,7 +1,8 @@
 // Le Ginédex : liste des espèces vues et capturées, avec fiche détaillée.
 import { SPECIES, dexNumber, getSpecies, preEvolution } from '../../data/ginedex';
 import { TALENTS } from '../../data/talents';
-import { PAL, bar, box, calabash, cursor, text, typeBadge, wrap } from '../draw';
+import { PAL, bar, box, calabash, cursor, fillEllipse, stamp, text, typeBadge } from '../draw';
+import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
@@ -10,7 +11,7 @@ import { ListCursor, menuBackground } from '../widgets';
 
 export class DexScene implements Scene {
   readonly opaque = true;
-  private cursor = new ListCursor(SPECIES.length, 13);
+  private cursor = new ListCursor(SPECIES.length, 14);
 
   constructor(private readonly game: Game) {}
 
@@ -40,50 +41,39 @@ export class DexScene implements Scene {
   render(ctx: CanvasRenderingContext2D): void {
     const dex = this.game.s.dex;
     menuBackground(ctx, W, H);
-    text(ctx, 'GINÉDEX', 10, 6, { size: 11, bold: true, color: PAL.cream, shadow: PAL.ink });
-    text(ctx, `Vus : ${dex.seen.length}   Capturés : ${dex.caught.length} / ${SPECIES.length}`, 310, 8, {
-      size: 8,
-      align: 'right',
-      color: PAL.cream,
-      shadow: PAL.ink,
-    });
-    box(ctx, 6, 22, 168, 214);
+    text(ctx, 'GINÉDEX', 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    text(ctx, `Vus ${dex.seen.length} · Capturés ${dex.caught.length}/${SPECIES.length}`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
+    box(ctx, 2, 14, 126, 176);
     for (const i of this.cursor.window()) {
       const s = SPECIES[i];
-      const y = 31 + (i - this.cursor.scroll) * 15.5;
+      const y = 19 + (i - this.cursor.scroll) * 12;
       const seen = dex.seen.includes(s.id);
       const caught = dex.caught.includes(s.id);
-      const selected = i === this.cursor.index;
-      if (selected) cursor(ctx, 12, y + 1);
-      text(ctx, dexNumber(s.id), 22, y, { size: 9, color: PAL.rust, bold: selected });
-      text(ctx, seen ? s.name : '- - - - -', 48, y, { size: 9, bold: selected, color: seen ? PAL.ink : PAL.grey });
-      if (caught) calabash(ctx, 162, y + 5, 3.5);
-      else if (seen) {
-        ctx.fillStyle = PAL.grey;
-        ctx.beginPath();
-        ctx.arc(162, y + 5, 2, 0, Math.PI * 2);
-        ctx.fill();
+      if (i === this.cursor.index) {
+        ctx.fillStyle = '#f0d898';
+        ctx.fillRect(6, y, 118, 11);
+        cursor(ctx, 8, y + 2);
       }
+      text(ctx, dexNumber(s.id), 14, y, { color: PAL.rust });
+      text(ctx, seen ? s.name : '- - - - -', 34, y, { color: seen ? PAL.ink : PAL.grey, shadow: seen ? PAL.shadow : undefined });
+      if (caught) calabash(ctx, 118, y + 6, 1);
+      else if (seen) stamp(ctx, ['##', '##'], 116, y + 5, { '#': PAL.grey });
     }
     const s = SPECIES[this.cursor.index];
     const seen = dex.seen.includes(s.id);
-    box(ctx, 178, 22, 136, 214);
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.beginPath();
-    ctx.ellipse(246, 128, 44, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    drawCreature(ctx, s.id, 246, 132, 100, { silhouette: !seen });
-    text(ctx, `N°${dexNumber(s.id)}`, 188, 30, { size: 8, color: PAL.rust, bold: true });
-    text(ctx, seen ? s.name : '???', 246, 142, { size: 11, bold: true, align: 'center' });
+    box(ctx, 130, 14, 124, 176);
+    fillEllipse(ctx, 192, 92, 34, 7, '#e8d4a4');
+    drawCreature(ctx, s.id, 192, 94, 64, { silhouette: !seen });
+    text(ctx, `N°${dexNumber(s.id)}`, 138, 18, { color: PAL.rust });
+    text(ctx, seen ? s.name : '???', 192, 102, { align: 'center', shadow: PAL.shadow });
     if (seen) {
-      text(ctx, s.category, 246, 157, { size: 7, align: 'center', color: PAL.grey });
-      s.types.forEach((t, i) => typeBadge(ctx, t, s.types.length === 1 ? 224 : 196 + i * 52, 170, 48));
-      wrap(ctx, s.folklore.split(' — ')[0], 118, 8)
+      s.types.forEach((t, i) => typeBadge(ctx, t, s.types.length === 1 ? 172 : 150 + i * 44, 116, 40));
+      wrapText(s.folklore.split(' — ')[0], 108)
         .slice(0, 3)
-        .forEach((row, i) => text(ctx, row, 246, 190 + i * 10, { size: 8, align: 'center' }));
-      text(ctx, 'A : voir la fiche', 246, 222, { size: 7, align: 'center', color: PAL.grey });
+        .forEach((row, i) => text(ctx, row, 192, 132 + i * 10, { align: 'center' }));
+      text(ctx, 'A : fiche', 192, 174, { align: 'center', color: PAL.grey });
     } else {
-      text(ctx, 'Jinémon jamais rencontré.', 246, 170, { size: 8, align: 'center', color: PAL.grey });
+      text(ctx, 'Jamais rencontré.', 192, 120, { align: 'center', color: PAL.grey });
     }
   }
 }
@@ -122,18 +112,20 @@ export class DexEntryScene implements Scene {
     const s = getSpecies(this.id);
     const caught = this.game.s.dex.caught.includes(s.id);
     menuBackground(ctx, W, H);
-    box(ctx, 6, 6, 308, 228);
-    ctx.fillStyle = 'rgba(200,137,42,0.18)';
-    ctx.fillRect(12, 12, 96, 104);
-    drawCreature(ctx, s.id, 60, 112, 100);
-    text(ctx, `N°${dexNumber(s.id)}`, 116, 14, { size: 9, color: PAL.rust, bold: true });
-    text(ctx, s.name, 150, 12, { size: 13, bold: true });
-    text(ctx, s.category + (s.legendary ? ' · Légende du Panthéon' : ''), 116, 30, { size: 8, color: PAL.grey });
-    s.types.forEach((t, i) => typeBadge(ctx, t, 116 + i * 52, 42, 48));
-    if (caught) calabash(ctx, 300, 20, 5);
+    box(ctx, 2, 2, 252, 188);
+    ctx.fillStyle = '#f0e0b8';
+    ctx.fillRect(8, 8, 68, 68);
+    fillEllipse(ctx, 42, 70, 26, 5, '#dcc490');
+    drawCreature(ctx, s.id, 42, 72, 64);
+    text(ctx, `N°${dexNumber(s.id)}`, 82, 6, { color: PAL.rust });
+    text(ctx, s.name, 112, 6, { shadow: PAL.shadow });
+    if (caught) calabash(ctx, 244, 11, 1);
+    text(ctx, s.category + (s.legendary ? ' ★' : ''), 82, 17, { color: PAL.grey });
+    s.types.forEach((t, i) => typeBadge(ctx, t, 82 + i * 44, 30, 40));
 
     if (!caught) {
-      text(ctx, 'Capturez ce Jinémon pour compléter sa fiche.', 116, 64, { size: 8, color: PAL.grey });
+      text(ctx, 'Capturez-le pour compléter', 82, 46, { color: PAL.grey });
+      text(ctx, 'sa fiche.', 82, 56, { color: PAL.grey });
     } else {
       const base = s.baseStats;
       const rows: Array<[string, number]> = [
@@ -143,38 +135,38 @@ export class DexEntryScene implements Scene {
         ['Vit.', base.speed],
       ];
       rows.forEach(([label, v], i) => {
-        const y = 60 + i * 12;
-        text(ctx, label, 116, y, { size: 8 });
-        text(ctx, String(v), 162, y, { size: 8, bold: true, align: 'right' });
-        bar(ctx, 168, y + 3, 134, 3, v / 130, v >= 90 ? PAL.hpGreen : v >= 60 ? PAL.hpYellow : PAL.ochre);
+        const y = 43 + i * 9;
+        text(ctx, label, 82, y - 2);
+        text(ctx, String(v), 124, y - 2, { align: 'right' });
+        bar(ctx, 130, y + 3, 116, 2, v / 130, v >= 90 ? PAL.hpGreen : v >= 60 ? PAL.hpYellow : PAL.ochre);
       });
-      if (s.talent) {
-        text(ctx, `Talent : ${TALENTS[s.talent].name}`, 116, 110, { size: 8, bold: true, color: PAL.rust });
-      }
     }
-
-    let y = 124;
+    let y = 80;
     const pre = preEvolution(s.id);
     const evo = s.evolution
       ? `Évolue en ${getSpecies(s.evolution.to).name} au niveau ${s.evolution.level}.`
       : pre
         ? `Évolution de ${pre.name}.`
         : 'N’évolue pas.';
-    text(ctx, evo, 16, y, { size: 8, color: PAL.indigo, bold: true });
-    y += 14;
-    if (caught) {
-      for (const row of wrap(ctx, s.description, 288, 9).slice(0, 4)) {
-        text(ctx, row, 16, y, { size: 9 });
-        y += 12;
-      }
-      y += 4;
+    text(ctx, evo, 10, y, { color: PAL.indigo });
+    y += 12;
+    if (caught && s.talent) {
+      text(ctx, `Talent : ${TALENTS[s.talent].name}`, 10, y, { color: PAL.rust });
+      y += 12;
     }
-    text(ctx, 'Origine', 16, y, { size: 8, bold: true, color: PAL.rust });
+    if (caught) {
+      for (const row of wrapText(s.description, 236).slice(0, 4)) {
+        text(ctx, row, 10, y, { shadow: PAL.shadow });
+        y += 11;
+      }
+      y += 2;
+    }
+    text(ctx, 'Origine', 10, y, { color: PAL.rust });
     y += 11;
-    for (const row of wrap(ctx, s.folklore, 288, 8).slice(0, 3)) {
-      text(ctx, row, 16, y, { size: 8 });
+    for (const row of wrapText(s.folklore, 236).slice(0, 3)) {
+      text(ctx, row, 10, y);
       y += 10;
     }
-    text(ctx, '◄ ► fiches · B retour', 304, 222, { size: 7, color: PAL.grey, align: 'right' });
+    text(ctx, '◄ ► · B', 246, 178, { color: PAL.grey, align: 'right' });
   }
 }

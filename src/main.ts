@@ -4,7 +4,7 @@ import { Audio } from './ui/audio';
 import { Game } from './ui/game';
 import { Input, type Button } from './ui/input';
 import { TitleScene } from './ui/scenes/title';
-import { Screen } from './ui/screen';
+import { H, Screen, W } from './ui/screen';
 
 const canvas = document.getElementById('ecran') as HTMLCanvasElement;
 const container = document.getElementById('cadre') as HTMLElement;
@@ -29,8 +29,9 @@ function frame(now: number): void {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   game.update(dt);
-  screen.ctx.clearRect(0, 0, 320, 240);
+  screen.ctx.clearRect(0, 0, W, H);
   game.render(screen.ctx);
+  screen.present();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

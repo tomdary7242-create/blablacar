@@ -1,4 +1,5 @@
 // Composants d'interface réutilisables.
+import { bandGradient, stamp } from './draw';
 import type { Game } from './game';
 
 /** Curseur de liste verticale avec défilement. */
@@ -41,23 +42,12 @@ export class ListCursor {
   }
 }
 
-/** Fond commun des écrans de menu. */
+/** Fond commun des écrans de menu : ocre en bandes et losanges de bogolan. */
 export function menuBackground(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#e8c890');
-  g.addColorStop(1, '#c8904a');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-  // Motifs bogolan discrets
-  ctx.fillStyle = 'rgba(90,50,20,0.12)';
-  for (let y = 0; y < h; y += 16) {
-    for (let x = (y / 16) % 2 === 0 ? 0 : 8; x < w; x += 16) {
-      ctx.beginPath();
-      ctx.moveTo(x + 4, y + 2);
-      ctx.lineTo(x + 7, y + 6);
-      ctx.lineTo(x + 4, y + 10);
-      ctx.lineTo(x + 1, y + 6);
-      ctx.fill();
+  bandGradient(ctx, 0, 0, w, h, ['#ecd29c', '#e4c486', '#dcb472', '#d4a462', '#cc9454']);
+  for (let row = 0, y = 4; y < h; y += 16, row++) {
+    for (let x = row % 2 === 0 ? 4 : 12; x < w; x += 16) {
+      stamp(ctx, ['.#.', '#.#', '.#.'], x, y, { '#': 'rgba(120,70,30,0.22)' });
     }
   }
 }

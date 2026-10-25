@@ -7,11 +7,13 @@ import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
 import { displayName, xpForLevel } from '../../engine/creature';
 import { removeItem } from '../../engine/gameState';
-import { PAL, bar, box, calabash, hpBar, hpColor, statusBadge, text, typeBadge, wrap } from '../draw';
+import { PAL, bandGradient, bar, box, calabash, cursor, fillEllipse, hpBar, rect, shade, stamp, statusBadge, text, typeBadge } from '../draw';
+import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
-import { PLAYER_LOOK, THEMES, characterSprite, drawCreature, shade } from '../sprites';
+import { PLAYER_LOOK, characterSprite, drawCreature } from '../sprites';
+import { THEMES } from '../tiles';
 import { BagScene } from './bag';
 import { promptLearnMove } from './learnMove';
 import { TeamScene } from './team';
@@ -418,50 +420,45 @@ export class BattleScene implements Scene {
 
   private renderBackground(ctx: CanvasRenderingContext2D): void {
     const pal = THEMES[this.opts.theme];
-    const sky = ctx.createLinearGradient(0, 0, 0, 120);
     const night = this.opts.theme === 'foret' || this.opts.theme === 'falaise';
-    sky.addColorStop(0, night ? '#3a4a7a' : '#f0a860');
-    sky.addColorStop(1, night ? '#8a7aa8' : '#f8e0a8');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, 120);
-    // Silhouettes lointaines (falaise, acacias)
-    ctx.fillStyle = shade(pal.tree, -0.35);
-    ctx.beginPath();
-    ctx.moveTo(0, 96);
-    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, 88 + Math.sin(x * 0.05) * 6 + (x % 60 === 0 ? -8 : 0));
-    ctx.lineTo(W, 120);
-    ctx.lineTo(0, 120);
-    ctx.fill();
-    for (const tx of [30, 140, 290]) {
-      ctx.fillRect(tx, 70, 2, 22);
-      ctx.beginPath();
-      ctx.ellipse(tx + 1, 70, 14, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
+    bandGradient(
+      ctx,
+      0,
+      0,
+      W,
+      80,
+      night ? ['#283058', '#3a4478', '#58609a', '#7a78b0', '#a090c0'] : ['#f0a058', '#f4b468', '#f8c87c', '#fadc98', '#fcecc0'],
+    );
+    // Collines lointaines et acacias en silhouette
+    const far = shade(pal.tree, night ? -0.55 : -0.4);
+    for (let x = 0; x < W; x++) {
+      const h = 10 + Math.round(Math.sin(x * 0.045) * 5 + Math.sin(x * 0.11) * 2);
+      rect(ctx, x, 80 - h, 1, h, far);
     }
-    ctx.fillStyle = pal.grass;
-    ctx.fillRect(0, 100, W, 140);
-    ctx.fillStyle = shade(pal.grass, -0.08);
-    for (let y = 110; y < H; y += 12) ctx.fillRect(0, y, W, 2);
-    // Socles
-    for (const [x, y, rx] of [
-      [232, 98, 50],
-      [82, 166, 58],
+    for (const tx of [26, 112, 230]) {
+      rect(ctx, tx, 54, 2, 16, far);
+      rect(ctx, tx - 9, 52, 20, 3, far);
+      rect(ctx, tx - 6, 50, 14, 2, far);
+    }
+    // Sol en bandes
+    bandGradient(ctx, 0, 80, W, 64, [shade(pal.grass, 0.1), pal.grass, shade(pal.grass, -0.06), shade(pal.grass, -0.12)]);
+    for (const [cx, cy, rx, ry] of [
+      [186, 84, 44, 9],
+      [66, 140, 52, 10],
     ] as const) {
-      ctx.fillStyle = shade(pal.ground, -0.25);
-      ctx.beginPath();
-      ctx.ellipse(x, y, rx, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = pal.ground;
-      ctx.beginPath();
-      ctx.ellipse(x, y - 2, rx - 4, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
+      fillEllipse(ctx, cx, cy + 1, rx, ry, shade(pal.grass, -0.35));
+      fillEllipse(ctx, cx, cy, rx, ry, shade(pal.ground, -0.05));
+      fillEllipse(ctx, cx - 4, cy - 2, rx - 10, ry - 4, shade(pal.ground, 0.12));
+      // Touffes d'herbe sur le bord du socle
+      for (let i = -rx + 6; i < rx - 6; i += 9) {
+        stamp(ctx, ['g.g', 'gGg'], cx + i, cy + ry - 2, { g: shade(pal.grass, -0.15), G: shade(pal.grass, -0.3) });
+      }
     }
-    // Dresseur adverse et joueur visibles tant que leurs Jinémon ne sont pas envoyés.
     if (this.opts.trainer && !this.views.adversaire) {
-      ctx.drawImage(characterSprite(this.opts.trainer.look, 'bas', 0), 216, 34, 32, 40);
+      ctx.drawImage(characterSprite(this.opts.trainer.look, 'bas', 0), 170, 38, 32, 48);
     }
     if (!this.views.joueur) {
-      ctx.drawImage(characterSprite(PLAYER_LOOK, 'haut', 0), 66, 118, 32, 40);
+      ctx.drawImage(characterSprite(PLAYER_LOOK, 'haut', 0), 50, 94, 32, 48);
     }
   }
 
@@ -473,8 +470,8 @@ export class BattleScene implements Scene {
     const view = this.views[side];
     if (!view || !view.visible) return;
     const player = side === 'joueur';
-    let x = player ? 82 : 232;
-    let y = player ? 166 : 98;
+    let x = player ? 66 : 186;
+    let y = player ? 142 : 86;
     let alpha = 1;
     let white = 0;
     const a = this.animOf(side);
@@ -482,7 +479,7 @@ export class BattleScene implements Scene {
       const t = Math.min(1, a.t);
       switch (a.kind) {
         case 'entree':
-          x += (player ? -1 : 1) * (1 - t) * 140;
+          x += (player ? -1 : 1) * (1 - t) * 120;
           white = 1 - t;
           break;
         case 'sortie':
@@ -490,38 +487,27 @@ export class BattleScene implements Scene {
           alpha = 1 - t;
           break;
         case 'elan':
-          x += (player ? 1 : -1) * Math.sin(t * Math.PI) * 14;
+          x += (player ? 1 : -1) * Math.round(Math.sin(t * Math.PI) * 12);
           break;
         case 'touche':
-          if (Math.floor(t * 8) % 2 === 0) alpha = 0.25;
-          x += Math.sin(t * 40) * 2;
+          if (Math.floor(t * 8) % 2 === 0) alpha = 0;
           break;
         case 'ko':
-          y += t * 30;
+          y += Math.round(t * 28);
           alpha = 1 - t;
           break;
         case 'stat':
           break;
       }
     }
-    drawCreature(ctx, view.speciesId, x, y, player ? 84 : 72, { flip: player, alpha, white });
+    drawCreature(ctx, view.speciesId, Math.round(x), Math.round(y), player ? 72 : 64, { back: player, alpha, white });
     if (a?.kind === 'stat') {
       const t = Math.min(1, a.t);
-      ctx.fillStyle = a.up ? 'rgba(255,120,60,0.85)' : 'rgba(80,140,255,0.85)';
+      const color = a.up ? '#f87838' : '#4890f8';
       for (let i = 0; i < 4; i++) {
-        const ax = x - 24 + i * 16;
-        const ay = y - 20 - (a.up ? t * 30 : (1 - t) * 30) - (i % 2) * 8;
-        ctx.beginPath();
-        if (a.up) {
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(ax + 5, ay + 6);
-          ctx.lineTo(ax - 5, ay + 6);
-        } else {
-          ctx.moveTo(ax, ay + 6);
-          ctx.lineTo(ax + 5, ay);
-          ctx.lineTo(ax - 5, ay);
-        }
-        ctx.fill();
+        const ax = Math.round(x - 22 + i * 14);
+        const ay = Math.round(y - 20 - (a.up ? t * 28 : (1 - t) * 28) - (i % 2) * 8);
+        stamp(ctx, a.up ? ['..#..', '.###.', '#####'] : ['#####', '.###.', '..#..'], ax, ay, { '#': color });
       }
     }
   }
@@ -529,39 +515,31 @@ export class BattleScene implements Scene {
   private renderCapture(ctx: CanvasRenderingContext2D): void {
     const c = this.capture;
     if (!c) return;
-    const tx = 232;
-    const ty = 88;
+    const tx = 186;
+    const ty = 70;
     if (c.phase === 'lancer') {
       const t = Math.min(1, c.t / 0.5);
-      const x = 70 + (tx - 70) * t;
-      const y = 150 + (ty - 150) * t - Math.sin(t * Math.PI) * 60;
-      calabash(ctx, x, y, 6);
+      const x = 60 + (tx - 60) * t;
+      const y = 128 + (ty - 128) * t - Math.sin(t * Math.PI) * 50;
+      calabash(ctx, Math.round(x), Math.round(y), 2);
       return;
     }
     if (c.phase === 'absorber') {
       const t = Math.min(1, c.t / 0.35);
-      ctx.fillStyle = `rgba(255,240,180,${0.8 * (1 - t)})`;
-      ctx.beginPath();
-      ctx.arc(tx, ty - 10, 30 * (1 - t) + 6, 0, Math.PI * 2);
-      ctx.fill();
-      calabash(ctx, tx, ty, 6);
+      fillEllipse(ctx, tx, ty - 8, Math.round(26 * (1 - t)) + 4, Math.round(22 * (1 - t)) + 4, '#fff4c0');
+      calabash(ctx, tx, ty, 2);
       return;
     }
-    let angle = 0;
+    let dx = 0;
     if (c.phase === 'secousses') {
       const local = (c.t % 0.55) / 0.55;
-      angle = local < 0.5 ? Math.sin(local * Math.PI * 4) * 0.4 : 0;
+      dx = local < 0.5 ? Math.round(Math.sin(local * Math.PI * 4) * 2) : 0;
     }
-    ctx.save();
-    ctx.translate(tx, ty + 6);
-    ctx.rotate(angle);
-    calabash(ctx, 0, -6, 6);
-    ctx.restore();
+    calabash(ctx, tx + dx, ty + 8, 2);
     if (c.phase === 'resultat' && c.success) {
-      ctx.fillStyle = '#ffe066';
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2 + c.t * 3;
-        ctx.fillRect(tx + Math.cos(a) * 16 - 1, ty - 4 + Math.sin(a) * 10 - 1, 3, 3);
+        stamp(ctx, ['.#.', '###', '.#.'], Math.round(tx + Math.cos(a) * 16) - 1, Math.round(ty + 4 + Math.sin(a) * 10) - 1, { '#': '#ffe066' });
       }
     }
   }
@@ -569,38 +547,31 @@ export class BattleScene implements Scene {
   private renderInfo(ctx: CanvasRenderingContext2D): void {
     const foe = this.views.adversaire;
     if (foe && (foe.visible || this.capture)) {
-      box(ctx, 8, 10, 146, 40);
-      text(ctx, foe.name, 16, 16, { size: 10, bold: true });
-      text(ctx, `Niv.${foe.level}`, 146, 17, { size: 8, align: 'right' });
-      hpBar(ctx, 16, 34, 106, foe.shownHp / foe.maxHp);
-      if (foe.status) statusBadge(ctx, foe.status, 124, 31);
-      if (this.combat.kind === 'dresseur') this.partyDots(ctx, this.combat.foe, 18, 4);
-      else if (this.game.s.dex.caught.includes(foe.speciesId)) calabash(ctx, 140, 34, 3);
+      box(ctx, 4, 8, 118, 38);
+      text(ctx, foe.name, 12, 10, { shadow: PAL.shadow });
+      text(ctx, `N.${foe.level}`, 114, 10, { align: 'right' });
+      hpBar(ctx, 12, 26, 102, foe.shownHp / foe.maxHp);
+      if (foe.status) statusBadge(ctx, foe.status, 90, 32);
+      if (this.combat.kind === 'dresseur') this.partyDots(ctx, this.combat.foe, 14, 36);
+      else if (this.game.s.dex.caught.includes(foe.speciesId)) calabash(ctx, 16, 38, 1);
     }
     const me = this.views.joueur;
     if (me && me.visible) {
-      box(ctx, 166, 116, 148, 52);
-      text(ctx, me.name, 174, 122, { size: 10, bold: true });
-      text(ctx, `Niv.${me.level}`, 306, 123, { size: 8, align: 'right' });
-      hpBar(ctx, 174, 140, 132, me.shownHp / me.maxHp);
-      text(ctx, `${Math.ceil(me.shownHp)} / ${me.maxHp}`, 306, 146, { size: 8, align: 'right' });
-      if (me.status) statusBadge(ctx, me.status, 174, 146);
-      text(ctx, 'XP', 174, 157, { size: 6, bold: true, color: PAL.xp });
-      bar(ctx, 186, 159, 120, 2, this.xpShown, PAL.xp);
-      this.partyDots(ctx, this.combat.player, 172, 108);
+      box(ctx, 132, 92, 122, 48);
+      text(ctx, me.name, 140, 94, { shadow: PAL.shadow });
+      text(ctx, `N.${me.level}`, 246, 94, { align: 'right' });
+      hpBar(ctx, 140, 110, 106, me.shownHp / me.maxHp);
+      text(ctx, `${Math.ceil(me.shownHp)}/${me.maxHp}`, 246, 114, { align: 'right' });
+      if (me.status) statusBadge(ctx, me.status, 140, 117);
+      stamp(ctx, ['#.#.###', '.#..#.#', '#.#.###', '....#..'], 140, 129, { '#': PAL.xp });
+      bar(ctx, 150, 130, 96, 2, this.xpShown, PAL.xp);
     }
   }
 
   private partyDots(ctx: CanvasRenderingContext2D, team: { hp: number }[], x: number, y: number): void {
     team.forEach((j, i) => {
-      ctx.fillStyle = PAL.ink;
-      ctx.beginPath();
-      ctx.arc(x + i * 9, y + 3, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = j.hp > 0 ? '#d8a040' : '#6a5a4a';
-      ctx.beginPath();
-      ctx.arc(x + i * 9, y + 3, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      fillEllipse(ctx, x + i * 8, y, 3, 3, PAL.ink);
+      fillEllipse(ctx, x + i * 8, y, 2, 2, j.hp > 0 ? '#e8a838' : '#6a5a4a');
     });
   }
 
@@ -610,60 +581,41 @@ export class BattleScene implements Scene {
       return;
     }
     const menu = this.mode === 'menu';
-    box(ctx, 4, 178, menu ? 170 : 312, 58);
-    const rows = wrap(ctx, this.message, menu ? 148 : 288, 10);
+    box(ctx, 2, 144, menu ? 140 : 252, 46);
+    const rows = wrapText(this.message, menu ? 120 : 230);
     let remaining = Math.floor(this.shown);
     rows.slice(0, 3).forEach((row, i) => {
-      text(ctx, row.slice(0, Math.max(0, remaining)), 16, 188 + i * 14, { size: 10 });
+      text(ctx, row.slice(0, Math.max(0, remaining)), 12, 149 + i * 12, { shadow: PAL.shadow });
       remaining -= row.length + 1;
     });
     if (!menu) return;
-    box(ctx, 176, 178, 140, 58);
+    box(ctx, 142, 144, 112, 46);
     MAIN_MENU.forEach((label, i) => {
-      const x = 188 + (i % 2) * 64;
-      const y = 190 + Math.floor(i / 2) * 22;
+      const x = 152 + (i % 2) * 52;
+      const y = 152 + Math.floor(i / 2) * 15;
       const disabled = i === 3 && this.combat.kind === 'dresseur';
-      text(ctx, label, x + 8, y, { size: 10, bold: i === this.menuIndex, color: disabled ? PAL.grey : PAL.ink });
-      if (i === this.menuIndex) {
-        ctx.fillStyle = PAL.rust;
-        ctx.beginPath();
-        ctx.moveTo(x, y + 1);
-        ctx.lineTo(x + 5, y + 5);
-        ctx.lineTo(x, y + 9);
-        ctx.fill();
-      }
+      text(ctx, label, x + 7, y, { color: disabled ? PAL.grey : PAL.ink, shadow: disabled ? undefined : PAL.shadow });
+      if (i === this.menuIndex) cursor(ctx, x, y + 2);
     });
   }
 
   private renderMoves(ctx: CanvasRenderingContext2D): void {
     const moves = this.combat.playerActive.moves;
-    box(ctx, 4, 178, 216, 58);
+    box(ctx, 2, 144, 252, 46);
     moves.forEach((slot, i) => {
-      const x = 14 + (i % 2) * 102;
-      const y = 189 + Math.floor(i / 2) * 22;
+      const x = 12 + (i % 2) * 120;
+      const y = 152 + Math.floor(i / 2) * 15;
       const move = MOVES[slot.id];
-      const color = slot.pp <= 0 ? PAL.grey : PAL.ink;
-      text(ctx, move.name, x + 9, y, { size: 9, bold: i === this.moveIndex, color });
-      if (i === this.moveIndex) {
-        ctx.fillStyle = PAL.rust;
-        ctx.beginPath();
-        ctx.moveTo(x, y + 1);
-        ctx.lineTo(x + 5, y + 5);
-        ctx.lineTo(x, y + 9);
-        ctx.fill();
-      }
+      text(ctx, move.name, x + 7, y, { color: slot.pp <= 0 ? PAL.grey : PAL.ink, shadow: PAL.shadow });
+      if (i === this.moveIndex) cursor(ctx, x, y + 2);
     });
-    box(ctx, 222, 178, 94, 58);
     const slot = moves[this.moveIndex];
     if (!slot) return;
     const move = MOVES[slot.id];
-    const ratio = slot.pp / move.pp;
-    text(ctx, 'PP', 232, 187, { size: 9, bold: true, color: PAL.rust });
-    text(ctx, `${slot.pp} / ${move.pp}`, 306, 187, { size: 9, align: 'right', color: ratio > 0.25 ? PAL.ink : hpColor(0.1) });
-    typeBadge(ctx, move.type, 232, 202, 74);
-    text(ctx, move.power > 0 ? `Puiss. ${move.power}  Préc. ${move.accuracy}` : `Statut  Préc. ${move.accuracy}`, 269, 219, {
-      size: 7,
-      align: 'center',
-    });
+    box(ctx, 160, 112, 94, 31);
+    text(ctx, 'PP', 168, 114, { color: PAL.rust });
+    text(ctx, `${slot.pp}/${move.pp}`, 246, 114, { align: 'right', color: slot.pp / move.pp > 0.25 ? PAL.ink : PAL.hpRed });
+    typeBadge(ctx, move.type, 168, 127, 40);
+    text(ctx, move.power > 0 ? `P.${move.power}` : 'Statut', 246, 127, { align: 'right' });
   }
 }

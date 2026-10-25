@@ -37,7 +37,7 @@ export class TeamScene implements Scene {
       consulter: 'Choisissez un Jinémon.',
       combat: 'Quel Jinémon envoyer au combat ?',
       remplacement: 'Quel Jinémon envoyer au combat ?',
-      objet: `Sur quel Jinémon utiliser : ${opts.item ? getItem(opts.item).name : ''} ?`,
+      objet: `${opts.item ? getItem(opts.item).name : 'Objet'} : sur quel Jinémon ?`,
     }[mode];
     if (opts.combat && mode !== 'objet') this.index = opts.combat.playerIndex;
   }
@@ -98,7 +98,7 @@ export class TeamScene implements Scene {
           const a = this.swapFrom;
           [this.party[a], this.party[this.index]] = [this.party[this.index], this.party[a]];
           this.swapFrom = null;
-          this.hint = 'Ordre modifié. Le premier Jinémon part au combat.';
+          this.hint = 'Ordre modifié : le premier part au combat.';
           this.game.sfx('valider');
           return;
         }
@@ -149,36 +149,33 @@ export class TeamScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
-    text(ctx, 'ÉQUIPE', 10, 6, { size: 11, bold: true, color: PAL.cream, shadow: PAL.ink });
+    text(ctx, 'ÉQUIPE', 6, 2, { color: PAL.cream, shadow: PAL.ink });
     this.party.forEach((j, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const x = 6 + col * 156;
-      const y = 22 + row * 62;
+      const x = 3 + (i % 2) * 126;
+      const y = 15 + Math.floor(i / 2) * 50;
       const selected = i === this.index;
-      box(ctx, x, y, 152, 58, selected ? 'sombre' : 'papier');
-      const ink = selected ? PAL.cream : PAL.ink;
+      box(ctx, x, y, 124, 48, selected ? 'actif' : 'papier');
       if (this.swapFrom === i) {
-        ctx.strokeStyle = PAL.ochre;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x + 2, y + 2, 148, 54);
+        ctx.fillStyle = PAL.rust;
+        ctx.fillRect(x + 2, y + 2, 120, 1);
+        ctx.fillRect(x + 2, y + 45, 120, 1);
       }
-      drawCreature(ctx, j.speciesId, x + 22, y + 50, 40, { alpha: isFainted(j) ? 0.4 : 1 });
-      text(ctx, displayName(j), x + 44, y + 8, { size: 10, bold: true, color: ink });
-      text(ctx, `Niv.${j.level}`, x + 146, y + 9, { size: 8, align: 'right', color: ink });
-      hpBar(ctx, x + 44, y + 26, 102, j.hp / maxHp(j));
-      text(ctx, `${j.hp} / ${maxHp(j)}`, x + 146, y + 33, { size: 8, align: 'right', color: ink });
-      if (isFainted(j)) text(ctx, 'K.O.', x + 44, y + 42, { size: 8, bold: true, color: PAL.hpRed });
-      else if (j.status) statusBadge(ctx, j.status.kind, x + 44, y + 41);
+      drawCreature(ctx, j.speciesId, x + 18, y + 38, 32, { alpha: isFainted(j) ? 0.45 : 1 });
+      text(ctx, displayName(j), x + 34, y + 3, { shadow: PAL.shadow });
+      text(ctx, `N.${j.level}`, x + 118, y + 3, { align: 'right' });
+      hpBar(ctx, x + 34, y + 19, 84, j.hp / maxHp(j));
+      text(ctx, `${j.hp}/${maxHp(j)}`, x + 118, y + 23, { align: 'right' });
+      if (isFainted(j)) text(ctx, 'K.O.', x + 34, y + 32, { color: PAL.hpRed });
+      else if (j.status) statusBadge(ctx, j.status.kind, x + 34, y + 34);
       if (this.opts.combat && i === this.opts.combat.playerIndex && this.mode !== 'objet') {
-        text(ctx, 'AU COMBAT', x + 146, y + 44, { size: 7, bold: true, align: 'right', color: PAL.ochre });
+        text(ctx, 'EN JEU', x + 118, y + 34, { align: 'right', color: PAL.rust });
       }
     });
-    box(ctx, 6, 210, 308, 26);
-    text(ctx, this.hint, 16, 218, { size: 9 });
+    box(ctx, 2, 166, 252, 24);
+    text(ctx, this.hint, 10, 172, { shadow: PAL.shadow });
     if (this.submenu !== null) {
-      box(ctx, 214, 116, 100, 70);
-      menuList(ctx, SUBMENU, 224, 126, this.submenu, { lineHeight: 13, size: 9 });
+      box(ctx, 160, 92, 92, 60);
+      menuList(ctx, SUBMENU, 166, 98, this.submenu);
     }
   }
 }

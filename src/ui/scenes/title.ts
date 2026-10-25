@@ -1,7 +1,8 @@
 // Écran titre, saisie du nom et démarrage de la partie.
 import { newGameState } from '../../engine/gameState';
 import { hasSave, loadGame } from '../../engine/saveManager';
-import { PAL, box, menuList, text } from '../draw';
+import { PAL, bandGradient, box, fillEllipse, menuList, stamp, text } from '../draw';
+import { drawOutlinedText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
@@ -13,56 +14,53 @@ const SUGGESTIONS = ['Sékou', 'Aïssata', 'Moussa', 'Awa', 'Kofi', 'Mariam', 'O
 
 /** Paysage sahélien au coucher du soleil (titre et saisie du nom). */
 function sahelBackdrop(ctx: CanvasRenderingContext2D, time: number): void {
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#2a1a3a');
-  sky.addColorStop(0.45, '#c8502a');
-  sky.addColorStop(0.75, '#f0a050');
-  sky.addColorStop(1, '#f8d890');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#ffd870';
-  ctx.beginPath();
-  ctx.arc(W / 2, 150, 46, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,216,112,0.25)';
-  ctx.beginPath();
-  ctx.arc(W / 2, 150, 60 + Math.sin(time) * 2, 0, Math.PI * 2);
-  ctx.fill();
-  // Falaise et greniers
-  ctx.fillStyle = '#4a2418';
-  ctx.beginPath();
-  ctx.moveTo(0, 150);
-  ctx.lineTo(40, 140);
-  ctx.lineTo(70, 146);
-  ctx.lineTo(96, 132);
-  ctx.lineTo(120, 160);
-  ctx.lineTo(0, 175);
-  ctx.fill();
-  for (const [x, y] of [
-    [52, 150],
-    [66, 152],
-    [84, 146],
-  ]) {
-    ctx.fillRect(x, y, 8, 10);
-    ctx.beginPath();
-    ctx.moveTo(x - 2, y + 1);
-    ctx.lineTo(x + 4, y - 6);
-    ctx.lineTo(x + 10, y + 1);
-    ctx.fill();
+  bandGradient(ctx, 0, 0, W, 150, ['#2a1c40', '#4a2448', '#7a3048', '#b04838', '#d86a38', '#ee9448', '#f6b860', '#fad488']);
+  // Soleil couchant, avec bandes horizontales de brume.
+  fillEllipse(ctx, W / 2, 118, 34, 34, '#ffe08a');
+  fillEllipse(ctx, W / 2 - 4, 112, 26, 26, '#fff0b8');
+  for (let y = 100; y < 150; y += 6) {
+    ctx.fillStyle = '#f6b860';
+    ctx.fillRect(W / 2 - 40, y + Math.floor(time * 2) % 2, 80, 1);
   }
-  ctx.fillStyle = '#2a140c';
-  ctx.fillRect(0, 168, W, H - 168);
-  // Baobab et acacia
-  ctx.fillRect(238, 128, 12, 42);
-  ctx.fillRect(232, 124, 4, 10);
-  ctx.fillRect(250, 120, 4, 12);
-  ctx.beginPath();
-  ctx.ellipse(244, 120, 24, 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillRect(286, 146, 3, 24);
-  ctx.beginPath();
-  ctx.ellipse(288, 144, 20, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Falaise de Bandiagara et greniers dogon en silhouette
+  const cliff = '#3a1c18';
+  for (let x = 0; x < 120; x++) {
+    const h = 30 + Math.round(Math.sin(x * 0.07) * 6 + Math.sin(x * 0.23) * 2) - Math.max(0, x - 80);
+    ctx.fillStyle = cliff;
+    ctx.fillRect(x, 150 - h, 1, h);
+  }
+  for (const gx of [30, 44, 58]) {
+    stamp(ctx, ['...#...', '..###..', '.#####.', '#######', '.#####.', '.#####.', '.#####.', '.#####.'], gx, 104, { '#': '#2a1210' });
+  }
+  ctx.fillStyle = '#24100c';
+  ctx.fillRect(0, 148, W, H - 148);
+  // Baobab
+  stamp(
+    ctx,
+    [
+      '..##.......##.......##..',
+      '...##.....##.......##...',
+      '....##...##.#.....##....',
+      '.....##.##...#...##.....',
+      '......####....#.##......',
+      '.......####....###......',
+      '........#####.###.......',
+      '.........#######........',
+      '.........#######........',
+      '........########........',
+      '........#########.......',
+      '........#########.......',
+      '.......##########.......',
+      '.......###########......',
+      '......############......',
+      '......#############.....',
+    ],
+    194,
+    118,
+    { '#': '#24100c' },
+    1,
+  );
+  for (const [x, y] of [[194, 114], [212, 112], [232, 115], [204, 110], [222, 109]]) fillEllipse(ctx, x, y, 7, 3, '#24100c');
 }
 
 export class TitleScene implements Scene {
@@ -109,20 +107,15 @@ export class TitleScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     sahelBackdrop(ctx, this.game.time);
-    text(ctx, 'GINÉMON', W / 2 + 2, 30, { size: 40, bold: true, align: 'center', color: PAL.ink });
-    text(ctx, 'GINÉMON', W / 2, 28, { size: 40, bold: true, align: 'center', color: '#f0c040' });
-    text(ctx, 'Légendes du Sahel et d’ailleurs', W / 2, 74, { size: 10, align: 'center', color: PAL.cream, shadow: PAL.ink });
+    drawOutlinedText(ctx, 'GINÉMON', W / 2 + 2, 14, '#7a3010', PAL.ink, { align: 'center', scale: 3 });
+    drawOutlinedText(ctx, 'GINÉMON', W / 2, 12, '#f8c840', PAL.ink, { align: 'center', scale: 3 });
+    text(ctx, 'Légendes du Sahel et d’ailleurs', W / 2, 46, { align: 'center', color: PAL.cream, shadow: PAL.ink });
     [1, 4, 7].forEach((id, i) => {
-      const bob = Math.sin(this.game.time * 3 + i * 2) * 2;
-      drawCreature(ctx, id, 70 + i * 90, 160 + bob, 56);
+      const bob = Math.floor(this.game.time * 2 + i) % 2;
+      drawCreature(ctx, id, 52 + i * 76, 148 - bob, 64);
     });
-    box(ctx, 110, 176, 100, this.options.length * 15 + 14);
-    menuList(ctx, this.options, 120, 184, this.index, { lineHeight: 15 });
-    text(ctx, 'Flèches/ZQSD : bouger · Entrée : valider · Échap : menu · Maj : courir', W / 2, 226, {
-      size: 7,
-      align: 'center',
-      color: '#e8d4b0',
-    });
+    box(ctx, 78, 152, 100, this.options.length * 12 + 12);
+    menuList(ctx, this.options, 86, 157, this.index);
   }
 }
 
@@ -167,13 +160,14 @@ export class NameScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     sahelBackdrop(ctx, this.game.time);
-    box(ctx, 30, 40, 260, 120);
-    text(ctx, 'Comment t’appelles-tu, jeune Initié ?', W / 2, 52, { size: 11, bold: true, align: 'center' });
-    box(ctx, 70, 76, 180, 30, 'sombre');
+    box(ctx, 14, 36, 228, 92);
+    text(ctx, 'Comment t’appelles-tu, jeune Initié ?', W / 2, 42, { align: 'center', shadow: PAL.shadow });
+    box(ctx, 58, 58, 140, 26, 'sombre');
     const caret = Math.floor(this.game.time * 2) % 2 === 0 ? '_' : ' ';
-    text(ctx, this.name + caret, W / 2, 84, { size: 13, bold: true, align: 'center', color: PAL.cream });
-    text(ctx, 'Tape ton nom au clavier, ou ◄ ► pour une suggestion.', W / 2, 116, { size: 8, align: 'center' });
-    text(ctx, 'Entrée / A : valider', W / 2, 132, { size: 8, align: 'center', color: PAL.grey });
+    text(ctx, this.name + caret, W / 2, 62, { align: 'center', color: PAL.cream, scale: 1 });
+    text(ctx, 'Tape ton nom au clavier,', W / 2, 92, { align: 'center' });
+    text(ctx, 'ou ◄ ► pour une suggestion.', W / 2, 102, { align: 'center' });
+    text(ctx, 'Entrée / A : valider', W / 2, 114, { align: 'center', color: PAL.grey });
   }
 }
 

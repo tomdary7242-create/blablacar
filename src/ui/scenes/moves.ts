@@ -3,7 +3,8 @@
 import { getSpecies } from '../../data/ginedex';
 import { MOVES, type MoveId } from '../../data/moves';
 import { availableMoves, displayName, slot, type Jinemon } from '../../engine/creature';
-import { PAL, box, cursor, text, typeBadge, wrap } from '../draw';
+import { PAL, box, cursor, text, typeBadge } from '../draw';
+import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
@@ -18,13 +19,13 @@ export interface MoveEntry {
 export function drawMoveDetails(ctx: CanvasRenderingContext2D, id: MoveId, x: number, y: number, w: number, h: number, pp?: number): void {
   const move = MOVES[id];
   box(ctx, x, y, w, h);
-  text(ctx, move.name, x + 10, y + 8, { size: 10, bold: true });
-  typeBadge(ctx, move.type, x + 10, y + 22, 50);
+  text(ctx, move.name, x + 8, y + 3, { shadow: PAL.shadow });
+  typeBadge(ctx, move.type, x + 8, y + 16, 40);
   const power = move.power > 0 ? String(move.power) : '—';
-  text(ctx, `Puissance ${power}   Précision ${move.accuracy}   PP ${pp ?? move.pp}/${move.pp}`, x + 66, y + 23, { size: 8 });
-  wrap(ctx, move.description, w - 20, 8)
-    .slice(0, Math.floor((h - 40) / 10))
-    .forEach((row, i) => text(ctx, row, x + 10, y + 38 + i * 10, { size: 8 }));
+  text(ctx, `Puiss. ${power}  Préc. ${move.accuracy}  PP ${pp ?? move.pp}/${move.pp}`, x + 52, y + 15);
+  wrapText(move.description, w - 16)
+    .slice(0, Math.max(0, Math.floor((h - 34) / 10)))
+    .forEach((row, i) => text(ctx, row, x + 8, y + 28 + i * 10));
 }
 
 /** Liste d'attaques avec panneau de détails ; `onPick(null)` si annulation. */
@@ -39,7 +40,7 @@ export class MoveListScene implements Scene {
     private readonly onPick: (index: number | null) => void,
     private readonly levelOf?: (id: MoveId) => number | undefined,
   ) {
-    this.cursor = new ListCursor(entries.length, 8);
+    this.cursor = new ListCursor(entries.length, 7);
   }
 
   update(): void {
@@ -58,21 +59,21 @@ export class MoveListScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
-    text(ctx, this.title, 10, 6, { size: 10, bold: true, color: PAL.cream, shadow: PAL.ink });
-    box(ctx, 6, 20, 308, 128);
+    text(ctx, this.title, 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    box(ctx, 2, 15, 252, 100);
     for (const i of this.cursor.window()) {
       const e = this.entries[i];
-      const y = 30 + (i - this.cursor.scroll) * 14;
+      const y = 20 + (i - this.cursor.scroll) * 12;
       const move = MOVES[e.id];
       const level = this.levelOf?.(e.id);
-      if (level !== undefined) text(ctx, `Niv.${level}`, 26, y, { size: 8, color: PAL.grey });
-      text(ctx, move.name, 66, y, { size: 10, bold: i === this.cursor.index });
-      text(ctx, move.type, 220, y + 1, { size: 8, color: PAL.grey });
-      if (e.tag) text(ctx, e.tag, 304, y + 1, { size: 8, bold: true, align: 'right', color: PAL.rust });
-      if (i === this.cursor.index) cursor(ctx, 14, y + 1);
+      if (level !== undefined) text(ctx, `N.${level}`, 16, y, { color: PAL.grey });
+      text(ctx, move.name, 44, y, { shadow: PAL.shadow });
+      text(ctx, move.type, 196, y, { color: PAL.grey });
+      if (e.tag) text(ctx, e.tag, 246, y, { align: 'right', color: PAL.rust });
+      if (i === this.cursor.index) cursor(ctx, 8, y + 2);
     }
     const current = this.entries[this.cursor.index];
-    if (current) drawMoveDetails(ctx, current.id, 6, 152, 308, 84);
+    if (current) drawMoveDetails(ctx, current.id, 2, 117, 252, 73);
   }
 }
 
@@ -103,7 +104,7 @@ export class MovesScene implements Scene {
     const equipped = new Set(this.j.moves.map((m) => m.id));
     const candidates = availableMoves(this.j).filter((m) => !equipped.has(m));
     if (candidates.length === 0) {
-      this.message = 'Aucune autre attaque apprise pour le moment.';
+      this.message = 'Aucune autre attaque apprise.';
       this.game.sfx('erreur');
       return;
     }
@@ -117,7 +118,7 @@ export class MovesScene implements Scene {
         (picked) => {
           if (picked === null) return;
           this.j.moves[this.index] = slot(candidates[picked]);
-          this.message = `${displayName(this.j)} utilisera désormais ${MOVES[candidates[picked]].name}.`;
+          this.message = `Nouvelle attaque : ${MOVES[candidates[picked]].name}.`;
           this.game.save(true);
         },
         this.levelOf,
@@ -131,22 +132,21 @@ export class MovesScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
-    text(ctx, `ATTAQUES DE ${displayName(this.j).toUpperCase()}`, 10, 6, { size: 10, bold: true, color: PAL.cream, shadow: PAL.ink });
-    box(ctx, 6, 20, 308, 74);
+    text(ctx, `ATTAQUES DE ${displayName(this.j).toUpperCase()}`, 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    box(ctx, 2, 15, 252, 58);
     this.j.moves.forEach((m, i) => {
-      const y = 30 + i * 14;
-      text(ctx, MOVES[m.id].name, 26, y, { size: 10, bold: i === this.index });
-      text(ctx, `PP ${m.pp}/${MOVES[m.id].pp}`, 304, y + 1, { size: 8, align: 'right' });
-      if (i === this.index) cursor(ctx, 14, y + 1);
+      const y = 20 + i * 12;
+      text(ctx, MOVES[m.id].name, 18, y, { shadow: PAL.shadow });
+      text(ctx, `PP ${m.pp}/${MOVES[m.id].pp}`, 246, y, { align: 'right' });
+      if (i === this.index) cursor(ctx, 8, y + 2);
     });
     const slotSel = this.j.moves[this.index];
-    drawMoveDetails(ctx, slotSel.id, 6, 98, 308, 84, slotSel.pp);
-    box(ctx, 6, 186, 308, 50);
-    text(ctx, this.message, 16, 194, { size: 9 });
+    drawMoveDetails(ctx, slotSel.id, 2, 75, 252, 70, slotSel.pp);
+    box(ctx, 2, 147, 252, 43);
+    wrapText(this.message, 236)
+      .slice(0, 1)
+      .forEach((row) => text(ctx, row, 10, 152, { shadow: PAL.shadow }));
     const total = availableMoves(this.j).length;
-    text(ctx, `Bassin : ${total} attaque${total > 1 ? 's' : ''} apprise${total > 1 ? 's' : ''} sur ${getSpecies(this.j.speciesId).learnset.length}.`, 16, 210, {
-      size: 8,
-      color: PAL.grey,
-    });
+    text(ctx, `Bassin : ${total}/${getSpecies(this.j.speciesId).learnset.length} attaques apprises.`, 10, 168, { color: PAL.grey });
   }
 }

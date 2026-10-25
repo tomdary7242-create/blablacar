@@ -19,12 +19,14 @@ import { createJinemon, displayName } from '../../engine/creature';
 import { addItem, giveStarter, hasBadge, healParty } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { startTrainerBattle, startWildBattle } from '../battleFlow';
-import { box, text } from '../draw';
+import { box, PAL, text } from '../draw';
+import { textWidth } from '../font';
 import type { Game, World } from '../game';
 import type { Button } from '../input';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
-import { PLAYER_LOOK, THEMES, TILE, animateTile, characterSprite, drawCreature, itemBall, renderMap, tallGrass } from '../sprites';
+import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
+import { TILE, animateTile, grassOverlay, itemBall, renderZoneLayers, type ZoneLayers } from '../tiles';
 import { MenuScene } from './menu';
 import { ShopScene } from './shop';
 import { StarterScene } from './starter';
@@ -48,7 +50,7 @@ const DECOR_TEXT: Record<string, string> = {
 export class OverworldScene implements Scene, World {
   readonly opaque = true;
   zone!: Zone;
-  private mapCanvas!: HTMLCanvasElement;
+  private layers!: ZoneLayers;
   private x = 0;
   private y = 0;
   private dir: Dir = 'bas';
@@ -63,6 +65,16 @@ export class OverworldScene implements Scene, World {
     game.world = this;
     const p = game.s.position;
     this.loadZone(p.zone, p.x, p.y, p.dir);
+    this.prewarmParty();
+  }
+
+  /** Sculpte à l'avance les sprites de l'équipe (menus et combat). */
+  private prewarmParty(): void {
+    prewarmCreatures(this.game.s.party.flatMap((j): Array<[number, number, 'face' | 'dos']> => [
+      [j.speciesId, 72, 'dos'],
+      [j.speciesId, 32, 'face'],
+      [j.speciesId, 64, 'face'],
+    ]));
   }
 
   // ── Zone ───────────────────────────────────────────────────────────────
@@ -80,7 +92,7 @@ export class OverworldScene implements Scene, World {
   }
 
   private redrawMap(): void {
-    this.mapCanvas = renderMap(this.zone.map, this.zone.theme, (x, y) => (this.rockBroken(x, y) ? '.' : null));
+    this.layers = renderZoneLayers(this.zone, (x, y) => this.tile(x, y));
   }
 
   teleport(zone: ZoneId, x: number, y: number, dir: Dir): void {
@@ -211,6 +223,7 @@ export class OverworldScene implements Scene, World {
 
   resume(): void {
     this.game.input.consume();
+    this.prewarmParty();
   }
 
   // ── Interactions ───────────────────────────────────────────────────────
@@ -405,7 +418,7 @@ export class OverworldScene implements Scene, World {
 
     ctx.fillStyle = '#1a1208';
     ctx.fillRect(0, 0, W, H);
-    ctx.drawImage(this.mapCanvas, ox, oy);
+    ctx.drawImage(this.layers.base, ox, oy);
 
     // Tuiles animées visibles
     const time = this.game.time;
@@ -418,9 +431,14 @@ export class OverworldScene implements Scene, World {
       }
     }
 
-    // Entités triées par profondeur
+    // Entités triées par profondeur ; les personnages (16×24) dépassent de 8 px au-dessus de leur case.
     type Drawable = { y: number; draw: () => void };
     const drawables: Drawable[] = [];
+    const shadow = (x: number, y: number) => {
+      ctx.fillStyle = 'rgba(20,12,4,0.28)';
+      ctx.fillRect(x + 4, y + 14, 8, 2);
+      ctx.fillRect(x + 3, y + 15, 10, 1);
+    };
     for (const npc of this.zone.npcs) {
       if (!this.npcVisible(npc)) continue;
       const nx = npc.x * TILE + ox;
@@ -429,14 +447,12 @@ export class OverworldScene implements Scene, World {
         y: npc.y * TILE,
         draw: () => {
           if (npc.look.kind === 'personne') {
-            ctx.drawImage(characterSprite(npc.look.look, this.npcDirs.get(npc.id) ?? npc.dir, 0), nx, ny - 5);
+            shadow(nx, ny);
+            ctx.drawImage(characterSprite(npc.look.look, this.npcDirs.get(npc.id) ?? npc.dir, 0), nx, ny - 8);
           } else if (npc.look.kind === 'creature') {
-            const bob = Math.sin(time * 2.5) * 1.5;
-            ctx.fillStyle = 'rgba(0,0,0,0.25)';
-            ctx.beginPath();
-            ctx.ellipse(nx + 8, ny + 14, 9, 2.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-            drawCreature(ctx, npc.look.species, nx + 8, ny + 15 + bob, 34);
+            const bob = Math.floor(time * 2) % 2;
+            shadow(nx, ny);
+            drawCreature(ctx, npc.look.species, nx + 8, ny + 15 - bob, 32);
           } else {
             itemBall(ctx, nx, ny, time);
           }
@@ -448,21 +464,24 @@ export class OverworldScene implements Scene, World {
     drawables.push({
       y: py,
       draw: () => {
-        ctx.drawImage(characterSprite(PLAYER_LOOK, this.dir, frame), Math.round(px + ox), Math.round(py + oy) - 5);
-        if (!this.moving && this.tile(this.x, this.y) === GRASS_TILE) {
-          tallGrass(ctx, Math.round(px + ox), Math.round(py + oy), THEMES[this.zone.theme], true);
-        }
+        const sx = Math.round(px + ox);
+        const sy = Math.round(py + oy);
+        shadow(sx, sy);
+        ctx.drawImage(characterSprite(PLAYER_LOOK, this.dir, frame), sx, sy - 8);
+        if (!this.moving && this.tile(this.x, this.y) === GRASS_TILE) grassOverlay(ctx, sx, sy, this.zone.theme);
       },
     });
     drawables.sort((a, b) => a.y - b.y).forEach((d) => d.draw());
+    ctx.drawImage(this.layers.over, ox, oy);
 
     // Nom de la zone
     if (this.banner > 0) {
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, this.banner * 1.5);
-      box(ctx, 6, 6, 150, 22);
-      text(ctx, this.zone.name, 81, 11, { size: 10, bold: true, align: 'center' });
-      ctx.restore();
+      const w = textWidth(this.zone.name) + 24;
+      // Glisse depuis le haut, reste affiché, puis remonte.
+      const t = Math.min(2.5 - this.banner, this.banner);
+      const slide = t < 0.3 ? -24 + (t / 0.3) * 24 : 0;
+      box(ctx, 4, 4 + Math.round(slide), w, 20);
+      text(ctx, this.zone.name, 4 + w / 2, 8 + Math.round(slide), { align: 'center', shadow: PAL.shadow });
     }
   }
 }

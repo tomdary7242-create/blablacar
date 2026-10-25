@@ -1,10 +1,11 @@
 // Cérémonie du choix du premier Jinémon, parmi trois Calebasses Sacrées.
 import { getSpecies } from '../../data/ginedex';
 import { markSeen } from '../../engine/gameState';
-import { PAL, box, calabash, text, typeBadge, wrap } from '../draw';
+import { PAL, bandGradient, box, calabash, cursor, fillEllipse, text, typeBadge } from '../draw';
+import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
-import { H, W } from '../screen';
+import { W } from '../screen';
 import { drawCreature } from '../sprites';
 
 const STARTERS = [1, 4, 7];
@@ -45,41 +46,43 @@ export class StarterScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#3a2414');
-    g.addColorStop(1, '#8a5a32');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    // Natte tressée
+    // Intérieur de la case de l'Ancien : murs de banco et natte tressée.
+    bandGradient(ctx, 0, 0, W, 124, ['#3a2214', '#4a2c18', '#5a3620', '#6a4028']);
+    for (let x = 0; x < W; x += 24) {
+      ctx.fillStyle = '#2c180c';
+      ctx.fillRect(x, 0, 2, 70);
+    }
     ctx.fillStyle = '#c8a050';
-    ctx.fillRect(20, 112, 280, 40);
-    ctx.fillStyle = '#a87a38';
-    for (let x = 20; x < 300; x += 8) ctx.fillRect(x, 112, 2, 40);
-    text(ctx, 'Choisis ton premier compagnon', W / 2, 12, { size: 12, bold: true, align: 'center', color: PAL.cream, shadow: PAL.ink });
+    ctx.fillRect(8, 94, W - 16, 26);
+    for (let x = 8; x < W - 8; x += 4) {
+      ctx.fillStyle = (x / 4) % 2 ? '#a87a38' : '#d8b468';
+      ctx.fillRect(x, 94, 2, 26);
+    }
+    ctx.fillStyle = '#7a5428';
+    ctx.fillRect(8, 120, W - 16, 2);
+    text(ctx, 'Choisis ton premier compagnon', W / 2, 4, { align: 'center', color: PAL.cream, shadow: PAL.ink });
 
     STARTERS.forEach((id, i) => {
-      const x = 70 + i * 90;
+      const x = 64 + i * 64;
       const selected = i === this.index;
-      calabash(ctx, x, 134, selected ? 13 : 11, ['#7ac84a', '#5ab0d8', '#f08a3a'][i]);
+      calabash(ctx, x, 110, selected ? 3 : 2, ['#7ac84a', '#5ab0d8', '#f08a3a'][i]);
       if (selected) {
-        const bob = Math.sin(this.game.time * 4) * 2;
-        ctx.fillStyle = 'rgba(255,240,180,0.25)';
-        ctx.beginPath();
-        ctx.arc(x, 82, 34, 0, Math.PI * 2);
-        ctx.fill();
-        drawCreature(ctx, id, x, 108 + bob, 76);
+        const bob = Math.floor(this.game.time * 3) % 2;
+        fillEllipse(ctx, x, 60, 30, 28, '#5a3a22');
+        drawCreature(ctx, id, x, 90 - bob, 64);
+        cursor(ctx, x - 22, 106);
       } else {
-        drawCreature(ctx, id, x, 104, 44, { silhouette: true, alpha: 0.6 });
+        drawCreature(ctx, id, x, 90, 32, { silhouette: true, alpha: 0.75 });
       }
     });
 
     const species = getSpecies(STARTERS[this.index]);
-    box(ctx, 6, 160, 308, 76);
-    text(ctx, species.name, 16, 168, { size: 12, bold: true });
-    typeBadge(ctx, species.types[0], 260, 170, 46);
-    text(ctx, species.category, 16, 184, { size: 8, color: PAL.grey });
-    wrap(ctx, species.description, 288, 9)
+    box(ctx, 2, 124, 252, 66);
+    text(ctx, species.name, 10, 128, { shadow: PAL.shadow });
+    typeBadge(ctx, species.types[0], 206, 129, 40);
+    text(ctx, species.category, 10, 139, { color: PAL.grey });
+    wrapText(species.description, 236)
       .slice(0, 3)
-      .forEach((row, i) => text(ctx, row, 16, 197 + i * 12, { size: 9 }));
+      .forEach((row, i) => text(ctx, row, 10, 151 + i * 11));
   }
 }

@@ -3,6 +3,7 @@ import { SPECIES } from '../../data/ginedex';
 import { displayName } from '../../engine/creature';
 import { formatPlayTime } from '../../engine/gameState';
 import { PAL, box, text } from '../draw';
+import { drawOutlinedText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
@@ -60,34 +61,35 @@ export class CreditsScene implements Scene {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#141a2e';
     ctx.fillRect(0, 0, W, H);
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 50; i++) {
       const x = (i * 97) % W;
-      const y = (i * 53) % 140;
-      ctx.fillStyle = `rgba(255,248,232,${0.3 + ((i * 7) % 10) / 15})`;
+      const y = (i * 53) % 120;
+      ctx.fillStyle = (i + Math.floor(this.t * 2)) % 5 === 0 ? '#ffffff' : '#8a90b0';
       ctx.fillRect(x, y, 1, 1);
     }
     const s = this.game.s;
     if (this.phase === 'pantheon') {
-      text(ctx, 'PANTHÉON DES LÉGENDES', W / 2, 14, { size: 14, bold: true, align: 'center', color: '#f0c040', shadow: PAL.ink });
-      text(ctx, `${s.playerName}, Maître des Légendes`, W / 2, 36, { size: 10, align: 'center', color: PAL.cream });
+      drawOutlinedText(ctx, 'PANTHÉON DES LÉGENDES', W / 2, 6, '#f0c040', PAL.ink, { align: 'center' });
+      text(ctx, `${s.playerName}, Maître des Légendes`, W / 2, 20, { align: 'center', color: PAL.cream });
       s.party.forEach((j, i) => {
-        const x = W / 2 + (i - (s.party.length - 1) / 2) * 51;
-        const bob = Math.sin(this.t * 3 + i) * 2;
-        drawCreature(ctx, j.speciesId, x, 118 + bob, 56);
-        text(ctx, displayName(j), x, 124, { size: 7, align: 'center', color: PAL.cream });
-        text(ctx, `Niv.${j.level}`, x, 134, { size: 7, align: 'center', color: '#c8b8a0' });
+        const x = Math.round(W / 2 + (i - (s.party.length - 1) / 2) * 42);
+        const bob = Math.floor(this.t * 2 + i) % 2;
+        drawCreature(ctx, j.speciesId, x, 84 - bob, 32);
+        text(ctx, displayName(j).slice(0, 8), x, 88, { align: 'center', color: PAL.cream });
+        text(ctx, `N.${j.level}`, x, 98, { align: 'center', color: '#c8b8a0' });
       });
-      box(ctx, 40, 156, 240, 60, 'sombre');
-      text(ctx, `Temps de jeu : ${formatPlayTime(s.playTimeMs)}`, W / 2, 166, { size: 9, align: 'center', color: PAL.cream });
-      text(ctx, `Ginédex : ${s.dex.caught.length} / ${SPECIES.length} capturés`, W / 2, 180, { size: 9, align: 'center', color: PAL.cream });
-      text(ctx, `Insignes : ${s.badges.length} / 3`, W / 2, 194, { size: 9, align: 'center', color: PAL.cream });
-      if (Math.floor(this.t * 2) % 2 === 0) text(ctx, 'Appuyez sur A', W / 2, 224, { size: 8, align: 'center', color: '#c8b8a0' });
+      box(ctx, 28, 118, 200, 50, 'sombre');
+      text(ctx, `Temps de jeu : ${formatPlayTime(s.playTimeMs)}`, W / 2, 122, { align: 'center', color: PAL.cream });
+      text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length} capturés`, W / 2, 134, { align: 'center', color: PAL.cream });
+      text(ctx, `Insignes : ${s.badges.length}/3`, W / 2, 146, { align: 'center', color: PAL.cream });
+      if (Math.floor(this.t * 2) % 2 === 0) text(ctx, 'Appuyez sur A', W / 2, 176, { align: 'center', color: '#c8b8a0' });
       return;
     }
     CREDITS.forEach((line, i) => {
-      const y = 240 + i * 16 - this.t * 24;
-      if (y < -16 || y > H) return;
-      text(ctx, line, W / 2, y, { size: i === 0 ? 14 : 10, bold: i === 0, align: 'center', color: i === 0 ? '#f0c040' : PAL.cream });
+      const y = Math.round(H + i * 13 - this.t * 20);
+      if (y < -12 || y > H) return;
+      if (i === 0) drawOutlinedText(ctx, line, W / 2, y, '#f0c040', PAL.ink, { align: 'center' });
+      else text(ctx, line, W / 2, y, { align: 'center', color: PAL.cream });
     });
   }
 }

@@ -1,9 +1,10 @@
 // Boîte de dialogue avec texte progressif, pagination et choix éventuels.
-import { box, continueMarker, measure, menuList, text, wrap } from '../draw';
+import { box, continueMarker, menuList, PAL, text } from '../draw';
+import { textWidth, wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
 
-const BOX = { x: 4, y: 178, w: 312, h: 58 };
+const BOX = { x: 2, y: 144, w: 252, h: 46 };
 const LINES_PER_PAGE = 3;
 
 export interface DialogOptions {
@@ -14,7 +15,7 @@ export interface DialogOptions {
 }
 
 export class DialogScene implements Scene {
-  private pages: string[][] | null = null;
+  private readonly pages: string[][];
   private page = 0;
   private shown = 0;
   private choiceIndex = 0;
@@ -22,26 +23,23 @@ export class DialogScene implements Scene {
 
   constructor(
     private readonly game: Game,
-    private readonly lines: string[],
+    lines: string[],
     private readonly opts: DialogOptions = {},
-  ) {}
-
-  private layout(ctx: CanvasRenderingContext2D): string[][] {
+  ) {
     const pages: string[][] = [];
-    for (const line of this.lines) {
-      const rows = wrap(ctx, line, BOX.w - 24, 10);
+    for (const line of lines) {
+      const rows = wrapText(line, BOX.w - 22);
       for (let i = 0; i < rows.length; i += LINES_PER_PAGE) pages.push(rows.slice(i, i + LINES_PER_PAGE));
     }
-    return pages.length ? pages : [['']];
+    this.pages = pages.length ? pages : [['']];
   }
 
   private get pageLength(): number {
-    return this.pages ? this.pages[this.page].join(' ').length : 0;
+    return this.pages[this.page].join(' ').length;
   }
 
   update(dt: number): void {
     const input = this.game.input;
-    if (!this.pages) return;
     if (this.choosing) {
       const choices = this.opts.choices!;
       if (input.pressed('up')) {
@@ -61,19 +59,16 @@ export class DialogScene implements Scene {
     }
     this.shown = Math.min(this.pageLength, this.shown + dt * this.game.textSpeed);
     const complete = this.shown >= this.pageLength;
+    const last = this.page === this.pages.length - 1;
     if (input.pressed('a') || input.pressed('b')) {
-      if (!complete) {
-        this.shown = this.pageLength;
-      } else if (this.page < this.pages.length - 1) {
+      if (!complete) this.shown = this.pageLength;
+      else if (!last) {
         this.page += 1;
         this.shown = 0;
         this.game.sfx('curseur');
-      } else if (this.opts.choices?.length) {
-        this.choosing = true;
-      } else {
-        this.close(-1);
-      }
-    } else if (complete && this.page === this.pages.length - 1 && this.opts.choices?.length) {
+      } else if (this.opts.choices?.length) this.choosing = true;
+      else this.close(-1);
+    } else if (complete && last && this.opts.choices?.length) {
       this.choosing = true;
     }
   }
@@ -86,26 +81,23 @@ export class DialogScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    if (!this.pages) this.pages = this.layout(ctx);
     box(ctx, BOX.x, BOX.y, BOX.w, BOX.h);
     let remaining = Math.floor(this.shown);
     this.pages[this.page].forEach((row, i) => {
-      const visible = row.slice(0, Math.max(0, remaining));
+      text(ctx, row.slice(0, Math.max(0, remaining)), BOX.x + 10, BOX.y + 5 + i * 12, { shadow: PAL.shadow });
       remaining -= row.length + 1;
-      text(ctx, visible, BOX.x + 12, BOX.y + 9 + i * 14, { size: 10 });
     });
     const complete = this.shown >= this.pageLength;
-    if (complete && !this.choosing && !(this.opts.choices && this.page === this.pages.length - 1)) {
-      continueMarker(ctx, BOX.x + BOX.w - 16, BOX.y + BOX.h - 11, this.game.time);
-    }
+    const last = this.page === this.pages.length - 1;
+    if (complete && !this.choosing && !(this.opts.choices && last)) continueMarker(ctx, BOX.x + BOX.w - 14, BOX.y + BOX.h - 10, this.game.time);
     if (this.choosing && this.opts.choices) {
       const choices = this.opts.choices;
-      const w = Math.max(...choices.map((c) => measure(ctx, c, 10, true))) + 30;
-      const h = choices.length * 14 + 14;
+      const w = Math.max(...choices.map((c) => textWidth(c))) + 26;
+      const h = choices.length * 12 + 12;
       const x = BOX.x + BOX.w - w;
-      const y = BOX.y - h - 2;
+      const y = BOX.y - h - 1;
       box(ctx, x, y, w, h);
-      menuList(ctx, choices, x + 8, y + 8, this.choiceIndex);
+      menuList(ctx, choices, x + 8, y + 5, this.choiceIndex);
     }
   }
 }

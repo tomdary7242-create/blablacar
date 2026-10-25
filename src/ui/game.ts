@@ -50,9 +50,9 @@ export class Game {
       ctx.save();
       ctx.globalAlpha = Math.min(1, this.toastTimer * 2);
       // En bas à gauche : la zone la moins utilisée par les menus.
-      const w = 132;
-      box(ctx, 4, H - 24, w, 20, 'sombre');
-      text(ctx, this.toastText, 4 + w / 2, H - 19, { size: 8, color: '#fff8e8', align: 'center' });
+      const w = 116;
+      box(ctx, 2, H - 21, w, 19, 'sombre');
+      text(ctx, this.toastText, 2 + w / 2, H - 18, { color: '#fff8e8', align: 'center' });
       ctx.restore();
     }
   }

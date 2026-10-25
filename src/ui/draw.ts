@@ -1,238 +1,231 @@
-// Primitives de dessin de l'interface : textes, cadres, barres, badges.
-// Palette inspirée du bogolan (toile de boue) : ocre, rouille, brun, crème, indigo.
+// Primitives de dessin pixel art de l'interface : cadres, barres, badges, icônes.
+// Tout est dessiné au pixel près dans le tampon basse résolution (aucun anticrénelage).
 import { STATUS_LABELS, type StatusKind } from '../data/moves';
 import { TYPE_COLORS, type ElementType } from '../data/types';
+import { drawText, type TextOpts } from './font';
 
 export const PAL = {
-  ink: '#2a1a10',
-  paper: '#f6ecd6',
-  paperDark: '#e2cfa6',
-  ochre: '#c8892a',
-  rust: '#a8441e',
-  indigo: '#26365e',
+  ink: '#28180e',
+  paper: '#f8f0dc',
+  paperDark: '#e0cca0',
+  ochre: '#d0902c',
+  rust: '#b04a20',
+  indigo: '#28407a',
   night: '#141a2e',
   cream: '#fff8e8',
   grey: '#8a7a68',
-  hpGreen: '#4cb84c',
-  hpYellow: '#e8c030',
-  hpRed: '#d83a2a',
-  xp: '#3a8ae8',
+  shadow: '#d8c8a8',
+  hpGreen: '#48c048',
+  hpYellow: '#f0c028',
+  hpRed: '#e03828',
+  xp: '#3890f0',
 };
 
-const FAMILY = '"Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif';
-
-export function font(size: number, bold = false): string {
-  return `${bold ? 'bold ' : ''}${size}px ${FAMILY}`;
+/** Éclaircit (amt > 0) ou assombrit (amt < 0) une couleur hexadécimale. */
+export function shade(hex: string, amt: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(amt > 0 ? v + (255 - v) * amt : v * (1 + amt))));
+  const r = ch((n >> 16) & 255);
+  const g = ch((n >> 8) & 255);
+  const b = ch(n & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-export interface TextOptions {
-  size?: number;
-  color?: string;
-  align?: CanvasTextAlign;
-  bold?: boolean;
-  shadow?: string;
+export function rect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string): void {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-export function text(ctx: CanvasRenderingContext2D, str: string, x: number, y: number, opts: TextOptions = {}): void {
-  ctx.font = font(opts.size ?? 10, opts.bold);
-  ctx.textAlign = opts.align ?? 'left';
-  ctx.textBaseline = 'top';
-  if (opts.shadow) {
-    ctx.fillStyle = opts.shadow;
-    ctx.fillText(str, x + 1, y + 1);
-  }
-  ctx.fillStyle = opts.color ?? PAL.ink;
-  ctx.fillText(str, x, y);
+/** Texte en police pixel (raccourci). */
+export function text(
+  ctx: CanvasRenderingContext2D,
+  str: string,
+  x: number,
+  y: number,
+  opts: TextOpts & { color?: string } = {},
+): void {
+  drawText(ctx, str, x, y, opts.color ?? PAL.ink, opts);
 }
 
-export function measure(ctx: CanvasRenderingContext2D, str: string, size = 10, bold = false): number {
-  ctx.font = font(size, bold);
-  return ctx.measureText(str).width;
-}
-
-/** Découpe un texte en lignes tenant dans `maxWidth`. */
-export function wrap(ctx: CanvasRenderingContext2D, str: string, maxWidth: number, size = 10): string[] {
-  ctx.font = font(size);
-  const lines: string[] = [];
-  for (const paragraph of str.split('\n')) {
-    let line = '';
-    for (const word of paragraph.split(' ')) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (ctx.measureText(candidate).width > maxWidth && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = candidate;
+/** Dessine une petite image définie par des lignes de caractères et une palette ('.' = transparent). */
+export function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number, pal: Record<string, string>, scale = 1): void {
+  rows.forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) {
+      const c = pal[row[i]];
+      if (c) {
+        ctx.fillStyle = c;
+        ctx.fillRect(Math.round(x) + i * scale, Math.round(y) + j * scale, scale, scale);
       }
     }
-    lines.push(line);
+  });
+}
+
+/** Ellipse pleine au pixel près. */
+export function fillEllipse(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string): void {
+  ctx.fillStyle = color;
+  for (let y = -ry; y <= ry; y++) {
+    const half = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
+    ctx.fillRect(Math.round(cx - half), Math.round(cy + y), half * 2 + 1, 1);
   }
-  return lines;
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-/** Cadre décoré façon bogolan. */
+/** Cadre de fenêtre façon bogolan : bord sombre, liseré clair, filet ocre et losanges aux coins. */
 export function box(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   w: number,
   h: number,
-  style: 'papier' | 'sombre' = 'papier',
+  style: 'papier' | 'sombre' | 'actif' = 'papier',
 ): void {
-  const dark = style === 'sombre';
-  roundRect(ctx, x, y, w, h, 4);
-  ctx.fillStyle = dark ? '#2a2018' : PAL.paper;
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = PAL.ink;
-  ctx.stroke();
-  roundRect(ctx, x + 3, y + 3, w - 6, h - 6, 2);
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = dark ? PAL.ochre : PAL.paperDark;
-  ctx.stroke();
-  // Petits losanges aux coins.
-  ctx.fillStyle = PAL.rust;
+  const fill = style === 'sombre' ? '#3a2818' : style === 'actif' ? '#fff4c8' : PAL.paper;
+  const ring = style === 'sombre' ? '#8a6038' : '#ffffff';
+  const inner = style === 'sombre' ? PAL.ochre : PAL.ochre;
+  // Bord extérieur aux coins arrondis
+  rect(ctx, x + 2, y, w - 4, 1, PAL.ink);
+  rect(ctx, x + 2, y + h - 1, w - 4, 1, PAL.ink);
+  rect(ctx, x, y + 2, 1, h - 4, PAL.ink);
+  rect(ctx, x + w - 1, y + 2, 1, h - 4, PAL.ink);
+  rect(ctx, x + 1, y + 1, 1, 1, PAL.ink);
+  rect(ctx, x + w - 2, y + 1, 1, 1, PAL.ink);
+  rect(ctx, x + 1, y + h - 2, 1, 1, PAL.ink);
+  rect(ctx, x + w - 2, y + h - 2, 1, 1, PAL.ink);
+  // Liseré clair puis filet ocre
+  rect(ctx, x + 2, y + 1, w - 4, 1, ring);
+  rect(ctx, x + 1, y + 2, w - 2, h - 4, ring);
+  rect(ctx, x + 2, y + h - 2, w - 4, 1, ring);
+  rect(ctx, x + 2, y + 2, w - 4, h - 4, inner);
+  rect(ctx, x + 3, y + 3, w - 6, h - 6, fill);
+  // Ombre intérieure légère
+  rect(ctx, x + 3, y + h - 4, w - 6, 1, style === 'sombre' ? '#2a1c10' : PAL.shadow);
+  // Losanges
   for (const [cx, cy] of [
-    [x + 4, y + 4],
-    [x + w - 4, y + 4],
-    [x + 4, y + h - 4],
+    [x + 3, y + 3],
+    [x + w - 4, y + 3],
+    [x + 3, y + h - 4],
     [x + w - 4, y + h - 4],
   ]) {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - 2);
-    ctx.lineTo(cx + 2, cy);
-    ctx.lineTo(cx, cy + 2);
-    ctx.lineTo(cx - 2, cy);
-    ctx.fill();
+    rect(ctx, cx, cy - 1, 1, 3, PAL.rust);
+    rect(ctx, cx - 1, cy, 3, 1, PAL.rust);
   }
-}
-
-export function bar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number, color: string): void {
-  ctx.fillStyle = PAL.ink;
-  ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
-  ctx.fillStyle = '#5a4a3a';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, Math.round(w * Math.max(0, Math.min(1, ratio))), h);
 }
 
 export function hpColor(ratio: number): string {
   return ratio > 0.5 ? PAL.hpGreen : ratio > 0.2 ? PAL.hpYellow : PAL.hpRed;
 }
 
-export function hpBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number): void {
-  text(ctx, 'PV', x, y - 2, { size: 7, bold: true, color: PAL.rust });
-  bar(ctx, x + 14, y, w - 14, 4, ratio, hpColor(ratio));
+/** Barre de progression avec reflet. */
+export function bar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number, color: string): void {
+  rect(ctx, x - 1, y - 1, w + 2, h + 2, PAL.ink);
+  rect(ctx, x, y, w, h, '#4a4038');
+  const fill = Math.round(w * Math.max(0, Math.min(1, ratio)));
+  if (fill > 0) {
+    rect(ctx, x, y, fill, h, color);
+    rect(ctx, x, y, fill, 1, shade(color, 0.45));
+    if (h > 2) rect(ctx, x, y + h - 1, fill, 1, shade(color, -0.25));
+  }
 }
 
-export function typeBadge(ctx: CanvasRenderingContext2D, type: ElementType, x: number, y: number, w = 44): void {
-  roundRect(ctx, x, y, w, 11, 3);
-  ctx.fillStyle = TYPE_COLORS[type];
-  ctx.fill();
-  ctx.strokeStyle = PAL.ink;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  text(ctx, type.toUpperCase(), x + w / 2, y + 1.5, { size: 7, bold: true, color: '#fff', align: 'center', shadow: 'rgba(0,0,0,0.45)' });
+/** Barre de PV façon console : étiquette « PV » sur fond sombre puis jauge. */
+export function hpBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number): void {
+  rect(ctx, x, y - 1, 15, 5, PAL.ink);
+  stamp(ctx, ['###.#.#', '#.#.#.#', '###.#.#', '#...#.#', '#....#.'], x + 4, y - 1, { '#': PAL.ochre });
+  bar(ctx, x + 16, y, w - 16, 3, ratio, hpColor(ratio));
+}
+
+export function typeBadge(ctx: CanvasRenderingContext2D, type: ElementType, x: number, y: number, w = 40): void {
+  const c = TYPE_COLORS[type];
+  rect(ctx, x + 1, y, w - 2, 11, shade(c, -0.55));
+  rect(ctx, x, y + 1, w, 9, shade(c, -0.55));
+  rect(ctx, x + 1, y + 1, w - 2, 9, c);
+  rect(ctx, x + 1, y + 1, w - 2, 1, shade(c, 0.35));
+  rect(ctx, x + 1, y + 9, w - 2, 1, shade(c, -0.25));
+  text(ctx, type.toUpperCase(), x + w / 2, y - 1, { color: '#ffffff', align: 'center', shadow: shade(c, -0.6) });
 }
 
 const STATUS_COLORS: Record<StatusKind, string> = {
-  sommeil: '#8a8aa8',
-  poison: '#9a4ab8',
-  paralysie: '#d8b02a',
-  confusion: '#e85a8f',
+  sommeil: '#8888a8',
+  poison: '#a048c0',
+  paralysie: '#d8a820',
+  confusion: '#e05890',
 };
 
 export function statusBadge(ctx: CanvasRenderingContext2D, status: StatusKind, x: number, y: number): void {
-  roundRect(ctx, x, y, 24, 10, 2);
-  ctx.fillStyle = STATUS_COLORS[status];
-  ctx.fill();
-  text(ctx, STATUS_LABELS[status], x + 12, y + 1, { size: 7, bold: true, color: '#fff', align: 'center' });
+  const c = STATUS_COLORS[status];
+  rect(ctx, x + 1, y, 22, 10, PAL.ink);
+  rect(ctx, x, y + 1, 24, 8, PAL.ink);
+  rect(ctx, x + 1, y + 1, 22, 8, c);
+  text(ctx, STATUS_LABELS[status], x + 12, y - 1, { color: '#ffffff', align: 'center', shadow: shade(c, -0.5) });
 }
 
-/** Curseur triangulaire. */
+/** Curseur en forme de flèche. */
 export function cursor(ctx: CanvasRenderingContext2D, x: number, y: number, color = PAL.rust): void {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + 5, y + 4);
-  ctx.lineTo(x, y + 8);
-  ctx.fill();
+  stamp(ctx, ['#...', '##..', '###.', '####', '###.', '##..', '#...'], x, y, { '#': color });
 }
 
 export interface ListOptions {
   lineHeight?: number;
-  size?: number;
   disabled?: boolean[];
   color?: string;
 }
 
-export function menuList(
-  ctx: CanvasRenderingContext2D,
-  items: string[],
-  x: number,
-  y: number,
-  selected: number,
-  opts: ListOptions = {},
-): void {
-  const lh = opts.lineHeight ?? 14;
+export function menuList(ctx: CanvasRenderingContext2D, items: string[], x: number, y: number, selected: number, opts: ListOptions = {}): void {
+  const lh = opts.lineHeight ?? 12;
   items.forEach((item, i) => {
     const color = opts.disabled?.[i] ? PAL.grey : (opts.color ?? PAL.ink);
-    text(ctx, item, x + 10, y + i * lh, { size: opts.size ?? 10, color, bold: i === selected });
-    if (i === selected) cursor(ctx, x, y + i * lh + 1);
+    text(ctx, item, x + 8, y + i * lh, { color, shadow: opts.disabled?.[i] ? undefined : PAL.shadow });
+    if (i === selected) cursor(ctx, x, y + i * lh + 2);
   });
 }
 
-/** Petit indicateur clignotant « suite » en bas à droite d'une boîte de texte. */
+/** Petite flèche clignotante « suite ». */
 export function continueMarker(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
-  if (Math.floor(time * 3) % 2 === 0) return;
-  ctx.fillStyle = PAL.rust;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + 6, y);
-  ctx.lineTo(x + 3, y + 4);
-  ctx.fill();
+  const dy = Math.floor(time * 3) % 2;
+  stamp(ctx, ['#####', '.###.', '..#..'], x, y + dy, { '#': PAL.rust });
 }
 
-/** Fond plein écran en dégradé vertical. */
-export function gradient(ctx: CanvasRenderingContext2D, w: number, h: number, top: string, bottom: string): void {
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, top);
-  g.addColorStop(1, bottom);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
+/** Dégradé vertical en bandes de couleurs, avec une ligne tramée entre deux bandes. */
+export function bandGradient(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, colors: string[]): void {
+  const band = h / colors.length;
+  colors.forEach((c, i) => {
+    const top = Math.round(y + i * band);
+    const bottom = Math.round(y + (i + 1) * band);
+    rect(ctx, x, top, w, bottom - top, c);
+    if (i > 0) {
+      // Trame d'une ligne avec la couleur précédente pour adoucir la transition.
+      ctx.fillStyle = colors[i - 1];
+      for (let px = x + (i % 2); px < x + w; px += 2) ctx.fillRect(px, top, 1, 1);
+    }
+  });
 }
 
-/** Calebasse (icône d'objet de capture). */
-export function calabash(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color = '#d8a040'): void {
-  ctx.fillStyle = PAL.ink;
-  ctx.beginPath();
-  ctx.arc(x, y + r * 0.25, r + 1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y + r * 0.25, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillRect(x - r * 0.35, y - r * 0.9, r * 0.7, r * 0.8);
-  ctx.strokeStyle = PAL.ink;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x - r * 0.35, y - r * 0.9, r * 0.7, r * 0.8);
-  ctx.strokeStyle = PAL.rust;
-  ctx.beginPath();
-  ctx.moveTo(x - r, y + r * 0.25);
-  ctx.lineTo(x + r, y + r * 0.25);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.beginPath();
-  ctx.arc(x - r * 0.35, y - r * 0.05, r * 0.25, 0, Math.PI * 2);
-  ctx.fill();
+/** Calebasse en pixel art (taille 1 : 6×8, taille 2 : 11×12, taille 3 : 22×24), centrée sur (x, y). */
+export function calabash(ctx: CanvasRenderingContext2D, x: number, y: number, size: 1 | 2 | 3 = 1, color = '#d8a040'): void {
+  const pal = { k: PAL.ink, c: color, h: shade(color, 0.4), d: shade(color, -0.3), r: PAL.rust };
+  if (size === 1) {
+    stamp(ctx, ['..kk..', '..ck..', '.kcck.', 'kchcck', 'kcccck', 'krrrrk', 'kdccdk', '.kkkk.'], x - 3, y - 4, pal);
+  } else {
+    const k = size === 3 ? 2 : 1;
+    stamp(
+      ctx,
+      [
+        '....kkk....',
+        '....kck....',
+        '....kck....',
+        '..kkkckkk..',
+        '.kchhcccck.',
+        'kchhcccccck',
+        'kcccccccdck',
+        'krrrrrrrrrk',
+        'kccccccccdk',
+        'kdcccccddk.',
+        '.kddddddk..',
+        '..kkkkkkk..',
+      ],
+      x - 5 * k,
+      y - 6 * k,
+      pal,
+      k,
+    );
+  }
 }

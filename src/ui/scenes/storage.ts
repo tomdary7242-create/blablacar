@@ -13,7 +13,7 @@ export class StorageScene implements Scene {
   readonly opaque = true;
   private focus: 'equipe' | 'grenier' = 'equipe';
   private party = new ListCursor(0, 6, false);
-  private stock = new ListCursor(0, 10, false);
+  private stock = new ListCursor(0, 9, false);
   private submenu: { options: string[]; index: number } | null = null;
   private message = 'Choisissez un Jinémon.';
 
@@ -73,7 +73,7 @@ export class StorageScene implements Scene {
       const j = state.party[this.party.index];
       const othersReady = state.party.filter((o) => o !== j && !isFainted(o)).length;
       if (othersReady === 0) {
-        this.message = 'Garde au moins un Jinémon en état de combattre avec toi !';
+        this.message = 'Garde au moins un Jinémon valide !';
         this.game.sfx('erreur');
         return;
       }
@@ -100,42 +100,45 @@ export class StorageScene implements Scene {
 
   private row(ctx: CanvasRenderingContext2D, j: Jinemon, x: number, y: number, selected: boolean): void {
     if (selected) {
-      ctx.fillStyle = 'rgba(200,137,42,0.3)';
-      ctx.fillRect(x - 2, y - 2, 146, 16);
-      cursor(ctx, x, y + 2);
+      ctx.fillStyle = '#f0d898';
+      ctx.fillRect(x - 2, y - 1, 120, 18);
+      cursor(ctx, x, y + 4);
     }
-    drawCreature(ctx, j.speciesId, x + 16, y + 14, 18);
-    text(ctx, displayName(j), x + 28, y, { size: 9, bold: selected });
-    text(ctx, `Niv.${j.level}`, x + 140, y, { size: 8, align: 'right' });
-    ctx.fillStyle = hpColor(j.hp / maxHp(j));
-    ctx.fillRect(x + 28, y + 11, Math.round(60 * (j.hp / maxHp(j))), 2);
+    drawCreature(ctx, j.speciesId, x + 17, y + 18, 24);
+    text(ctx, displayName(j), x + 30, y, { shadow: PAL.shadow });
+    text(ctx, `N.${j.level}`, x + 116, y, { align: 'right' });
+    const ratio = j.hp / maxHp(j);
+    ctx.fillStyle = PAL.ink;
+    ctx.fillRect(x + 30, y + 11, 62, 4);
+    ctx.fillStyle = hpColor(ratio);
+    ctx.fillRect(x + 31, y + 12, Math.round(60 * ratio), 2);
   }
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
-    text(ctx, 'GRENIER DES JINÉMON', 10, 6, { size: 11, bold: true, color: PAL.cream, shadow: PAL.ink });
+    text(ctx, 'GRENIER DES JINÉMON', 6, 2, { color: PAL.cream, shadow: PAL.ink });
     const state = this.game.s;
-    box(ctx, 6, 22, 152, 160, this.focus === 'equipe' ? 'papier' : 'sombre');
-    text(ctx, `ÉQUIPE (${state.party.length}/6)`, 14, 28, { size: 8, bold: true, color: this.focus === 'equipe' ? PAL.rust : PAL.ochre });
-    state.party.forEach((j, i) => this.row(ctx, j, 12, 42 + i * 22, this.focus === 'equipe' && i === this.party.index));
+    box(ctx, 2, 14, 126, 134, this.focus === 'equipe' ? 'actif' : 'papier');
+    text(ctx, `ÉQUIPE (${state.party.length}/6)`, 10, 16, { color: PAL.rust });
+    state.party.forEach((j, i) => this.row(ctx, j, 8, 28 + i * 19, this.focus === 'equipe' && i === this.party.index));
 
-    box(ctx, 162, 22, 152, 160, this.focus === 'grenier' ? 'papier' : 'sombre');
-    text(ctx, `GRENIER (${state.storage.length})`, 170, 28, { size: 8, bold: true, color: this.focus === 'grenier' ? PAL.rust : PAL.ochre });
-    if (state.storage.length === 0) text(ctx, 'Le grenier est vide.', 170, 46, { size: 8, color: PAL.grey });
+    box(ctx, 130, 14, 124, 134, this.focus === 'grenier' ? 'actif' : 'papier');
+    text(ctx, `GRENIER (${state.storage.length})`, 138, 16, { color: PAL.rust });
+    if (state.storage.length === 0) text(ctx, 'Le grenier est vide.', 138, 30, { color: PAL.grey });
     for (const i of this.stock.window()) {
-      const y = 42 + (i - this.stock.scroll) * 13.5;
+      const y = 28 + (i - this.stock.scroll) * 12;
       const j = state.storage[i];
       const selected = this.focus === 'grenier' && i === this.stock.index;
-      if (selected) cursor(ctx, 168, y + 1);
-      text(ctx, displayName(j), 178, y, { size: 8, bold: selected });
-      text(ctx, `Niv.${j.level}`, 306, y, { size: 8, align: 'right' });
+      if (selected) cursor(ctx, 136, y + 2);
+      text(ctx, displayName(j), 144, y, { shadow: PAL.shadow });
+      text(ctx, `N.${j.level}`, 246, y, { align: 'right' });
     }
-    box(ctx, 6, 186, 308, 50);
-    text(ctx, this.message, 16, 195, { size: 9 });
-    text(ctx, '◄ ► changer de colonne · A choisir · B sortir', 16, 214, { size: 8, color: PAL.grey });
+    box(ctx, 2, 150, 252, 40);
+    text(ctx, this.message, 10, 154, { shadow: PAL.shadow });
+    text(ctx, '◄ ► colonne · A choisir · B sortir', 10, 170, { color: PAL.grey });
     if (this.submenu) {
-      box(ctx, 214, 120, 96, 56);
-      menuList(ctx, this.submenu.options, 224, 130, this.submenu.index, { lineHeight: 13, size: 9 });
+      box(ctx, 160, 100, 92, 46);
+      menuList(ctx, this.submenu.options, 166, 106, this.submenu.index);
     }
   }
 }
