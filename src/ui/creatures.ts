@@ -1569,8 +1569,9 @@ export function renderCreature(speciesId: number, size: number, pose: Pose = 'fa
   const fill = 0.6 + 0.36 * look.size;
   const bw = box.x1 - box.x0;
   const bh = box.y1 - box.y0;
-  const scale = Math.min((fill * size) / Math.max(bw, bh * 0.92), (size - 3) / bw, (size - 3) / bh);
-  const bottom = size - 2 - (a.floating ? Math.round(size * 0.06) : 0);
+  const lift = a.floating ? Math.round(size * 0.06) : 0;
+  const scale = Math.min((fill * size) / Math.max(bw, bh * 0.92), (size - 4) / bw, (size - 4 - lift) / bh);
+  const bottom = size - 2 - lift;
   const ground = Math.round(bottom + box.y0 * scale);
   const img = s.render({ size, scale, ground, center: (box.x0 + box.x1) / 2, view });
   if (pose === 'face') stampFeatures(img, a, scale);

@@ -2,7 +2,8 @@
 // végétation sculptés, reliefs en plans successifs, sol texturé et socles en volume.
 import type { Theme } from '../data/zones';
 import { baobabProp, granaryProp, hutProp, sculpted, termiteProp, treeProp, type Prop, type PropView } from './props';
-import { noise3, shiftColor } from './sculpt';
+import { noise3, shiftColor, type V3 } from './sculpt';
+import { shade } from './draw';
 import { THEMES } from './tiles';
 
 export const BACKDROP_W = 256;
@@ -191,10 +192,18 @@ function platform(top: string, rim: string, r: number): Prop {
   return sculpted(
     `socle:${top}:${rim}:${r}`,
     (s, m) => {
-      const grass = m(rim, { fur: 1 });
+      const grass = m(rim, { fur: 0.6 });
+      const blade = m(shade(rim, 0.1));
       const dirt = m(top);
-      s.capped([0, -5, 0], [0, 0, 0], r, r - 1.5, grass, { round: 1.5, amp: 1, freq: 0.45 });
+      s.capped([0, -5, 0], [0, 0, 0], r, r - 1.5, grass, { round: 1.5 });
       s.paint([0, 0.5, 0], [r * 0.8, 1.6, r * 0.8], dirt);
+      // Touffes d'herbe tout autour du bord.
+      for (let i = 0; i < 40; i++) {
+        const a = (i / 40) * Math.PI * 2 + (i % 3) * 0.05;
+        const rr = r - 1.5 + (i % 2) * 0.8;
+        const base: V3 = [Math.cos(a) * rr, -0.5, Math.sin(a) * rr];
+        s.cone(base, [base[0] * 1.04, 1.4 + (i % 3) * 0.7, base[2] * 1.04], 0.9, 0.2, blade);
+      }
     },
     { pitch: 13, scale: 1 },
   );
@@ -410,4 +419,99 @@ export function titleBackdrop(): HTMLCanvasElement {
   }
   title = ctx;
   return ctx;
+}
+
+let interior: HTMLCanvasElement | null = null;
+
+/** Intérieur de la case de l'Ancien (choix du premier Jinémon), 256×124. */
+export function hutInterior(): HTMLCanvasElement {
+  if (interior) return interior;
+  const W = 256;
+  const H = 124;
+  const c = new Canvas(W, H);
+  const floorY = 86;
+  // Mur de banco : enduit irrégulier, plus sombre sous le toit.
+  const wall = ['#8a5232', '#7a4628', '#6a3c22', '#56301c', '#40220f'].map(hexRgb);
+  for (let y = 0; y < floorY; y++) {
+    for (let x = 0; x < W; x++) {
+      const v = noise3(x * 0.06, y * 0.09, 3) * 0.6 + noise3(x * 0.2, y * 0.2, 5) * 0.4 + (bayer(x, y) - 0.5) * 0.3 - (1 - y / floorY) * 0.9 + 0.35;
+      c.set(x, y, wall[v > 0.3 ? 0 : v > 0 ? 1 : v > -0.35 ? 2 : v > -0.7 ? 3 : 4]);
+    }
+  }
+  // Frise bogolan peinte sur le mur : zigzag et points.
+  const ochre = hexRgb('#d8a050');
+  const white = hexRgb('#f0e0c0');
+  const black = hexRgb('#2a1610');
+  for (let x = 0; x < W; x++) {
+    for (let y = 54; y < 66; y++) c.set(x, y, y === 54 || y === 65 ? black : ochre);
+    const zig = 57 + Math.abs(((x + 4) % 12) - 6) * 0.83;
+    c.set(x, Math.round(zig), black);
+    c.set(x, Math.round(zig) + 1, black);
+    if (x % 12 === 6) {
+      c.set(x, 63, white);
+      c.set(x, 58, white);
+    }
+  }
+  // Poutres du toit
+  for (const x0 of [20, 70, 128, 186, 236]) {
+    for (let y = 0; y < 22; y++) {
+      const x = Math.round(x0 + (x0 - 128) * (y / 60));
+      for (let k = -1; k <= 1; k++) c.set(x + k, y, k === -1 ? hexRgb('#5a3820') : hexRgb('#3a2414'));
+    }
+  }
+  // Porte lumineuse à gauche et rai de lumière sur le sol.
+  for (let y = 18; y < floorY; y++) for (let x = 6; x < 30; x++) c.set(x, y, y < 22 || x < 8 || x > 27 ? hexRgb('#2a1610') : hexRgb(y < 50 ? '#fce8b0' : '#f6d088'));
+  // Sol de terre battue
+  dithered(c, floorY, H, ['#6a4428', '#5a3820', '#4a2c18']);
+  const light = hexRgb('#c89058');
+  for (let y = floorY; y < H; y++) {
+    for (let x = 30; x < 120; x++) {
+      const edge = 30 + (y - floorY) * 1.6;
+      if (x > edge && x < edge + 40 && bayer(x, y) < 0.5) c.set(x, y, light);
+    }
+  }
+  // Natte tressée
+  const mat = ['#d8b468', '#b08840', '#e8cc88', '#8a6a30'].map(hexRgb);
+  for (let y = 92; y < 118; y++) {
+    for (let x = 12; x < W - 12; x++) {
+      const border = y < 94 || y > 115 || x < 15 || x > W - 16;
+      const weave = ((Math.floor(x / 3) + Math.floor(y / 3)) & 1) === 0;
+      c.set(x, y, border ? mat[3] : (x + y) % 7 === 0 ? mat[1] : weave ? mat[0] : mat[2]);
+    }
+  }
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = H;
+  out.getContext('2d')!.putImageData(new ImageData(c.data, W, H), 0, 0);
+  interior = out;
+  return out;
+}
+
+let glow: HTMLCanvasElement | null = null;
+
+/** Halo radial tramé de l'écran d'évolution (256×192). */
+export function evolutionGlow(): HTMLCanvasElement {
+  if (glow) return glow;
+  const W = 256;
+  const H = 192;
+  const c = new Canvas(W, H);
+  const ring = ['#fff0c0', '#f8c870', '#d88a48', '#a85a34', '#6a3424', '#3a1c18', '#1e1012'].map(hexRgb);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const dx = x - W / 2;
+      const dy = (y - 92) * 1.2;
+      const d = Math.hypot(dx, dy) / 150;
+      // Rayons qui partent du centre.
+      const rays = Math.sin(Math.atan2(dy, dx) * 9) * 0.06;
+      const t = Math.min(ring.length - 1.001, Math.max(0, (d + rays) * ring.length));
+      const i = Math.floor(t);
+      c.set(x, y, t - i > bayer(x, y) ? ring[Math.min(ring.length - 1, i + 1)] : ring[i]);
+    }
+  }
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = H;
+  out.getContext('2d')!.putImageData(new ImageData(c.data, W, H), 0, 0);
+  glow = out;
+  return out;
 }

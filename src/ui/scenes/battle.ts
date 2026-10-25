@@ -3,6 +3,7 @@ import { MAX_LEVEL, getSpecies } from '../../data/ginedex';
 import { isCaptureItem, type ItemId } from '../../data/items';
 import { MOVES, type StatusKind } from '../../data/moves';
 import type { Trainer } from '../../data/trainers';
+import type { ElementType } from '../../data/types';
 import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
 import { displayName, xpForLevel } from '../../engine/creature';
@@ -13,6 +14,7 @@ import type { Game } from '../game';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
 import { battleBackdrop } from '../backdrops';
+import { drawMoveEffect } from '../effects';
 import { PLAYER_LOOK, characterSprite, drawCreature } from '../sprites';
 import { BagScene } from './bag';
 import { promptLearnMove } from './learnMove';
@@ -60,6 +62,8 @@ export class BattleScene implements Scene {
   private moveIndex = 0;
   private views: Record<Side, SideView | null> = { joueur: null, adversaire: null };
   private anims: Anim[] = [];
+  /** Effets d'attaque en cours, joués sur la cible. */
+  private effects: Array<{ type: ElementType; side: Side; t: number; duration: number }> = [];
   private xpShown = 0;
   private xpTarget = 0;
   private lastXp = 0;
@@ -82,6 +86,7 @@ export class BattleScene implements Scene {
     this.intro = Math.min(1, this.intro + dt * 2.2);
     // Les animations terminées sont retirées après avoir appliqué leur effet final.
     this.anims = this.anims.filter((a) => (a.t += dt / a.duration) < 1 || this.finishAnim(a));
+    this.effects = this.effects.filter((e) => (e.t += dt / e.duration) < 1);
     this.animateBars(dt);
     if (this.capture) this.updateCapture(dt);
     if (this.intro < 1 || this.busy) return;
@@ -168,10 +173,19 @@ export class BattleScene implements Scene {
         this.anims.push({ kind: 'sortie', side: event.side, t: 0, duration: 0.3 });
         this.wait = 0.35;
         break;
-      case 'attaque':
+      case 'attaque': {
         this.anims.push({ kind: 'elan', side: event.side, t: 0, duration: 0.3 });
         this.wait = 0.3;
+        if (event.moveId) {
+          // L'effet vise le lanceur pour les soins et les renforcements, l'adversaire sinon.
+          const move = MOVES[event.moveId];
+          const self = move.power === 0 && !move.status && (move.heal || move.stages?.every((st) => st.target === 'self'));
+          const target: Side = self ? event.side : event.side === 'joueur' ? 'adversaire' : 'joueur';
+          this.effects.push({ type: move.type, side: target, t: -0.4, duration: 0.75 });
+          this.wait = 0.95;
+        }
         break;
+      }
       case 'pv': {
         const view = this.views[event.side];
         if (view) {
@@ -407,6 +421,11 @@ export class BattleScene implements Scene {
     this.renderBackground(ctx);
     this.renderSide(ctx, 'adversaire');
     this.renderSide(ctx, 'joueur');
+    for (const e of this.effects) {
+      if (e.t < 0) continue;
+      const player = e.side === 'joueur';
+      drawMoveEffect(ctx, e.type, player ? 66 : 186, player ? 112 : 60, e.t);
+    }
     this.renderCapture(ctx);
     this.renderInfo(ctx);
     this.renderBottom(ctx);

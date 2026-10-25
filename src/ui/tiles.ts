@@ -159,27 +159,50 @@ function grassFringe(ctx: CanvasRenderingContext2D, x: number, y: number, side: 
   }
 }
 
-/** Touffe d'herbe haute (8×8) : trois feuilles pointues ombrées. */
-const TUFT = ['...U....', '..UTK...', '.UTTKUK.', 'UTTVKTTK', 'UTVVKTVK', 'TVVK.VVK', 'VVK..VK.', 'KK...K..'];
+/** Brins qui dépassent au-dessus d'une plaque d'herbes hautes (bord irrégulier). */
+function tallGrassFringe(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette): void {
+  const g = pal.grass;
+  const colors = [css(shiftColor(g, -0.2)), css(shiftColor(g, 0.02)), css(shiftColor(g, 0.24)), css(shiftColor(g, 0.4))];
+  for (let k = 0; k < 6; k++) {
+    const bx = x + k * 3 + Math.floor(hash(x + k, y, 9) * 3) - 1;
+    const h = 3 + Math.floor(hash(x + k, y, 10) * 4);
+    const lean = (hash(x + k, y, 11) - 0.5) * 3;
+    for (let s = 0; s < h; s++) {
+      const px2 = bx + Math.round((lean * s) / h);
+      if (px2 < x || px2 >= x + TILE) continue;
+      px(ctx, px2, y + 1 - s, colors[Math.min(3, Math.floor((s / h) * 3) + (s === h - 1 ? 1 : 0))]);
+    }
+  }
+}
 
+/** Herbes hautes : brins irréguliers en trois rangées, du fond vers l'avant. */
 function tallGrass(ctx: CanvasRenderingContext2D, x: number, y: number, pal: Palette, onlyLower = false): void {
   const g = pal.grass;
-  const colors = { U: css(shiftColor(g, 0.3)), T: css(shiftColor(g, 0.05)), V: css(shiftColor(g, -0.2)), K: css(shiftColor(g, -0.45)) };
+  const deep = css(shiftColor(g, -0.34));
+  const dark = css(shiftColor(g, -0.2));
+  const mid = css(shiftColor(g, 0.02));
+  const light = css(shiftColor(g, 0.24));
+  const tip = css(shiftColor(g, 0.4));
   if (!onlyLower) {
-    ctx.fillStyle = css(shiftColor(g, -0.3));
+    ctx.fillStyle = deep;
     ctx.fillRect(x, y, TILE, TILE);
   }
-  const positions: Array<[number, number]> = onlyLower
-    ? [[0, 8], [8, 8]]
-    : [[0, 0], [8, 0], [4, 8], [-4, 8], [12, 8]];
-  for (const [ox, oy] of positions) {
-    TUFT.forEach((row, j) => {
-      for (let i = 0; i < 8; i++) {
-        const c = colors[row[i] as keyof typeof colors];
-        const pxX = ox + i;
-        if (c && pxX >= 0 && pxX < TILE) px(ctx, x + pxX, y + oy + j, c);
+  const rows = onlyLower ? [15] : [5, 10, 15];
+  for (const row of rows) {
+    for (let k = 0; k < 6; k++) {
+      const seed = (x + k * 3) * 7 + (y + row) * 13;
+      const bx = x + k * 3 - 1 + Math.floor(hash(seed, row, 1) * 3);
+      const h = (row === 5 ? 5 : 7) + Math.floor(hash(seed, row, 2) * 4);
+      const lean = (hash(seed, row, 3) - 0.5) * 4;
+      for (let s = 0; s < h; s++) {
+        const px2 = bx + Math.round((lean * s) / h);
+        const py2 = y + row - s;
+        if (px2 < x || px2 >= x + TILE || py2 < y) continue;
+        const c = s === h - 1 ? tip : s < h * 0.35 ? dark : s < h * 0.7 ? mid : light;
+        px(ctx, px2, py2, c);
+        if (s < 2) px(ctx, Math.min(x + TILE - 1, px2 + 1), py2, dark);
       }
-    });
+    }
   }
 }
 
@@ -336,6 +359,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
         case ',':
           if (zone.theme === 'laterite') dirtGround(base, x, y, pal.ground, tx, ty);
           tallGrass(base, x, y, pal, false);
+          if (at(tx, ty - 1) !== ',') tallGrassFringe(base, x, y, pal);
           break;
         case '=':
         case '.':

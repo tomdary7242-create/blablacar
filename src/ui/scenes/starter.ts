@@ -1,7 +1,8 @@
 // Cérémonie du choix du premier Jinémon, parmi trois Calebasses Sacrées.
 import { getSpecies } from '../../data/ginedex';
 import { markSeen } from '../../engine/gameState';
-import { PAL, bandGradient, box, calabash, cursor, fillEllipse, text, typeBadge } from '../draw';
+import { hutInterior } from '../backdrops';
+import { PAL, box, calabash, cursor, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
@@ -46,20 +47,8 @@ export class StarterScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    // Intérieur de la case de l'Ancien : murs de banco et natte tressée.
-    bandGradient(ctx, 0, 0, W, 124, ['#3a2214', '#4a2c18', '#5a3620', '#6a4028']);
-    for (let x = 0; x < W; x += 24) {
-      ctx.fillStyle = '#2c180c';
-      ctx.fillRect(x, 0, 2, 70);
-    }
-    ctx.fillStyle = '#c8a050';
-    ctx.fillRect(8, 94, W - 16, 26);
-    for (let x = 8; x < W - 8; x += 4) {
-      ctx.fillStyle = (x / 4) % 2 ? '#a87a38' : '#d8b468';
-      ctx.fillRect(x, 94, 2, 26);
-    }
-    ctx.fillStyle = '#7a5428';
-    ctx.fillRect(8, 120, W - 16, 2);
+    // Intérieur de la case de l'Ancien : murs de banco, frise bogolan et natte tressée.
+    ctx.drawImage(hutInterior(), 0, 0);
     text(ctx, 'Choisis ton premier compagnon', W / 2, 4, { align: 'center', color: PAL.cream, shadow: PAL.ink });
 
     STARTERS.forEach((id, i) => {
@@ -68,7 +57,6 @@ export class StarterScene implements Scene {
       calabash(ctx, x, 110, selected ? 3 : 2, ['#7ac84a', '#5ab0d8', '#f08a3a'][i]);
       if (selected) {
         const bob = Math.floor(this.game.time * 3) % 2;
-        fillEllipse(ctx, x, 60, 30, 28, '#5a3a22');
         drawCreature(ctx, id, x, 90 - bob, 64);
         cursor(ctx, x - 22, 106);
       } else {

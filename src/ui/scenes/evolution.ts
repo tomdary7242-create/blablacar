@@ -2,11 +2,12 @@
 import { getSpecies } from '../../data/ginedex';
 import { displayName, evolve, type Jinemon } from '../../engine/creature';
 import { markCaught } from '../../engine/gameState';
-import { PAL, bandGradient, box, continueMarker, stamp, text } from '../draw';
+import { evolutionGlow } from '../backdrops';
+import { PAL, box, continueMarker, stamp, text } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
-import { H, W } from '../screen';
+import { W } from '../screen';
 import { drawCreature } from '../sprites';
 
 const DURATION = 3.6;
@@ -66,7 +67,7 @@ export class EvolutionScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    bandGradient(ctx, 0, 0, W, H, ['#2a1a10', '#4a2c18', '#7a5030', '#a87848', '#7a5030', '#4a2c18']);
+    ctx.drawImage(evolutionGlow(), 0, 0);
     if (this.phase === 'animation') {
       // Alternance de plus en plus rapide entre les deux formes.
       const p = this.t / DURATION;

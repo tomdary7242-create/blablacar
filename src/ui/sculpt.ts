@@ -699,8 +699,9 @@ export class Sculpt {
         [x0, x1, y0, y1] = [Math.min(x0, sx), Math.max(x1, sx), Math.min(y0, sy), Math.max(y1, sy)];
       }
     }
-    const m = step * 0.6;
-    return { x0: x0 - m, x1: x1 + m, y0: y0 - m, y1: y1 + m };
+    // Marge d'une maille : la grille grossière peut manquer une pointe fine.
+    const m = step;
+    return { x0: x0 - m, x1: x1 + m, y0: y0 - m * 0.5, y1: y1 + m };
   }
 
   render(opts: RenderOpts): SculptImage {
@@ -874,11 +875,17 @@ export class Sculpt {
         const i = py * w + px;
         if (keys[i] < 0) continue;
         let rgb = colorOf(keys[i], tones[i]);
-        // Trait intérieur : un voisin passe nettement devant ce pixel.
+        // Trait intérieur : un voisin passe nettement devant ce pixel, au-delà de
+        // la pente locale (une surface vue en biais n'est pas une rupture).
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           if (!has(px + dx, py + dy)) continue;
           const j = (py + dy) * w + px + dx;
-          if (depth[j] - depth[i] > gap && !bareKeys.has(keys[j])) {
+          const slope = has(px - dx, py - dy)
+            ? depth[i] - depth[(py - dy) * w + px - dx]
+            : has(px + 2 * dx, py + 2 * dy)
+              ? depth[(py + 2 * dy) * w + px + 2 * dx] - depth[j]
+              : 0;
+          if (depth[j] - depth[i] - Math.max(0, slope) > gap && !bareKeys.has(keys[j])) {
             rgb = colorOf(keys[j], glowKeys.has(keys[j]) ? 4 : 5);
             break;
           }
