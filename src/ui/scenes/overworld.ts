@@ -4,7 +4,7 @@ import { SPECIES, getSpecies } from '../../data/ginedex';
 import { hauntCapturedFlag, hauntOf } from '../../data/hantises';
 import { getItem } from '../../data/items';
 import { MOVES } from '../../data/moves';
-import { getTrainer } from '../../data/trainers';
+import { TRAINERS, getTrainer } from '../../data/trainers';
 import {
   DIR_DELTA,
   GRASS_TILE,
@@ -18,9 +18,9 @@ import {
   type ZoneId,
 } from '../../data/zones';
 import { MINUTES_PER_SECOND, advance, advanceTo, darknessOf, isNight, nightId, phaseOf, warmthOf } from '../../engine/clock';
-import { createJinemon, displayName } from '../../engine/creature';
+import { createJinemon, displayName, isFainted, maxHp } from '../../engine/creature';
 import { currentObjective } from '../../engine/objective';
-import { addItem, giveStarter, hasBadge, healParty, itemCount } from '../../engine/gameState';
+import { HOME_BED, addItem, giveStarter, hasBadge, itemCount, sleepHere, type Position } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { startTrainerBattle, startWildBattle } from '../battleFlow';
 import { box, PAL, text } from '../draw';
@@ -271,6 +271,7 @@ export class OverworldScene implements Scene, World {
         flag: hauntCapturedFlag(zone),
         intro: `La Hantise ${name} surgit des ténèbres !`,
         music: 'hantise',
+        haunt: true,
         onOutcome: () => {
           // Quelle que soit l'issue, elle disparaît jusqu'à la nuit suivante.
           game.s.repelled[zone] = nightId(game.s.clock);
@@ -296,6 +297,8 @@ export class OverworldScene implements Scene, World {
   private npcVisible(npc: Npc): boolean {
     const flags = this.game.s.flags;
     if (npc.hideFlag && flags[npc.hideFlag]) return false;
+    // Un bandit mis à terre ne revient pas : mort, livré à la garde, ou en fuite.
+    if (npc.script.kind === 'dresseur' && TRAINERS[npc.script.trainer]?.bandit && flags[`dresseur:${npc.script.trainer}`]) return false;
     if (npc.showFlag && !flags[npc.showFlag]) return false;
     return true;
   }
@@ -567,7 +570,11 @@ export class OverworldScene implements Scene, World {
       return;
     }
     const t = this.tile(tx, ty);
-    if (t === 'g') {
+    if (t === 'l' && this.zone.interior) {
+      this.game.ask(['Un lit bien fait, couvert d’un pagne.', 'Dormir ici ?'], ['Oui', 'Non'], (i) => {
+        if (i === 0) this.rest(this.bedHere());
+      });
+    } else if (t === 'g') {
       this.game.sfx('valider');
       this.game.say(['Tu te penches sur la Grande Jarre… Le tourbillon s’ouvre !'], () => this.game.scenes.push(new StorageScene(this.game)));
     } else if (t === 'X') {
@@ -673,22 +680,27 @@ export class OverworldScene implements Scene, World {
       case 'maman':
         this.maman();
         break;
-      case 'soin':
-        game.ask([...s.lines, 'Veux-tu que je soigne tes Jinémon ?'], ['Oui', 'Se reposer', 'Non'], (i) => {
+      case 'soin': {
+        // Auberge en ville, campement en brousse : on y soigne, on y dort, et l'on s'y réveille après un malheur.
+        const bed = this.bedHere();
+        const offer = this.zone.interior
+          ? 'Je soigne tes Jinémon, et une chambre t’attend : si un malheur t’arrive, c’est ici que tu te réveilleras.'
+          : 'Je soigne tes Jinémon, et tu peux dormir sous ma tente : si un malheur t’arrive, c’est ici que tu te réveilleras.';
+        game.ask([...s.lines, offer], ['Soigner', 'Dormir', 'Non'], (i) => {
           if (i === 1) {
-            this.rest();
+            this.rest(bed);
             return;
           }
           if (i !== 0) {
-            game.say(['Reviens quand tu veux.']);
+            game.say(['Reviens quand tu veux. Les routes sont dangereuses.']);
             return;
           }
-          healParty(state);
-          state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+          sleepHere(state, this.here(), bed);
           game.jingle('soin');
-          game.say(['… … …', 'Tes Jinémon sont en pleine forme ! Que les ancêtres veillent sur toi.'], () => game.save());
+          game.say(['… … …', 'Tes Jinémon sont en pleine forme, et toi aussi.', `Point de réveil : ${bed}.`], () => game.save());
         });
         break;
+      }
       case 'boutique':
         game.say(s.lines, () => game.scenes.push(new ShopScene(game, s.items)));
         break;
@@ -746,17 +758,28 @@ export class OverworldScene implements Scene, World {
     }
   }
 
-  /** Se reposer chez un guérisseur : soigne l'équipe et fait passer le temps. */
-  private rest(): void {
+  private here(): Position {
+    return { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+  }
+
+  /** Nom du lit où l'on se trouve (pour « Vous vous réveillez dans … »). */
+  private bedHere(): string {
+    const zone = this.zone;
+    if (zone.id === 'chambre' || zone.id === 'maison') return 'votre lit, à la maison';
+    if (zone.interior && zone.parent) return `une chambre de l’auberge (${ZONES[zone.parent].name})`;
+    return `la tente du campement (${zone.name})`;
+  }
+
+  /** Dormir (auberge, campement, maison) : tout le monde guérit, le temps passe, et l'on se réveillera ici. */
+  private rest(bed: string): void {
     const game = this.game;
-    game.ask(['Jusqu’à quand veux-tu te reposer ?'], ['Jusqu’au matin', 'Jusqu’à la nuit', 'Annuler'], (i) => {
+    game.ask(['Jusqu’à quand veux-tu dormir ?'], ['Jusqu’au matin', 'Jusqu’à la nuit', 'Annuler'], (i) => {
       if (i > 1) return;
       game.scenes.push(
         new CoverScene(game, 'fondu', () => {
           const state = game.s;
           advanceTo(state.clock, i === 0 ? 7 * 60 : 20 * 60 + 15);
-          healParty(state);
-          state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+          sleepHere(state, this.here(), bed);
           this.haunt = null;
           this.steps = [];
           this.syncHaunt();
@@ -766,6 +789,65 @@ export class OverworldScene implements Scene, World {
             new RevealScene(game, 0.6, () =>
               game.say([i === 0 ? 'Vous vous réveillez reposé. Le soleil se lève sur la brousse.' : 'Vous vous réveillez à la nuit tombée. Au loin, quelque chose a hurlé.'], () =>
                 game.save(true),
+              ),
+            ),
+          );
+        }, 0.6),
+      );
+    });
+  }
+
+  /**
+   * Le sac de couchage : on dort à la belle étoile, et c'est ici que l'on se réveillera
+   * après un malheur. Moins réparateur qu'un vrai lit… et la nuit, on n'est jamais seul.
+   */
+  camp(): void {
+    const game = this.game;
+    const state = game.s;
+    if (this.zone.interior) {
+      game.say(['Inutile de dérouler votre sac de couchage sous un toit : cherchez plutôt un lit.']);
+      return;
+    }
+    if (this.haunt && this.haunt.distance() <= 6) {
+      game.say(['Impossible de fermer l’œil : quelque chose rôde tout près…']);
+      return;
+    }
+    game.ask(['Vous déroulez votre sac de couchage.', 'Dormir jusqu’à quand ?'], ['Jusqu’au matin', 'Jusqu’à la nuit', 'Annuler'], (i) => {
+      if (i > 1) return;
+      // La nuit, une Hantise rôde peut-être encore dans la zone.
+      const prowler = isNight(state.clock) && !!this.haunt;
+      game.scenes.push(
+        new CoverScene(game, 'fondu', () => {
+          state.lastHeal = this.here();
+          state.bed = `votre sac de couchage (${this.zone.name})`;
+          state.heroWounds = 0;
+          for (const j of state.party) if (!isFainted(j)) j.hp = Math.min(maxHp(j), j.hp + Math.ceil(maxHp(j) / 2));
+          if (prowler && game.rng.next() < 0.5) {
+            advance(state.clock, 90);
+            game.scenes.push(
+              new RevealScene(game, 0.3, () =>
+                game.say(['Un craquement vous tire du sommeil…', 'Quelque chose respire, tout contre votre sac de couchage.'], () => {
+                  this.ambush = 0;
+                  this.moving = null;
+                }),
+              ),
+            );
+            return;
+          }
+          advanceTo(state.clock, i === 0 ? 7 * 60 : 20 * 60 + 15);
+          this.haunt = null;
+          this.steps = [];
+          this.syncHaunt();
+          this.bannerText = i === 0 ? 'Le jour est levé' : 'La nuit tombe…';
+          this.banner = 2.5;
+          game.scenes.push(
+            new RevealScene(game, 0.6, () =>
+              game.say(
+                [
+                  i === 0 ? 'Vous vous réveillez courbatu, mais reposé.' : 'Vous vous réveillez à la nuit tombée. Le froid vous mord les os.',
+                  'Vos Jinémon ont un peu récupéré. Pour les soigner tout à fait, il faudra une auberge.',
+                ],
+                () => game.save(true),
               ),
             ),
           );
@@ -787,11 +869,12 @@ export class OverworldScene implements Scene, World {
           'Maman : Le Hogon t’attend au sanctuaire depuis l’aube. Il va te confier ton premier Jinémon.',
           'Maman : Le sanctuaire est tout au nord de la place du village. Sors, remonte la rue, et suis le chemin.',
           'Maman : Si tu te perds, regarde le plan sur la place, ou ouvre ton menu : la CARTE te rappelle toujours où aller.',
-          'Maman : Allez, file ! Et reviens me voir quand tu veux : un bon repas et une sieste, rien de tel pour tes Jinémon.',
+          'Maman : Et prends ton vieux sac de couchage. Si la nuit te surprend sur la piste, déroule-le : c’est là que tu te réveilleras s’il t’arrive malheur.',
+          'Maman : Mais méfie-toi de la nuit. Ce qui rôde dans le noir ne s’attaque pas qu’aux Jinémon.',
         ],
         () => {
           state.flags.maman = true;
-          game.save(true);
+          this.giveBag();
         },
       );
       return;
@@ -800,12 +883,21 @@ export class OverworldScene implements Scene, World {
       game.say(['Maman : Qu’est-ce que tu fais encore là ? Le Hogon t’attend au sanctuaire, au nord de la place !']);
       return;
     }
-    game.say([`Maman : ${name} ! Tu as l’air à bout de forces. Assieds-toi, et laisse tes Jinémon se reposer un peu.`], () => {
-      healParty(state);
-      state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+    if (itemCount(state, 'sacCouchage') === 0) {
+      game.say(['Maman : Tiens, tu avais oublié ton sac de couchage !'], () => this.giveBag());
+      return;
+    }
+    game.say([`Maman : ${name} ! Tu as une mine affreuse. Assieds-toi, mange, et laisse tes Jinémon se reposer.`], () => {
+      sleepHere(state, HOME_BED, 'votre lit, à la maison');
       game.jingle('soin');
-      game.say(['… … …', 'Maman : Voilà, tout le monde est en pleine forme ! Fais attention à toi, mon enfant.'], () => game.save());
+      game.say(['… … …', 'Maman : Voilà. Ton lit est fait, en haut : s’il t’arrive malheur, c’est là que tu te réveilleras.', 'Maman : Et fais attention aux bandits, sur les pistes. Ils tuent pour quelques cauris.'], () => game.save());
     });
+  }
+
+  private giveBag(): void {
+    addItem(this.game.s, 'sacCouchage');
+    this.game.jingle('objet');
+    this.game.say(['Vous recevez : Sac de Couchage !', 'Ouvrez le SAC pour le dérouler et dormir à la belle étoile.'], () => this.game.save(true));
   }
 
   /** Le Hogon, chef spirituel du village : il confie le premier Jinémon, puis guide le joueur. */
@@ -826,6 +918,8 @@ export class OverworldScene implements Scene, World {
               const j = giveStarter(state, speciesId, game.rng);
               addItem(state, 'calebasse', 5);
               addItem(state, 'karite', 3);
+              addItem(state, 'menottes', 5);
+              state.flags['don:menottes'] = true;
               game.jingle('capture');
               game.say(
                 [
@@ -833,8 +927,13 @@ export class OverworldScene implements Scene, World {
                   `Hogon : ${displayName(j)} t’a choisi autant que tu l’as choisi.`,
                   'Hogon : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
                   "Hogon : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
-                  'Hogon : Ma petite-fille Kady est partie devant avec son propre Jinémon. Elle t’attend dans la Savane des Termitières, au nord du village.',
-                  'Hogon : Si tes Jinémon sont fatigués, va à la Case de Soins : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
+                  'Hogon : Écoute-moi bien. Les pistes sont infestées de bandits. Ils asservissent des Jinémon et tuent pour quelques cauris.',
+                  'Hogon : Quand tu auras abattu leurs Jinémon, ils se jetteront sur toi, machette au poing. Mets-les à terre.',
+                  'Hogon : Ensuite, à toi de choisir : les achever… ou les épargner. Beaucoup ont la tête mise à prix : passe-leur ces menottes, et la garde te paiera la prime.',
+                  'Vous recevez : 5 Menottes de Fer !',
+                  'Hogon : Et un Jinémon de bandit affaibli peut lui être arraché d’un coup de calebasse. Libère-les.',
+                  'Hogon : Ma petite-fille Kady est partie devant. Elle t’attend dans la Savane des Termitières, au nord du village.',
+                  'Hogon : Pour soigner tes Jinémon et dormir, va à l’auberge : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
                   'Hogon : Plus loin, les Maîtres de Piste gardent les Arènes. Gagne leurs insignes, et peut-être atteindras-tu un jour le Panthéon des Légendes.',
                 ],
                 () => game.save(),

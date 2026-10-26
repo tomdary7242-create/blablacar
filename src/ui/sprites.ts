@@ -160,8 +160,13 @@ export interface CreatureFx {
 export function drawCreatureFx(ctx: CanvasRenderingContext2D, speciesId: number, x: number, y: number, size: number, fx: CreatureFx = {}): void {
   const pose: Pose = fx.back ? 'dos' : 'face';
   const variant = fx.shiny ? 'chatoyant' : 'normal';
-  const base = creatureSprite(speciesId, size, variant, pose);
-  const key = `${speciesId}:${size}:${variant}:${pose}`;
+  drawSpriteFx(ctx, creatureSprite(speciesId, size, variant, pose), `${speciesId}:${size}:${variant}:${pose}`, x, y, fx);
+}
+
+/** Dessine un sprite avec ses effets de combat ; (x, y) est le point au sol, au milieu du bord inférieur. */
+export function drawSpriteFx(ctx: CanvasRenderingContext2D, base: HTMLCanvasElement, key: string, x: number, y: number, fx: CreatureFx = {}): void {
+  const w = base.width;
+  const h = base.height;
   const sx = fx.sx ?? 1;
   const sy = fx.sy ?? 1;
   ctx.save();
@@ -173,21 +178,21 @@ export function drawCreatureFx(ctx: CanvasRenderingContext2D, speciesId: number,
   ctx.translate(Math.round(x), Math.round(y));
   if (fx.rotate) ctx.rotate(fx.rotate);
   ctx.scale(sx, sy);
-  const left = -size / 2;
-  const top = -size + 2;
+  const left = -w / 2;
+  const top = -h + 2;
   const alpha = fx.alpha ?? 1;
   if (fx.glow) {
     // Halo : la silhouette teintée, décalée d'un pixel dans les quatre directions.
     ctx.globalAlpha = alpha * 0.85;
     const halo = tintedSprite(base, fx.glow, key);
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(halo, left + dx, top + dy, size, size);
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(halo, left + dx, top + dy, w, h);
   }
   ctx.globalAlpha = alpha;
-  ctx.drawImage(base, left, top, size, size);
+  ctx.drawImage(base, left, top, w, h);
   const over = (color: string, amount: number) => {
     if (amount <= 0) return;
     ctx.globalAlpha = alpha * Math.min(1, amount);
-    ctx.drawImage(tintedSprite(base, color, key), left, top, size, size);
+    ctx.drawImage(tintedSprite(base, color, key), left, top, w, h);
   };
   over('#201828', fx.silhouette ?? 0);
   if (fx.tint) over(fx.tint, fx.tintAmount ?? 0.5);

@@ -38,6 +38,14 @@ export class SceneManager {
     if (wasTop) this.top?.resume?.();
   }
 
+  /** Retire toutes les scènes posées au-dessus de `scene` (menus, sac…). */
+  popAbove(scene: Scene): void {
+    const index = this.stack.lastIndexOf(scene);
+    if (index < 0 || index === this.stack.length - 1) return;
+    this.stack.length = index + 1;
+    scene.resume?.();
+  }
+
   replace(scene: Scene): void {
     this.stack.pop();
     this.stack.push(scene);

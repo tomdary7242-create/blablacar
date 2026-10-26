@@ -71,10 +71,13 @@ export function xpForLevel(level: number): number {
   return level <= 1 ? 0 : level ** 3;
 }
 
+/** Les niveaux montent plus vite : chaque victoire rapporte 50 % d'expérience en plus. */
+export const XP_BOOST = 1.5;
+
 /** Expérience donnée par un adversaire vaincu. */
 export function xpYield(foe: Jinemon, fromTrainer: boolean): number {
   const base = Math.floor((getSpecies(foe.speciesId).baseXp * foe.level) / 5);
-  return Math.max(1, Math.floor(base * (fromTrainer ? 1.5 : 1)));
+  return Math.max(1, Math.floor(base * (fromTrainer ? 1.5 : 1) * XP_BOOST));
 }
 
 /** Attaques du bassin apprises jusqu'à `level` inclus (sans doublon, dans l'ordre). */

@@ -1,51 +1,70 @@
 // Acte II : la route de Tombouctou. Cinq nouveaux Maîtres de Piste, la Confrérie
-// des Masques Brisés, la rivale Kady, et le Conseil des Griots.
+// des Masques Brisés et les bandits du désert, la rivale Kady, et le Conseil des Griots.
 import type { CharacterLook, Trainer } from './trainers';
 
 const RIVAL_LOOK: CharacterLook = { skin: '#8a5a3a', outfit: '#e8a030', accent: '#3a6ab8', headwear: 'foulard' };
 const SBIRE: CharacterLook = { skin: '#4a2a1a', outfit: '#2a2430', accent: '#c8401a', headwear: 'masque' };
 const TOUAREG: CharacterLook = { skin: '#7a4a30', outfit: '#2a3a8a', accent: '#e8e0c8', headwear: 'turban' };
 
-/** Sbire de la Confrérie des Masques Brisés. */
-function sbire(id: string, team: Trainer['team'], intro: string, defeat: string, after: string): Trainer {
+/** Sbire de la Confrérie des Masques Brisés : un bandit, dont la tête est toujours mise à prix. */
+function sbire(id: string, team: Trainer['team'], intro: string, defeat: string, plea: string, after: string): Trainer {
   return {
     id, name: 'Sbire', title: 'Masque Brisé', ai: 'malin', reward: 1500 + team[0].level * 20,
     team, intro: [intro], defeat: [defeat], after: [after], look: SBIRE,
+    bandit: { prime: 1500 + team[0].level * 30, plea: [plea] },
   };
 }
 
 export const ACTE2_TRAINERS: Trainer[] = [
   // ── Désert des Djinns ──
   {
-    id: 'akli', name: 'Akli', title: 'Caravanier Touareg', ai: 'malin', reward: 1900,
+    id: 'akli', name: 'Akli', title: 'Pillard de Caravanes', ai: 'malin', reward: 1900,
     team: [{ species: 81, level: 42 }, { species: 129, level: 41 }, { species: 122, level: 42 }],
-    intro: ['Akli : Le sel de Taoudéni, l’or et les livres… les caravanes portent tout. Mais d’abord, elles se défendent !'],
-    defeat: ['Akli : Tu mènerais une caravane jusqu’à la mer, toi.'],
-    after: ['Akli : Les Masques Brisés ont attaqué notre caravane hier. Ils cherchaient des fétiches, pas du sel.'],
+    intro: [
+      'Akli : Le sel, l’or, les livres… je prends tout ce que portent les caravanes.',
+      'Akli : Et aujourd’hui, la caravane, c’est toi.',
+    ],
+    defeat: ['Akli : Mes bêtes sont mortes dans le sable. Tu vas les rejoindre.'],
+    after: ['Akli : Les Masques Brisés nous achètent tous les fétiches qu’on vole. Ils paient bien… trop bien.'],
+    bandit: { prime: 3200, plea: ['Akli : Je me rends ! Le désert est assez grand pour qu’on ne se recroise jamais !'] },
     look: TOUAREG,
   },
   {
-    id: 'tazir', name: 'Tazir', title: 'Nomade des Dunes', ai: 'malin', reward: 1950,
+    id: 'tazir', name: 'Tazir', title: 'Pillard des Dunes', ai: 'malin', reward: 1950,
     team: [{ species: 83, level: 42 }, { species: 85, level: 43 }],
-    intro: ['Tazir : Le désert n’est pas vide, étranger. Il est plein de ceux qu’on ne voit pas.'],
-    defeat: ['Tazir : Le vent a tourné en ta faveur.'],
-    after: ['Tazir : La nuit, si tu voyages seul, chante. Les Kel Essuf n’aiment pas les chansons.'],
+    intro: [
+      'Tazir : Le désert n’est pas vide, étranger. Il est plein de ceux qu’on ne voit pas.',
+      'Tazir : Comme moi. Jusqu’au moment où il est trop tard.',
+    ],
+    defeat: ['Tazir : Le vent a tourné… mais ma lame, elle, ne tourne pas.'],
+    after: [
+      'Tazir : La nuit, si tu voyages seul, chante. Les Kel Essuf n’aiment pas les chansons. Va, et oublie-moi.',
+    ],
+    bandit: { prime: 0, plea: ['Tazir : Grâce ! Le désert me reprendra bien assez tôt.'] },
     look: { skin: '#6a4028', outfit: '#3a4a9a', accent: '#c8b080', headwear: 'turban' },
   },
   sbire('sbire1', [{ species: 21, level: 42 }, { species: 54, level: 43 }],
-    'Sbire : La Confrérie des Masques Brisés prend ce qu’elle veut ! Et je veux tes Jinémon !',
-    'Sbire : Mon masque… fendu en deux…',
-    'Sbire : Notre maître dit que les vieux fétiches dorment trop. Nous, on les réveille.'),
+    'Sbire : La Confrérie des Masques Brisés prend ce qu’elle veut. Et je veux ta bourse et tes Jinémon !',
+    'Sbire : Mon masque est fendu… mais ma lame, non !',
+    'Sbire : Pitié ! Je ne suis qu’un sbire, on m’a forcé !',
+    'Sbire : Notre maître dit que les vieux fétiches dorment trop. Nous, on les réveille… et on les vend.'),
   sbire('sbire2', [{ species: 97, level: 43 }, { species: 50, level: 43 }],
-    'Sbire : Hé ! Personne ne doit savoir ce qu’on cherche dans les sables !',
-    'Sbire : Bon, bon… je n’ai rien vu, tu n’as rien vu.',
+    'Sbire : Hé ! Personne ne doit savoir ce qu’on cherche dans les sables. Personne ne repart vivant.',
+    'Sbire : Tu vas regretter d’avoir fourré ton nez ici !',
+    'Sbire : Je n’ai rien vu, tu n’as rien vu ! On oublie tout ?',
     'Sbire : Les Légendes du fleuve et des falaises vaudront une fortune à Kouma… oups.'),
   {
-    id: 'hamza', name: 'Hamza', title: 'Chasseur de Djinns', ai: 'malin', reward: 2200,
+    id: 'hamza', name: 'Hamza', title: 'Chasseur de Primes', ai: 'malin', reward: 2200,
     team: [{ species: 66, level: 44 }, { species: 85, level: 44 }, { species: 131, level: 45 }],
-    intro: ['Hamza : Je traque les djinns depuis vingt ans. Toi, tu me sembles plus coriace qu’un djinn.'],
-    defeat: ['Hamza : Tu as l’âme d’un chasseur.'],
-    after: ['Hamza : Les mirages, au nord, cachent la route de Hombori. Seul un Jinémon Psy peut les dissiper.'],
+    intro: [
+      'Hamza : Je traque les têtes mises à prix depuis vingt ans.',
+      'Hamza : Les Masques Brisés paient bien pour la tienne. Rien de personnel.',
+    ],
+    defeat: ['Hamza : Tu as abattu mes bêtes. Ta tête vaut plus cher que prévu…'],
+    after: [
+      'Hamza : Les mirages, au nord, cachent la route de Hombori. Seul un Jinémon Psy peut les dissiper. Considère ça comme ma dernière prime.',
+    ],
+    bandit: { prime: 3500, plea: ['Hamza : Ha… Le chasseur devient la proie. Fais vite, ou fais ton métier.'] },
     look: { skin: '#5a3420', outfit: '#c8a060', accent: '#3a2a20', headwear: 'turban' },
   },
   {
@@ -67,31 +86,50 @@ export const ACTE2_TRAINERS: Trainer[] = [
 
   // ── Monts de Hombori ──
   {
-    id: 'issa', name: 'Issa', title: 'Mineur de Hombori', ai: 'malin', reward: 2300,
+    id: 'issa', name: 'Issa', title: 'Orpailleur Clandestin', ai: 'malin', reward: 2300,
     team: [{ species: 36, level: 46 }, { species: 108, level: 46 }],
-    intro: ['Issa : Il fait noir comme dans un four ici. Mais j’ai l’habitude, et toi ?'],
-    defeat: ['Issa : Tu y vois mieux que moi dans le noir, on dirait.'],
-    after: ['Issa : Un Jinémon Feu dans ton équipe éclaire les galeries. Sans lui, tu marches à tâtons.'],
+    intro: [
+      'Issa : Ces galeries sont à moi, et l’or qu’elles cachent aussi.',
+      'Issa : Ici, dans le noir, personne ne t’entendra crier.',
+    ],
+    defeat: ['Issa : Tu y vois mieux que moi dans le noir… Pas pour longtemps.'],
+    after: [
+      'Issa : Un Jinémon Feu dans ton équipe éclaire les galeries. Sans lui, tu marches à tâtons… comme moi, maintenant.',
+    ],
+    bandit: { prime: 3000, plea: ['Issa : Ne me laisse pas mourir dans ce trou ! Je me rends !'] },
     look: { skin: '#5a3420', outfit: '#6a6f78', accent: '#f0c040', headwear: 'bonnet' },
   },
   {
-    id: 'aicha', name: 'Aïcha', title: 'Grimpeuse des Monts', ai: 'malin', reward: 2400,
+    id: 'aicha', name: 'Aïcha', title: 'Coupe-Jarret des Monts', ai: 'malin', reward: 2400,
     team: [{ species: 107, level: 47 }, { species: 13, level: 47 }, { species: 106, level: 46 }],
-    intro: ['Aïcha : J’ai escaladé la Main de Fatma par la face nord ! Toi, tu n’es qu’un petit caillou sur ma route.'],
-    defeat: ['Aïcha : Ouf. J’ai perdu prise…'],
-    after: ['Aïcha : Au sommet, les gargouilles nichent dans les fissures. Elles ne bougent que la nuit.'],
+    intro: [
+      'Aïcha : D’ici, je vois venir les voyageurs de loin. Et leurs bourses pleines.',
+      'Aïcha : Un faux pas sur ces roches, et on ne retrouve jamais le corps.',
+    ],
+    defeat: ['Aïcha : Tu vas faire le grand saut, toi !'],
+    after: [
+      'Aïcha : Au sommet, les gargouilles nichent dans les fissures. Elles ne bougent que la nuit. Je… je descends de la montagne, promis.',
+    ],
+    bandit: { prime: 0, plea: ['Aïcha : Je glisse ! Tends-moi la main, je ferai tout ce que tu veux !'] },
     look: { skin: '#6a4028', outfit: '#c83a3a', accent: '#f0f0f0', headwear: 'foulard' },
   },
   sbire('sbire3', [{ species: 57, level: 47 }, { species: 46, level: 47 }, { species: 54, level: 48 }],
-    'Sbire : Ces vieilles tombes tellem regorgent de statuettes. On creuse, et tu ne nous déranges pas !',
-    'Sbire : Aïe… le Lieutenant va me tuer.',
+    'Sbire : Ces vieilles tombes tellem regorgent de statuettes. On creuse… et toi, tu creuses ta tombe.',
+    'Sbire : Le Lieutenant va me tuer… mais toi d’abord !',
+    'Sbire : Ne me tue pas ! Le Lieutenant s’en chargera bien assez tôt…',
     'Sbire : Le Lieutenant Sogo est parti vers Djenné. Il a un plan pour attraper le génie du fleuve.'),
   {
-    id: 'mounkaila', name: 'Mounkaïla', title: 'Archéologue', ai: 'malin', reward: 2500,
+    id: 'mounkaila', name: 'Mounkaïla', title: 'Pilleur d’Antiquités', ai: 'malin', reward: 2500,
     team: [{ species: 134, level: 48 }, { species: 66, level: 47 }, { species: 133, level: 46 }],
-    intro: ['Mounkaïla : Ces grottes abritent les tombeaux des Tellem. Les pillards masqués saccagent tout ! Es-tu des leurs ?'],
-    defeat: ['Mounkaïla : Pardonne-moi. Tu combats avec respect, tu ne peux pas être un pillard.'],
-    after: ['Mounkaïla : Les Tellem plaçaient de petites figurines aux bras levés pour demander la pluie. Certaines se sont éveillées.'],
+    intro: [
+      'Mounkaïla : Archéologue, moi ? C’est ce que je raconte aux gardes.',
+      'Mounkaïla : Les tombeaux tellem se vident bien plus vite à la pioche… et sans témoins.',
+    ],
+    defeat: ['Mounkaïla : Mes figurines se sont brisées… Toi aussi, tu vas te briser.'],
+    after: [
+      'Mounkaïla : Les Tellem plaçaient de petites figurines aux bras levés pour demander la pluie. Certaines se sont éveillées quand on les a volées…',
+    ],
+    bandit: { prime: 3400, plea: ['Mounkaïla : Assez ! Je rendrai les statuettes ! Toutes !'] },
     look: { skin: '#4a2a1a', outfit: '#c8b890', accent: '#6a4a2a', headwear: 'chapeau' },
   },
   {
@@ -125,24 +163,37 @@ export const ACTE2_TRAINERS: Trainer[] = [
 
   // ── Djenné et le Delta ──
   {
-    id: 'sekou', name: 'Sékou', title: 'Pêcheur Bozo', ai: 'malin', reward: 2600,
+    id: 'sekou', name: 'Sékou', title: 'Passeur Véreux', ai: 'malin', reward: 2600,
     team: [{ species: 92, level: 49 }, { species: 79, level: 49 }, { species: 109, level: 48 }],
-    intro: ['Sékou : Les Bozo sont les maîtres de l’eau. Le fleuve nous connaît par nos prénoms !'],
-    defeat: ['Sékou : Le fleuve t’a adopté, on dirait.'],
-    after: ['Sékou : Garde la nasse que je t’ai donnée. Les plus beaux Jinémon se cachent au fond de l’eau.'],
+    intro: [
+      'Sékou : Tu veux traverser ? Le passage coûte cher.',
+      'Sékou : Ta bourse… et peut-être ta vie.',
+    ],
+    defeat: ['Sékou : Le fleuve a pris mes Jinémon. À toi de nager, maintenant !'],
+    after: [
+      'Sékou : Garde bien ta nasse. Les plus beaux Jinémon se cachent au fond de l’eau… et les cadavres aussi.',
+    ],
+    bandit: { prime: 2800, plea: ['Sékou : Je te ferai traverser pour rien ! À vie ! Mais lâche ça !'] },
     look: { skin: '#6a4028', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau' },
   },
   {
-    id: 'kadiatou', name: 'Kadiatou', title: 'Marchande de Djenné', ai: 'malin', reward: 2700,
+    id: 'kadiatou', name: 'Kadiatou', title: 'Receleuse de Djenné', ai: 'malin', reward: 2700,
     team: [{ species: 90, level: 49 }, { species: 81, level: 50 }],
-    intro: ['Kadiatou : Le lundi, tout le Delta vient au marché de Djenné. Et le lundi, je ne perds jamais !'],
-    defeat: ['Kadiatou : Bon, pas de chance. On est mardi, peut-être ?'],
-    after: ['Kadiatou : Chaque année, toute la ville remonte de l’argile sur les murs avant la saison des pluies. C’est la fête du crépissage !'],
+    intro: [
+      'Kadiatou : Le lundi, tout le Delta vient au marché. Et tout ce qui est volé finit sur mon étal.',
+      'Kadiatou : Tes Jinémon feraient un bon prix.',
+    ],
+    defeat: ['Kadiatou : Tes bêtes valent plus que les miennes, finalement. Ta peau aussi.'],
+    after: [
+      'Kadiatou : Les Masques Brisés écoulent leurs fétiches volés sur mon étal. Leur Lieutenant s’appelle Sogo. Voilà, tu sais tout.',
+    ],
+    bandit: { prime: 3000, plea: ['Kadiatou : Attends ! On peut s’arranger ! Je te fais un prix !'] },
     look: { skin: '#5a3420', outfit: '#e85a2a', accent: '#f0c040', headwear: 'foulard' },
   },
   sbire('sbire4', [{ species: 87, level: 50 }, { species: 99, level: 50 }],
-    'Sbire : Le Lieutenant prépare un grand coup au fleuve. Dégage !',
-    'Sbire : Je file prévenir le Lieutenant !',
+    'Sbire : Le Lieutenant prépare un grand coup au fleuve. Dégage, ou on repêchera ton corps demain.',
+    'Sbire : Plus de Jinémon ? Il me reste mon couteau !',
+    'Sbire : Je parle ! Je parle ! Mais range ça !',
     'Sbire : Le génie du fleuve… le Lieutenant veut l’enfermer dans une calebasse brisée.'),
   {
     id: 'sogo', name: 'Sogo', title: 'Lieutenant des Masques Brisés', ai: 'malin', reward: 4500,
@@ -154,10 +205,13 @@ export const ACTE2_TRAINERS: Trainer[] = [
     ],
     defeat: [
       'Sogo : Impossible… Mes Jinémon des marais, battus…',
-      'Sogo : Le Maître Kouma saura te faire regretter ça. Les Masques Brisés n’oublient jamais !',
-      'Le Lieutenant s’enfuit. Les eaux du fleuve se mettent à briller…',
+      'Sogo : Alors c’est moi qui vais te noyer !',
     ],
-    after: ['…'],
+    after: [
+      'Sogo : Le Maître Kouma te fera regretter ça. Les Masques Brisés n’oublient jamais !',
+      'Les eaux du fleuve se mettent à briller…',
+    ],
+    bandit: { prime: 6000, plea: ['Sogo : Tu ne sais pas à qui tu as affaire ! Kouma te fera payer… Pitié !'] },
     look: { skin: '#3a2214', outfit: '#1a1a24', accent: '#e8c040', headwear: 'masque' },
     sight: 0,
   },
@@ -180,32 +234,51 @@ export const ACTE2_TRAINERS: Trainer[] = [
 
   // ── Côte des Alizés ──
   {
-    id: 'ndeye', name: 'Ndèye', title: 'Pêcheuse Lébou', ai: 'malin', reward: 2800,
+    id: 'ndeye', name: 'Ndèye', title: 'Contrebandière', ai: 'malin', reward: 2800,
     team: [{ species: 110, level: 52 }, { species: 44, level: 52 }, { species: 119, level: 53 }],
-    intro: ['Ndèye : Les Lébou parlent à la mer, et la mer leur répond. Écoute bien !'],
-    defeat: ['Ndèye : La marée t’est favorable aujourd’hui.'],
-    after: ['Ndèye : Mame Coumba Bang protège les pêcheurs. On lui laisse toujours une part de la pêche.'],
+    intro: [
+      'Ndèye : Mes pirogues ne transportent pas que du poisson.',
+      'Ndèye : Et ceux qui fouillent mes filets finissent dedans.',
+    ],
+    defeat: ['Ndèye : La marée a tourné… Je vais te noyer de mes mains !'],
+    after: [
+      'Ndèye : Mame Coumba Bang protège les pêcheurs honnêtes. Moi, elle m’a abandonnée… On lui laisse toujours une part de la pêche.',
+    ],
+    bandit: { prime: 3000, plea: ['Ndèye : Grâce ! Mame Coumba Bang, protège-moi !'] },
     look: { skin: '#4a2a1a', outfit: '#e8c040', accent: '#3a86c8', headwear: 'foulard' },
   },
   {
-    id: 'ousmane', name: 'Ousmane', title: 'Marin', ai: 'malin', reward: 2800,
+    id: 'ousmane', name: 'Ousmane', title: 'Pirate', ai: 'malin', reward: 2800,
     team: [{ species: 50, level: 53 }, { species: 93, level: 53 }],
-    intro: ['Ousmane : J’ai navigué jusqu’aux îles lointaines. Les tempêtes ne me font pas peur, et toi non plus !'],
-    defeat: ['Ousmane : Coulé ! Comme en pleine tempête.'],
-    after: ['Ousmane : Les selkies viennent sécher leur peau de phoque sur ces plages, les nuits de pleine lune.'],
+    intro: [
+      'Ousmane : J’ai pillé des navires jusqu’aux îles lointaines. Ta bourse, c’est de la menue monnaie.',
+      'Ousmane : Mais je la prends quand même.',
+    ],
+    defeat: ['Ousmane : Coulé… Mais un pirate se bat jusqu’au bout !'],
+    after: [
+      'Ousmane : Les selkies viennent sécher leur peau de phoque sur ces plages, les nuits de pleine lune. On les volait pour les revendre…',
+    ],
+    bandit: { prime: 3200, plea: ['Ousmane : Je me rends ! Pas la corde, pas la corde !'] },
     look: { skin: '#5a3420', outfit: '#f0f0f0', accent: '#2a4a8a', headwear: 'bonnet' },
   },
   {
-    id: 'fatou', name: 'Fatou', title: 'Observatrice d’Oiseaux', ai: 'malin', reward: 2900,
+    id: 'fatou', name: 'Fatou', title: 'Trafiquante d’Oiseaux', ai: 'malin', reward: 2900,
     team: [{ species: 23, level: 53 }, { species: 104, level: 53 }, { species: 122, level: 54 }],
-    intro: ['Fatou : Chut ! Tu vas effrayer les oiseaux migrateurs… Bon, tant pis, combattons !'],
-    defeat: ['Fatou : Ils se sont tous envolés…'],
-    after: ['Fatou : Chaque hiver, des millions d’oiseaux d’Europe viennent ici. Ils sont plus voyageurs que les caravanes !'],
+    intro: [
+      'Fatou : Chut. Les oiseaux migrateurs se vendent une fortune, au Nord.',
+      'Fatou : Et toi, tu fais fuir ma marchandise.',
+    ],
+    defeat: ['Fatou : Ils se sont tous envolés… Toi, tu ne t’envoleras pas !'],
+    after: [
+      'Fatou : Chaque hiver, des millions d’oiseaux d’Europe viennent ici. Je… je les laisserai tranquilles.',
+    ],
+    bandit: { prime: 0, plea: ['Fatou : Arrête ! J’ouvrirai les cages, toutes !'] },
     look: { skin: '#6a4028', outfit: '#5fa83a', accent: '#f0e0a0', headwear: 'chapeau' },
   },
   sbire('sbire5', [{ species: 21, level: 54 }, { species: 117, level: 54 }],
-    'Sbire : On braconne les Jinémon des plages pour la Confrérie. Ne t’en mêle pas !',
-    'Sbire : Ouille ! Retraite vers le Bois des Masques !',
+    'Sbire : On braconne les Jinémon des plages pour la Confrérie. Toi, tu serviras d’appât aux requins.',
+    'Sbire : Viens là, que je t’apprenne !',
+    'Sbire : Grâce ! Je retourne pêcher, honnêtement !',
     'Sbire : Notre repaire est dans le Bois des Masques, au nord. Kouma t’y attend… enfin, j’imagine.'),
   {
     id: 'ndiaga', name: 'Ndiaga', title: 'Maître des Alizés', ai: 'malin', reward: 6800, badge: 'vent',
@@ -226,23 +299,32 @@ export const ACTE2_TRAINERS: Trainer[] = [
 
   // ── Bois des Masques ──
   sbire('sbire6', [{ species: 48, level: 55 }, { species: 52, level: 55 }],
-    'Sbire : Personne n’entre dans le Bois des Masques sans la permission de Kouma !',
-    'Sbire : Mes esprits me désobéissent…',
+    'Sbire : Personne n’entre dans le Bois des Masques sans la permission de Kouma. Les intrus, on les pend aux fromagers.',
+    'Sbire : Mes esprits me désobéissent… Je vais le faire moi-même !',
+    'Sbire : Pitié ! J’ai une famille au village !',
     'Sbire : Kouma dit que les masques ont perdu leur pouvoir parce que plus personne ne les craint.'),
   sbire('sbire7', [{ species: 99, level: 56 }, { species: 132, level: 56 }],
-    'Sbire : Tu entends ces tambours ? C’est la cérémonie qui commence. Tu arrives trop tard !',
-    'Sbire : La cérémonie… elle va mal tourner sans moi.',
+    'Sbire : Tu entends ces tambours ? La cérémonie commence. Tu arrives trop tard… et tu ne repartiras pas.',
+    'Sbire : Tu ne gâcheras pas la cérémonie !',
+    'Sbire : Je me rends… Je voulais juste un masque qui fait peur.',
     'Sbire : Moi, je voulais juste un masque qui fait peur. Pas devenir un brigand…'),
   sbire('sbire8', [{ species: 51, level: 56 }, { species: 73, level: 56 }, { species: 26, level: 57 }],
-    'Sbire : Dernière ligne de défense de la Confrérie ! Tu ne passeras pas !',
-    'Sbire : Je… je me rends.',
+    'Sbire : Dernière ligne de défense de la Confrérie ! Tu ne passeras pas vivant !',
+    'Sbire : À genoux devant toi ? Jamais !',
+    'Sbire : D’accord… Je me rends.',
     'Sbire : Le Maître est dans la clairière aux masques. C’est lui, le Maître de Piste de ce bois.'),
   {
-    id: 'ama', name: 'Ama', title: 'Sculptrice de Masques', ai: 'malin', reward: 2900,
+    id: 'ama', name: 'Ama', title: 'Faussaire de Masques', ai: 'malin', reward: 2900,
     team: [{ species: 135, level: 56 }, { species: 28, level: 56 }],
-    intro: ['Ama : Les Masques Brisés volent nos masques sacrés ! Montre-moi que tu n’es pas l’un d’eux.'],
-    defeat: ['Ama : Tu as le cœur pur. Pardonne mon accueil.'],
-    after: ['Ama : Un masque n’est pas un déguisement. Quand le danseur le porte, c’est l’esprit qui danse.'],
+    intro: [
+      'Ama : Je sculpte de faux masques sacrés, et les Masques Brisés les vendent aux étrangers.',
+      'Ama : Toi, tu en as trop vu.',
+    ],
+    defeat: ['Ama : Mes esprits me fuient… Je vais te faire taire moi-même.'],
+    after: [
+      'Ama : Un vrai masque n’est pas un déguisement : quand le danseur le porte, c’est l’esprit qui danse. Les miens étaient vides…',
+    ],
+    bandit: { prime: 3500, plea: ['Ama : Pardon ! Je ne sculpterai plus jamais un faux, je le jure !'] },
     look: { skin: '#3a2214', outfit: '#c8a060', accent: '#c8401a', headwear: 'foulard' },
   },
   {
@@ -256,10 +338,13 @@ export const ACTE2_TRAINERS: Trainer[] = [
     ],
     defeat: [
       'Kouma : … Mes masques se taisent. Les esprits ont choisi ton camp.',
+      'Kouma : Mais je ne m’agenouillerai pas devant toi. Viens prendre cet insigne !',
+    ],
+    after: [
       'Kouma : Peut-être que la peur n’était pas le bon chemin. Le respect ne s’impose pas…',
       'Kouma : La Confrérie est dissoute. Prends l’Insigne du Masque : avec huit insignes, Tombouctou t’ouvre ses portes.',
     ],
-    after: ['Kouma : Je vais rendre les masques volés aux villages. Ce sera long. C’est juste.'],
+    bandit: { prime: 10000, plea: ['Kouma : … Fais ce que tu as à faire. Je voulais seulement qu’on respecte à nouveau les esprits.'] },
     look: { skin: '#2a1810', outfit: '#3a1a3a', accent: '#e8e0d0', headwear: 'masque' },
   },
 
@@ -276,11 +361,17 @@ export const ACTE2_TRAINERS: Trainer[] = [
     look: RIVAL_LOOK,
   },
   {
-    id: 'mahmoud', name: 'Mahmoud', title: 'Lettré de Tombouctou', ai: 'malin', reward: 3000,
+    id: 'mahmoud', name: 'Mahmoud', title: 'Voleur de Manuscrits', ai: 'malin', reward: 3000,
     team: [{ species: 66, level: 57 }, { species: 23, level: 57 }, { species: 85, level: 58 }],
-    intro: ['Mahmoud : Les manuscrits de Tombouctou parlent d’astronomie, de médecine et de Jinémon. Voyons si tu as bien lu !'],
-    defeat: ['Mahmoud : Ta science du combat dépasse la mienne.'],
-    after: ['Mahmoud : Des familles ont caché des milliers de manuscrits pendant des siècles pour les sauver. Le savoir est un trésor.'],
+    intro: [
+      'Mahmoud : Pour certains collectionneurs, les manuscrits de Tombouctou valent plus que l’or.',
+      'Mahmoud : Et tu viens de me voir en sortir un sous le bras.',
+    ],
+    defeat: ['Mahmoud : Ta science du combat dépasse la mienne. Pas ma lame.'],
+    after: [
+      'Mahmoud : Des familles ont caché des milliers de manuscrits pendant des siècles pour les sauver… et moi, je les volais. Emmène-moi.',
+    ],
+    bandit: { prime: 4000, plea: ['Mahmoud : Grâce ! Je rendrai les manuscrits aux familles !'] },
     look: { skin: '#5a3420', outfit: '#f0ead8', accent: '#3a6ab8', headwear: 'turban' },
   },
   {

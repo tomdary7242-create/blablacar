@@ -98,7 +98,7 @@ export const desert: Zone = {
   ],
   npcs: [
     soin('guerisseuseDesert', 7, 15, 'bas', ['Guérisseuse : Le désert assèche les corps et les esprits. Bois, et laisse tes Jinémon se reposer à l’ombre.'], TOUAREG_SOIN),
-    boutique('marchandDesert', 6, 19, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola'], [
+    boutique('marchandDesert', 6, 19, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola', 'menottes'], [
       'Marchande : Des dattes ? Du sel ? Non… des calebasses et du miel, voilà ce qu’il te faut pour traverser !',
     ]),
     parole('conteuseDesert', 'Conteuse', 24, 20, 'haut', { skin: '#6a4028', outfit: '#b84ae8', accent: '#f0c040', headwear: 'turban' }, [
@@ -188,7 +188,7 @@ export const hombori: Zone = {
     soin('ermiteHombori', 16, 26, 'bas', ['Ermite : Assieds-toi près du feu. La montagne est froide et sombre, mais ici, tu es en sécurité.'], {
       skin: '#3a2214', outfit: '#e8e0d0', accent: '#9c8a5a', headwear: 'turban',
     }),
-    boutique('colporteurHombori', 24, 25, ['calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola'], [
+    boutique('colporteurHombori', 24, 25, ['calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola', 'menottes'], [
       'Colporteur : Des torches ? J’en ai plus. Mais j’ai du miel et des calebasses !',
     ]),
     dresseur('issa', 10, 19, 'droite', T('issa')),
@@ -285,8 +285,8 @@ export const djenne: Zone = {
     'TTTTTTTTTTTTTTTTTTTT=TTTTTTTTTTTTTTTTTTT',
   ],
   buildings: [
-    caseDeSoins(2, 16, soin('guerisseuseDjenne', 0, 0, 'bas', ['Guérisseuse : L’eau du fleuve et les plantes du Delta soignent tout. Approche.'])),
-    marche(31, 17, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'baumeAnciens', 'kola'], [
+    caseDeSoins(2, 16, soin('guerisseuseDjenne', 0, 0, 'bas', ['Aubergiste : L’eau du fleuve et les plantes du Delta soignent tout. Et mes lits sont les plus doux du Delta.'])),
+    marche(31, 17, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'baumeAnciens', 'kola', 'menottes'], [
         'Marchande : Bienvenue au grand marché de Djenné ! Tout le Delta vient ici le lundi.',
       ]),
   ],
@@ -404,10 +404,10 @@ export const cote: Zone = {
     '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
   ],
   buildings: [
-    caseDeSoins(26, 3, soin('guerisseuseCote', 0, 0, 'bas', ['Guérisseuse : L’air de la mer est bon pour les poumons. Et pour les Jinémon aussi !'], {
+    caseDeSoins(26, 3, soin('guerisseuseCote', 0, 0, 'bas', ['Aubergiste : L’air de la mer est bon pour les poumons. Et une nuit au son des vagues, rien de tel.'], {
         skin: '#4a2a1a', outfit: '#e8c040', accent: '#3a86c8', headwear: 'foulard',
       })),
-    marche(8, 5, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
+    marche(8, 5, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola', 'menottes'], [
         'Marchande : Poisson frais, coquillages… et calebasses ! Tout vient de la mer, ici.',
       ]),
   ],
@@ -510,7 +510,7 @@ export const masques: Zone = {
     soin('guerisseurMasques', 4, 13, 'bas', ['Guérisseur : Même les esprits du bois ont besoin de repos. Approche du feu.'], {
       skin: '#3a2214', outfit: '#9c7a4a', accent: '#e8e0c8', headwear: 'bonnet',
     }),
-    boutique('marchandMasques', 2, 15, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'kola'], [
+    boutique('marchandMasques', 2, 15, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'kola', 'menottes'], [
       'Marchand : Je vends surtout des masques… mais pas les sacrés ! Voici ce qu’il te faut pour la route.',
     ]),
     dresseur('ama', 6, 16, 'droite', T('ama')),
@@ -568,8 +568,8 @@ export const tombouctou: Zone = {
     'MMMMMMMMMMMMMMMMMMMM=MMMMMMMMMMMMMMMMMMM',
   ],
   buildings: [
-    caseDeSoins(13, 22, soin('guerisseuseTombouctou', 0, 0, 'bas', ['Guérisseuse : Le Conseil est une rude épreuve. Reviens me voir autant qu’il le faudra.'])),
-    marche(26, 23, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
+    caseDeSoins(13, 22, soin('guerisseuseTombouctou', 0, 0, 'bas', ['Aubergiste : Le Conseil est une rude épreuve. Reviens dormir ici autant qu’il le faudra.'])),
+    marche(26, 23, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola', 'menottes'], [
         'Marchand : Les caravanes de tout le Sahel s’arrêtent ici. J’ai le meilleur de chaque pays !',
       ]),
   ],

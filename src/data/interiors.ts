@@ -1,5 +1,5 @@
 // Intérieurs : la maison du joueur, le sanctuaire du Hogon, et dans chaque
-// ville la même Case de Soins et le même Marché, pour qu'on s'y retrouve.
+// ville la même auberge et le même Marché, pour qu'on s'y retrouve.
 //
 // Les portes sont reliées automatiquement : la porte « d » d'un bâtiment mène
 // juste au-dessus du seuil « x » de son intérieur, et le seuil ramène devant la porte.
@@ -16,7 +16,7 @@ export const BUILDING_SIZE: Record<BuildingKind, { w: number; h: number; door: [
 
 export const BUILDING_LABEL: Record<BuildingKind, string> = {
   maison: 'Maison',
-  soins: 'Case de Soins',
+  soins: 'Auberge',
   marche: 'Marché',
   sanctuaire: 'Sanctuaire',
 };
@@ -148,26 +148,27 @@ export const sanctuaire: Zone = interieur(
   },
 );
 
-// ── Case de Soins et Marché, identiques dans chaque ville ────────────────
+// ── Auberge et Marché, identiques dans chaque ville ──────────────────────
 
+/** L'auberge : le comptoir de l'aubergiste, la Grande Jarre au fond, et quatre lits. */
 const SOINS_MAP = [
   'WWWWWWWWWWWWW',
   'WnWqWbWWnWqWW',
   'W_____b__g__W',
   'Wccccc______W',
-  'W___________W',
-  'W_rrr___rrr_W',
-  'W_rrr___rrr_W',
+  'W____rrr____W',
+  'W_l_l___l_l_W',
+  'W_l_l___l_l_W',
   'Wj_________jW',
   'W_____x_____W',
   'WWWWWWWWWWWWW',
 ];
 
-/** Soigneur par défaut (guérisseuse du village). */
+/** Aubergiste par défaut (celle du village). */
 const GUERISSEUSE_NPC: Npc = {
-  id: 'guerisseuse', name: 'Guérisseuse', x: 0, y: 0, dir: 'bas',
+  id: 'guerisseuse', name: 'Aubergiste', x: 0, y: 0, dir: 'bas',
   look: { kind: 'personne', look: { skin: '#5a3420', outfit: '#5fa83a', accent: '#f0f0f0', headwear: 'foulard' } },
-  script: { kind: 'soin', lines: ['Bienvenue à la Case de Soins. Mes plantes remettent n’importe quel Jinémon sur pied.'] },
+  script: { kind: 'soin', lines: ['Aubergiste : Bienvenue à l’auberge. Mes plantes remettent n’importe quel Jinémon sur pied, et un lit t’attend.'] },
 };
 
 function soinsInterior(town: Zone, b: Building): Zone {
@@ -179,28 +180,29 @@ function soinsInterior(town: Zone, b: Building): Zone {
       kind: 'grenier',
       lines: [
         'Gardien : Voici la Grande Jarre. Au fond du tourbillon, les Jinémon qui ne voyagent pas avec toi se reposent dans le monde des esprits.',
-        'Gardien : Tu peux y déposer un Jinémon, en reprendre un, ou les échanger directement. Toutes les Grandes Jarres communiquent : il y en a une dans chaque Case de Soins.',
+        'Gardien : Tu peux y déposer un Jinémon, en reprendre un, ou les échanger directement. Toutes les Grandes Jarres communiquent : il y en a une dans chaque auberge.',
       ],
     },
   };
   const visitor: Npc = {
-    id: `${town.id}-visiteur`, name: 'Voyageur', x: 10, y: 6, dir: 'gauche',
+    id: `${town.id}-visiteur`, name: 'Voyageur', x: 7, y: 7, dir: 'gauche',
     look: { kind: 'personne', look: VILLAGEOIS },
     script: {
       kind: 'dialogue',
       lines: [
-        'Voyageur : Il y a une Case de Soins comme celle-ci dans chaque ville. Le toit vert se voit de loin !',
-        'Voyageur : On y soigne ses Jinémon gratuitement. Et au fond, la Grande Jarre garde ceux qui ne voyagent pas avec toi.',
-        'Voyageur : Ton équipe est pleine ? Confie un Jinémon à la jarre, ou échange-le contre un autre.',
+        'Voyageur : Il y a une auberge comme celle-ci dans chaque ville. Le toit vert se voit de loin.',
+        'Voyageur : Dors ici avant de reprendre la piste. Si un bandit ou une bête de la nuit te met à terre, c’est dans ce lit que tu te réveilleras.',
+        'Voyageur : Et en brousse, déroule ton sac de couchage. Mais pas la nuit, si tu tiens à ta peau.',
       ],
     },
   };
-  return interieur(`${town.id as TownId}:soins`, `Case de Soins · ${town.name}`, town.id as TownId, 'soins', SOINS_MAP, [healer, keeper, visitor], {
+  return interieur(`${town.id as TownId}:soins`, `Auberge · ${town.name}`, town.id as TownId, 'soins', SOINS_MAP, [healer, keeper, visitor], {
     music: 'soins',
     decor: {
       b: 'Des pots de beurre de karité, des feuilles de moringa séchées et des racines à infuser.',
       g: 'La Grande Jarre. Un tourbillon vert et violet tourne au fond…',
-      q: 'Une tenture brodée de feuilles : l’emblème des Cases de Soins.',
+      q: 'Une tenture brodée d’une lune et d’une feuille : l’emblème des auberges.',
+      l: 'Un lit propre, couvert d’un pagne. On y dort en sûreté.',
       n: 'La lumière du jour entre à flots.',
       p: 'Une plante médicinale, soigneusement taillée.',
       j: 'Un canari d’eau fraîche pour les voyageurs.',
@@ -247,7 +249,7 @@ function tileOf(zone: Zone, ch: string): { x: number; y: number } {
 
 /**
  * Crée les intérieurs de service de chaque ville et relie toutes les portes.
- * La Case de Soins sert aussi de point d'arrivée en vol.
+ * L'auberge sert aussi de point d'arrivée en vol.
  */
 export function linkBuildings(outdoor: Zone[], unique: Zone[]): Zone[] {
   const created: Zone[] = [];

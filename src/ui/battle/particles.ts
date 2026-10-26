@@ -188,6 +188,7 @@ const GLYPHS: Record<string, string[]> = {
   eclair: ['..#', '.#.', '###', '.#.', '#..'],
   question: ['.##.', '#..#', '..#.', '.#..', '....', '.#..'],
   ha: ['#.#.###', '###.#.#', '#.#.###', '#.#.#.#'],
+  menottes: ['.###...###.', '#...#.#...#', '#...###...#', '#...#.#...#', '.###...###.'],
 };
 
 function drawGlyph(ctx: Ctx, glyph: string, x: number, y: number, color: string): void {

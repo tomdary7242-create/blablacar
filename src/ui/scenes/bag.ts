@@ -21,6 +21,21 @@ export function remedyIcon(ctx: CanvasRenderingContext2D, item: ItemId, x: numbe
     stamp(ctx, ['..kkkk..', '.k....k.', 'k......k', 'k......k', '.k....k.', '..kwwk..', '..wyyw..', '...ww...'], x - 4, y - 4, { k: '#f0ecdc', w: '#c8a040', y: '#c8401a' });
     return;
   }
+  if (item === 'menottes') {
+    stamp(ctx, ['........', '.kk..kk.', 'k..kk..k', 'k..kk..k', '.kk..kk.', '........'], x - 4, y - 3, { k: '#c8ccd0' });
+    stamp(ctx, ['........', '........', '.d....d.', '.d....d.', '........', '........'], x - 4, y - 3, { d: '#6a6e74' });
+    return;
+  }
+  if (item === 'sacCouchage') {
+    stamp(
+      ctx,
+      ['..kkkk..', '.kccccdk', 'kccwwcdk', 'kcwkkwdk', 'kccwwcdk', '.kccccdk', '..kyyk..', '........'],
+      x - 4,
+      y - 4,
+      { k: '#28180e', c: '#b8582a', d: '#7a3418', w: '#e8b878', y: '#c8a040' },
+    );
+    return;
+  }
   if (item === 'nasse') {
     stamp(
       ctx,
@@ -89,6 +104,14 @@ export class BagScene implements Scene {
     if (isCaptureItem(item)) {
       this.message = 'Les calebasses se lancent sur les Jinémon sauvages, en combat.';
       this.game.sfx('erreur');
+      return;
+    }
+    if (item === 'sacCouchage' && this.game.world) {
+      // On referme le sac et le menu, puis on déroule le sac de couchage sur place.
+      const world = this.game.world;
+      this.game.sfx('valider');
+      this.game.scenes.popAbove(world);
+      world.camp();
       return;
     }
     if (isKeyItem(item)) {

@@ -1,8 +1,8 @@
-// Bâtiments où l'on entre (maison, Case de Soins, Marché, sanctuaire) et
+// Bâtiments où l'on entre (maison, auberge, Marché, sanctuaire) et
 // meubles des intérieurs, sculptés comme le reste du décor.
 //
 // Chaque bâtiment a une silhouette et des couleurs propres à sa fonction, les
-// mêmes dans toutes les villes : la Case de Soins blanche au toit vert, le
+// mêmes dans toutes les villes : l'auberge blanche au toit vert, le
 // Marché ocre à l'auvent rayé orange… On les reconnaît de loin.
 import { sculpted, type Prop } from './props';
 import { shade } from './draw';
@@ -48,7 +48,7 @@ export function maisonProp(): Prop {
   });
 }
 
-/** Case de Soins : murs blanchis à la chaux, toit et auvent verts, enseigne à la feuille (5 × 3 cases, porte au centre). */
+/** Auberge : murs blanchis à la chaux, toit et auvent verts, enseigne au croissant de lune, lanternes (5 × 3 cases, porte au centre). */
 export function soinsProp(): Prop {
   return sculpted('batiment:soins', (s, m) => {
     const lime = m('#eee6d6', { pattern: { kind: 'craquelures', color: '#d8ccb6', scale: 5, amount: 0.05 } });
@@ -64,11 +64,17 @@ export function soinsProp(): Prop {
     s.capped([0, 34.5, -2], [0, 40, -2], 7, 0.8, green, { round: 1.5 });
     // Bandeau vert au pied des murs.
     s.paint([0, 1.5, 11], [36, 1.8, 2], deep);
-    // Auvent au-dessus de la porte, et enseigne sur le bord du toit : feuille verte dans un disque blanc.
+    // Auvent au-dessus de la porte, et enseigne sur le bord du toit : croissant de lune vert dans un disque blanc.
     s.box([0, 19.5, 14], [10, 1, 4.5], 0.5, green, { rot: [0, 0, -12] });
     s.box([0, 27, 13.6], [7, 4, 1], 0.6, green);
     s.paint([0, 27, 14.4], [3.8, 3.4, 1.4], white);
-    s.paint([0, 27, 14.8], [1.3, 2.6, 1.4], m('#2e8a3e'), [35, 0, 0]);
+    s.paint([-0.5, 27, 14.8], [2.6, 2.6, 1.4], m('#2e8a3e'));
+    s.paint([0.9, 27.6, 14.9], [2.2, 2.2, 1.5], m('#fbf8f0'));
+    // Deux lanternes de part et d'autre de la porte : on voit l'auberge de loin, la nuit.
+    for (const lx of [-8.5, 8.5]) {
+      s.cone([lx, 16, 12.2], [lx, 13.5, 13.8], 0.35, 0.35, deep);
+      s.capped([lx, 10.5, 13.8], [lx, 13.5, 13.8], 1.4, 1.1, m('#ffd070', { glow: true }), { round: 0.4 });
+    }
     s.box([0, 7.5, 11.4], [5, 7.5, 0.7], 0.5, door);
     // Fenêtres à volets verts de part et d'autre.
     for (const wx of [-22, 22]) {

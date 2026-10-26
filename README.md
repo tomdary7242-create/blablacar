@@ -54,13 +54,13 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 ## Ne jamais être perdu
 
 - **Un vrai départ** : on se réveille dans sa chambre (on a trop dormi !), on descend l’escalier, Maman attend au
-  salon et envoie au **sanctuaire du Hogon**, le chef spirituel du village, qui confie le premier Jinémon. Maman
-  soigne aussi l’équipe à chaque visite.
-- **Des bâtiments qu’on reconnaît de loin**, identiques dans chaque ville : la **Case de Soins** blanche au toit vert
-  (soins gratuits et **Grande Jarre**), le **Marché** au toit de chaume et à l’auvent rayé orange. On y entre ;
-  on parle au soigneur et à la marchande par-dessus leur comptoir. Dans les lieux sauvages (Forêt Sacrée, camp de la
-  Piste, sommet de la Falaise, oasis du désert, grotte de Hombori, Bois des Masques), ils sont remplacés par un **stand
-  de soins** vert, une Grande Jarre en plein air et l’étal d’un marchand.
+  salon, donne le **sac de couchage** et envoie au **sanctuaire du Hogon**, le chef spirituel du village, qui confie le
+  premier Jinémon (et des menottes). Maman soigne aussi l’équipe à chaque visite.
+- **Des bâtiments qu’on reconnaît de loin**, identiques dans chaque ville : l’**Auberge** blanche au toit vert et aux
+  lanternes (soins gratuits, lits, **Grande Jarre**), le **Marché** au toit de chaume et à l’auvent rayé orange. On y
+  entre ; on parle à l’aubergiste et à la marchande par-dessus leur comptoir. Dans les lieux sauvages (Forêt Sacrée,
+  camp de la Piste, sommet de la Falaise, oasis du désert, grotte de Hombori, Bois des Masques), ils sont remplacés par
+  un **campement**, une Grande Jarre en plein air et l’étal d’un marchand.
 - **La Grande Jarre**, comme le PC de Pokémon : un canari géant au tourbillon magique vert et violet, où l’on peut
   déposer, retirer ou **échanger** directement un Jinémon de l’équipe contre un Jinémon en réserve. Toutes les jarres
   communiquent entre elles.
@@ -68,6 +68,30 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **CARTE** (menu) : la carte du Mandé avec « vous êtes ici », les lieux visités, les routes et une étoile sur
   l’objectif. Sur chaque lieu visité, A ouvre son **plan** (bâtiments, stands, sorties). Le Village des Greniers a aussi
   son plan affiché sur la place.
+
+## Bandits, lits et nuits mortelles
+
+- **Les dresseurs de route sont des bandits** : racketteurs, braconniers, pilleurs de tombes, pirates, sbires des
+  Masques Brisés… Ils veulent votre bourse. La rivale, les Maîtres de Piste et le Conseil des Griots se battent
+  loyalement (sauf Kouma, le chef des Masques Brisés).
+- **Quand leur dernier Jinémon tombe, le bandit vient en personne**, machette au poing : un **duel** au corps à corps
+  (FRAPPER, ASSOMMER — puissant mais peut manquer —, PARER — encaisse à peine puis riposte). Le héros a ses propres
+  PV, qui grandissent avec son équipe (affichés dans le menu).
+- **À genoux, il implore** : l’**achever** (on récupère sa bourse), ou l’**épargner**. Les trois quarts ont la tête mise
+  à prix : avec des **Menottes de Fer** (5 offertes par le Hogon, puis au marché), la garde l’emmène et la **prime** est
+  pour vous ; menotté, il avoue ce qu’il sait. Sans menottes, ou sans prime, il détale. Mort, arrêté ou en fuite, il
+  ne revient plus sur la carte. Vaincu, en revanche, c’est lui qui vous dépouille.
+- **Les Jinémon des bandits peuvent leur être arrachés** d’un coup de calebasse quand ils sont affaiblis : moins de 30 %
+  de leurs PV, endormis, paralysés ou confus (une calebasse clignote alors à côté de leurs PV).
+- **Un peu plus facile** : les coups de votre camp portent 25 % de plus, l’expérience est multipliée par 1,5, et après
+  chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %.
+- **Lits et point de réveil** : dormir à l’auberge (lits ou aubergiste), dans sa chambre, chez Maman ou sous la tente
+  d’un campement soigne tout le monde et fixe l’endroit où l’on se réveille après un malheur. Le **sac de couchage**
+  (SAC) permet de bivouaquer n’importe où dehors : moins réparateur, et la nuit, une Hantise vient parfois renifler le
+  dormeur.
+- **La nuit, dehors, si toute l’équipe tombe, le monstre s’en prend au héros** : l’écran se teinte de sang, le cœur
+  bat, la bête grandit. On peut se débattre (les coups ne font qu’effleurer sa chair d’ombre) ou tenter de fuir.
+  Mort, on s’évanouit et l’on se réveille au petit matin dans le dernier lit.
 
 ## Contenu
 
@@ -82,17 +106,17 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Bassins d’attaques** d’environ 15 attaques par lignée, apprises du niveau 1 au niveau 70 ; au-delà de 4 attaques,
   le jeu propose d’en oublier une. Depuis l’équipe, on peut à tout moment remplacer une attaque par une autre déjà
   apprise.
-- **13 zones** et une trentaine d’intérieurs : Village des Greniers (maison, sanctuaire, Case de Soins, Marché), Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
+- **13 zones** et une trentaine d’intérieurs : Village des Greniers (maison, sanctuaire, auberge, Marché), Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
   Piste des Chasseurs Donzos, Falaise des Ancêtres (Panthéon des Légendes), puis Désert des Djinns, Monts de Hombori
   (grottes obscures), Djenné et le Delta, Côte des Alizés, Bois des Masques et Tombouctou.
 - **8 Arènes et leurs insignes** : Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos, Oasis
   de Tin-Hinan, Main de Fatma, Fleuve de Djenné, Phare des Alizés, Bois des Masques ; puis le **Conseil des Griots**
-  (quatre griots à affronter d’affilée) et la Championne. Plus de 50 dresseurs, une rivale qui grandit avec vous, une
-  organisation de pillards et son chef.
-- **Les dresseurs vous repèrent** : un « ! » apparaît, ils marchent jusqu’à vous et lancent le défi.
+  (quatre griots à affronter d’affilée) et la Championne. Plus de 50 adversaires, dont une quarantaine de bandits, une
+  rivale qui grandit avec vous, une organisation de pillards et son chef.
+- **Les bandits vous repèrent** : un « ! » apparaît, ils marchent jusqu’à vous et réclament votre bourse.
 - **Techniques hors combat** : briser les rochers fissurés (Insigne de l’Enclume + Jinémon Métal), franchir les gués
   (Insigne de la Pluie + Jinémon Eau), dissiper les mirages (Insigne du Mirage + Jinémon Psy), éclairer les grottes
-  (un Jinémon Feu dans l’équipe), **voler** vers les lieux de soin visités (Insigne du Vent + Jinémon Vol, menu
+  (un Jinémon Feu dans l’équipe), **voler** vers les auberges et campements visités (Insigne du Vent + Jinémon Vol, menu
   « Voler »), **pêcher** face à l’eau avec la Nasse du Pêcheur.
 - Calebasses de capture (Sacrée, Ornée, des Ancêtres, Royale), remèdes (karité, bissap, pain de singe, miel sauvage,
   baume des Anciens, moringa, noix de kola), Amulette du Partage (l’expérience profite à toute l’équipe), marché en
@@ -102,8 +126,8 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 ## Jour, nuit et Hantises
 
 - **Horloge** : une seconde réelle vaut une minute de jeu, une journée dure donc 24 minutes. Aube de 5 h à 7 h, jour
-  jusqu’à 18 h, crépuscule jusqu’à 20 h, puis nuit. L’heure s’affiche dans le menu ; chez le soigneur, on peut
-  se reposer jusqu’au matin ou jusqu’à la nuit. Les intérieurs restent éclairés à toute heure.
+  jusqu’à 18 h, crépuscule jusqu’à 20 h, puis nuit. L’heure s’affiche dans le menu ; à l’auberge, on peut
+  dormir jusqu’au matin ou jusqu’à la nuit. Les intérieurs restent éclairés à toute heure.
 - **La nuit**, la carte s’assombrit (tramage en pixel art) : seuls la lanterne du joueur, les forges, les portes des
   cases et les autels éclairent. Les combats se déroulent sous un ciel étoilé.
 - **14 Jinémon nocturnes** ne sortent des hautes herbes qu’entre 20 h et 5 h (Hiboulet, Roussetin, Bakeneko,
@@ -120,8 +144,9 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   | Piste des Chasseurs | Nopperabô (niv. 35) | Un passant, dos tourné, qui se retourne sans visage. |
   | Falaise des Ancêtres | Obayifeu (niv. 48) | Une lueur qui s’éteint et se rallume plus près, souvent dans votre dos. |
 
-  Un murmure annonce la Hantise à l’entrée de la zone, un battement de cœur s’accélère quand elle approche. Vaincue
-  ou fuie, elle disparaît jusqu’à la nuit suivante ; capturée, elle ne revient plus.
+  Un murmure annonce la Hantise à l’entrée de la zone, un battement de cœur s’accélère quand elle approche. Quand elle
+  attaque, elle surgit immense, en silhouette rouge sang, avant de reculer à sa place. Vaincue ou fuie, elle disparaît
+  jusqu’à la nuit suivante ; capturée, elle ne revient plus. Si elle terrasse toute l’équipe, elle s’en prend au héros.
 
 ## Combats animés
 
@@ -167,16 +192,17 @@ src/
     moves.ts            Répertoire central des 100 attaques
     ginedex.ts          Bestiaire, bassins d’attaques, apparence des sprites
     talents.ts          Talents passifs
-    items.ts            Calebasses et remèdes
-    trainers.ts         Dresseurs, rivale, Maîtres de Piste, insignes
+    items.ts            Calebasses, remèdes, menottes, sac de couchage
+    trainers.ts         Bandits (primes), rivale, Maîtres de Piste, insignes
     zones.ts            Cartes ASCII de l’Acte I, PNJ, bâtiments, rencontres de jour, de nuit et de pêche, téléporteurs
     zonesActe2.ts       Les six zones de l’Acte II
-    interiors.ts        Intérieurs (chambre, salon, sanctuaire, Case de Soins et Marché de chaque ville), portes reliées
+    interiors.ts        Intérieurs (chambre, salon, sanctuaire, auberge et Marché de chaque ville), portes reliées
     zoneKit.ts          Fabriques de PNJ et de bâtiments (soigneurs, marchands, dresseurs, objets…)
-    trainersActe2.ts    Maîtres de Piste, Masques Brisés et Conseil des Griots de l’Acte II
+    trainersActe2.ts    Maîtres de Piste, bandits du désert, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
   engine/               Logique pure, testée sans navigateur
-    combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience)
+    combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience, avantage du joueur)
+    hero.ts             Le héros : ses PV, et les duels contre les bandits et les monstres de la nuit
     creature.ts         Statistiques, expérience, apprentissage, évolution, objets
     gameState.ts        État de partie
     clock.ts            Horloge du jeu : phases du jour, obscurité, nuits
@@ -194,7 +220,8 @@ src/
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
     props.ts            Objets du décor sculptés
-    buildings.ts        Bâtiments (maison, Case de Soins, Marché, sanctuaire), stands et meubles sculptés
+    buildings.ts        Bâtiments (maison, auberge, Marché, sanctuaire), stands et meubles sculptés
+    fighters.ts         Combattants humains sculptés pour les duels (bandit de face, héros de dos)
     tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
     interiors.ts        Rendu des intérieurs : murs enduits, sols, nattes, escaliers, comptoirs
     backdrops.ts        Fonds de combat, titre, sanctuaire du Hogon, halo d’évolution

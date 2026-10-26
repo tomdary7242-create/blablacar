@@ -14,7 +14,7 @@
 //   J  pirogue                    N  tente touareg                 Z  masque sur poteau
 //   I  phare
 //   g  Grande Jarre (Jinémon)     C  stand de soins (on parle par-dessus, comme à un étal)
-//   @  bâtiment où l'on entre (maison, Case de Soins, Marché, sanctuaire : voir `buildings`)
+//   @  bâtiment où l'on entre (maison, auberge, Marché, sanctuaire : voir `buildings`)
 //   d  sa porte (on la franchit pour entrer)
 //
 // Dans les grottes (thème « grotte »), « , » désigne les éboulis où rôdent les Jinémon.
@@ -128,11 +128,11 @@ export interface Building {
   /** Coin haut-gauche de l'emprise. */
   x: number;
   y: number;
-  /** Intérieur où mène la porte (par défaut, celui de la Case de Soins ou du Marché de la ville). */
+  /** Intérieur où mène la porte (par défaut, celui de l’auberge ou du Marché de la ville). */
   to?: ZoneId;
   /** Nom affiché sur le plan de la ville. */
   label?: string;
-  /** Case de Soins : le soigneur de la ville (son apparence et ses mots). */
+  /** Auberge : l’aubergiste de la ville (son apparence et ses mots). */
   healer?: Npc;
   /** Marché : marchandises et boniment. */
   items?: ItemId[];
@@ -213,8 +213,8 @@ const village: Zone = {
     { kind: 'soins', x: 27, y: 11 },
     {
       kind: 'marche', x: 5, y: 11,
-      items: ['calebasse', 'karite', 'moringa'],
-      lines: ['Marchande : Approche ! Calebasses, karité et moringa, tout ce qu’il faut pour ta première aventure !'],
+      items: ['calebasse', 'karite', 'moringa', 'menottes'],
+      lines: ['Marchande : Approche ! Calebasses, karité, moringa… et des menottes. Par les temps qui courent, on en vend plus que de mil.'],
     },
     { kind: 'maison', x: 5, y: 19, to: 'maison', label: 'Ta maison' },
   ],
@@ -233,15 +233,17 @@ const village: Zone = {
       'Conteur : Tous ont trouvé leur place dans notre monde. Le Ginédex les recense tous.',
     ]),
     parole('enfant', 'Enfant', 20, 12, 'droite', ENFANT, [
-      'Enfant : Au nord, il y a des termitières plus hautes que moi ! Et des Jinémon cachés dans les hautes herbes !',
+      'Enfant : Papa dit qu’il y a des bandits dans la savane. La semaine dernière, ils ont dépouillé un marchand et l’ont laissé pour mort.',
+      'Enfant : Moi, quand je serai grand, je les mettrai tous aux fers !',
     ]),
     parole('voisine', 'Voisine', 12, 22, 'gauche', { skin: '#6a4028', outfit: '#e85a8f', accent: '#f0c040', headwear: 'foulard' }, [
       'Voisine : Bonjour {nom} ! Tu cherches le sanctuaire du Hogon ? Remonte la rue jusqu’à la place : il est tout au nord.',
       'Voisine : Si tu te perds, le plan du village est affiché sur la place, près du chemin.',
     ]),
     parole('cultivateur', 'Cultivateur', 25, 15, 'bas', VILLAGEOIS, [
-      'Cultivateur : Le bâtiment blanc au toit vert, c’est la Case de Soins. On y soigne les Jinémon, gratuitement.',
-      'Cultivateur : Il y en a une dans chaque ville, toujours la même. Et le toit de chaume à l’ouest de la place, c’est le Marché.',
+      'Cultivateur : Le bâtiment blanc au toit vert, c’est l’auberge. On y soigne les Jinémon, et on y dort en sûreté.',
+      'Cultivateur : Il y en a une dans chaque ville, toujours la même. Dors-y avant de partir : si tu tombes en route, c’est là que tu te réveilleras.',
+      'Cultivateur : Et le toit de chaume à l’ouest de la place, c’est le Marché.',
     ]),
     parole('grandMere', 'Grand-mère', 22, 21, 'bas', { skin: '#3a2214', outfit: '#3a86c8', accent: '#f0f0f0', headwear: 'foulard' }, [
       'Grand-mère : Les greniers du village ne désemplissent jamais. Les Jinémon des champs veillent sur le mil.',
@@ -386,8 +388,8 @@ const terresRouges: Zone = {
     '##############################',
   ],
   buildings: [
-    caseDeSoins(19, 4, soin('guerisseuseTR', 0, 0, 'bas', ['Les Terres Rouges sont rudes. Repose tes Jinémon ici.'])),
-    marche(9, 4, ['calebasse', 'calebasseOrnee', 'karite', 'bissap', 'moringa'], ['Du solide, du forgé, du testé ! Que veux-tu ?']),
+    caseDeSoins(19, 4, soin('guerisseuseTR', 0, 0, 'bas', ['Aubergiste : Les Terres Rouges sont rudes, et les racketteurs rôdent autour de la Forge. Ici, tu es en sûreté.'])),
+    marche(9, 4, ['calebasse', 'calebasseOrnee', 'karite', 'bissap', 'moringa', 'menottes'], ['Du solide, du forgé, du testé ! Que veux-tu ?']),
   ],
   warps: [
     { x: 0, y: 8, to: 'savane', tx: 30, ty: 6, dir: 'gauche' },
@@ -493,10 +495,10 @@ const marigot: Zone = {
     'TTTTTTTTTTTTTTTT=TTTTTTTTTTTTTTTTT',
   ],
   buildings: [
-    caseDeSoins(3, 18, soin('pecheurSoin', 0, 0, 'bas', ['Vieux Pêcheur : Assieds-toi, petit. L’eau du marigot guérit bien des maux.'], {
+    caseDeSoins(3, 18, soin('pecheurSoin', 0, 0, 'bas', ['Vieux Pêcheur : Assieds-toi, petit. Mon auberge est modeste, mais l’eau du marigot guérit bien des maux.'], {
         skin: '#4a2a1a', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau',
       })),
-    marche(20, 22, ['calebasse', 'calebasseOrnee', 'bissap', 'moringa', 'kola'], ['Poisson séché ? Non ? Alors des calebasses, peut-être !']),
+    marche(20, 22, ['calebasse', 'calebasseOrnee', 'bissap', 'moringa', 'kola', 'menottes'], ['Poisson séché ? Non ? Alors des calebasses, peut-être !']),
   ],
   warps: [
     { x: 16, y: 27, to: 'terresRouges', tx: 15, ty: 1, dir: 'bas' },
@@ -678,7 +680,7 @@ const piste: Zone = {
     soin('guerisseurDonzo', 14, 16, 'bas', ['Guérisseur : Les chasseurs connaissent les plantes de la brousse. Tes Jinémon seront vite sur pied.'], {
       skin: '#3a2214', outfit: '#9c7a4a', accent: '#e8e0c8', headwear: 'bonnet',
     }),
-    boutique('marchandPiste', 9, 15, ['calebasseOrnee', 'calebasseAncetres', 'bissap', 'painDeSinge', 'moringa', 'kola'], [
+    boutique('marchandPiste', 9, 15, ['calebasseOrnee', 'calebasseAncetres', 'bissap', 'painDeSinge', 'moringa', 'kola', 'menottes'], [
       'Les chasseurs ne partent jamais sans provisions. Toi non plus, j’espère !',
     ]),
     {
@@ -795,7 +797,7 @@ const falaise: Zone = {
     soin('ermite', 12, 23, 'bas', ['Ermite : L’air de la falaise est pur. Que tes Jinémon s’y reposent.'], {
       skin: '#3a2214', outfit: '#e8e0d0', accent: '#9c8a5a', headwear: 'turban',
     }),
-    boutique('colporteur', 18, 23, ['calebasseAncetres', 'painDeSinge', 'moringa', 'kola'], [
+    boutique('colporteur', 18, 23, ['calebasseAncetres', 'painDeSinge', 'moringa', 'kola', 'menottes'], [
       'Colporteur : J’ai traîné ma charrette jusqu’ici. Mes prix tiennent compte de l’altitude !',
     ]),
     dresseur('moctar', 10, 15, 'droite', T('moctar')),

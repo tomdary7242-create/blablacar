@@ -58,7 +58,8 @@ describe('Gestionnaire de sauvegarde', () => {
     storage.setItem(SAVE_KEY, JSON.stringify(raw));
     const loaded = loadGame(storage)!;
     expect(loaded.party).toHaveLength(1);
-    expect(loaded.inventory).toEqual({});
+    // L'objet inconnu disparaît ; une partie d'avant les bandits reçoit menottes et sac de couchage.
+    expect(loaded.inventory).toEqual({ menottes: 5, sacCouchage: 1 });
     expect(loaded.badges).toEqual([]);
     expect(loaded.position).toEqual(START_POSITION);
   });

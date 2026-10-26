@@ -160,7 +160,7 @@ export class PlanScene implements Scene {
       ctx.fillRect(ox + x * k, oy + y * k, k, k);
     };
     const stands: Array<[string, string, string]> = [
-      ['soin', BUILDING_COLOR.soins, 'Stand de soins'],
+      ['soin', BUILDING_COLOR.soins, 'Campement'],
       ['boutique', BUILDING_COLOR.marche, 'Marchand'],
     ];
     for (const [kind, color, label] of stands) {
@@ -333,8 +333,8 @@ export class WorldMapScene implements Scene {
       text(ctx, zone.name, 10, 162, { shadow: PAL.shadow });
       const leader = zone.npcs.find((n) => n.script.kind === 'dresseur' && getTrainer(n.script.trainer).badge);
       const info: string[] = [];
-      if (zone.buildings?.some((b) => b.kind === 'soins')) info.push('Case de Soins');
-      else if (zone.npcs.some((n) => n.script.kind === 'soin')) info.push('Stand de soins');
+      if (zone.buildings?.some((b) => b.kind === 'soins')) info.push('Auberge');
+      else if (zone.npcs.some((n) => n.script.kind === 'soin')) info.push('Campement');
       if (zone.buildings?.some((b) => b.kind === 'marche')) info.push('Marché');
       else if (zone.npcs.some((n) => n.script.kind === 'boutique')) info.push('Marchand');
       if (leader && leader.script.kind === 'dresseur') {

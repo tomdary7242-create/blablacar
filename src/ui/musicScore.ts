@@ -178,7 +178,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
     ],
     drums: 'B...h...B.T.S...',
   },
-  // Case de Soins : flûte apaisante sur la kora, comme une berceuse.
+  // Auberge : flûte apaisante sur la kora, comme une berceuse.
   soins: {
     bpm: 96,
     loop: true,

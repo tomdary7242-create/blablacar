@@ -3,8 +3,9 @@ import { SPECIES } from '../../data/ginedex';
 import { BADGES, BADGE_ORDER, type BadgeId } from '../../data/trainers';
 import { formatClock, phaseOf } from '../../engine/clock';
 import { formatPlayTime } from '../../engine/gameState';
+import { heroHp, heroMaxHp } from '../../engine/hero';
 import { currentObjective } from '../../engine/objective';
-import { PAL, box, fillEllipse, menuList, shade, stamp, text } from '../draw';
+import { PAL, box, fillEllipse, hpBar, menuList, shade, stamp, text } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
 import type { Scene } from '../scene';
@@ -89,23 +90,29 @@ export class MenuScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     const s = this.game.s;
-    box(ctx, 2, 2, 124, 78);
+    box(ctx, 2, 2, 144, 96);
     text(ctx, s.playerName, 10, 5, { shadow: PAL.shadow });
-    text(ctx, `Cauris : ${s.cauris}`, 10, 18);
-    text(ctx, `Insignes : ${s.badges.length}/8`, 10, 29);
-    text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length}`, 10, 40);
+    // Les PV du héros lui-même : les bandits et les monstres de la nuit s'en prennent à lui.
+    const hp = heroHp(s);
+    const max = heroMaxHp(s);
+    hpBar(ctx, 10, 19, 84, hp / max);
+    text(ctx, `${hp}/${max}`, 138, 15, { align: 'right' });
+    text(ctx, `Cauris : ${s.cauris}`, 10, 27);
+    text(ctx, `Insignes : ${s.badges.length}/8`, 10, 38);
+    text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length}`, 10, 49);
+    text(ctx, s.bounties > 0 ? `Primes touchées : ${s.bounties}` : 'Aucune prime touchée', 10, 60, { color: s.bounties > 0 ? PAL.rust : PAL.grey });
     // Heure du monde, avec un soleil ou une lune.
     const phase = phaseOf(s.clock.minute);
     const night = phase === 'nuit';
-    stamp(ctx, night ? ['.ww.', 'ww..', 'ww..', '.ww.'] : ['.yy.', 'yyyy', 'yyyy', '.yy.'], 10, 54, { w: '#e8e4c0', y: '#f0b030' });
-    text(ctx, `Jour ${s.clock.day} · ${formatClock(s.clock)}`, 18, 51, { color: night ? PAL.indigo : PAL.ink });
-    text(ctx, `Temps : ${formatPlayTime(s.playTimeMs)}`, 10, 63, { color: PAL.grey });
+    stamp(ctx, night ? ['.ww.', 'ww..', 'ww..', '.ww.'] : ['.yy.', 'yyyy', 'yyyy', '.yy.'], 10, 74, { w: '#e8e4c0', y: '#f0b030' });
+    text(ctx, `Jour ${s.clock.day} · ${formatClock(s.clock)}`, 18, 71, { color: night ? PAL.indigo : PAL.ink });
+    text(ctx, `Temps : ${formatPlayTime(s.playTimeMs)}`, 10, 82, { color: PAL.grey });
     const options = optionsFor(this.game);
     box(ctx, 150, 2, 104, options.length * 12 + 12);
     menuList(ctx, options, 156, 7, this.index);
     // Objectif du moment, toujours sous les yeux.
-    const rows = wrapText(currentObjective(s).text, 128).slice(0, 7);
-    const top = 84;
+    const rows = wrapText(currentObjective(s).text, 128).slice(0, 6);
+    const top = 100;
     box(ctx, 2, top, 144, rows.length * 10 + 20);
     stamp(ctx, ['...k...', '..kyk..', 'kkkyykk', 'kyyyyyk', '.kyyyk.', '.kykyk.', 'kk...kk'], 9, top + 5, { k: PAL.ink, y: '#f0c040' });
     text(ctx, 'OBJECTIF', 19, top + 4, { color: PAL.rust });

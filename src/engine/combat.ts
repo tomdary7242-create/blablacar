@@ -83,7 +83,21 @@ export interface CombatOptions {
   intro?: string;
   /** Amulette du Partage : les Jinémon restés en réserve gagnent la moitié de l'expérience. */
   xpShare?: boolean;
+  /**
+   * Combat contre un bandit : ses Jinémon, asservis, peuvent lui être arrachés
+   * d'un coup de calebasse quand ils sont affaiblis.
+   */
+  bandit?: boolean;
 }
+
+/**
+ * Avantage de l'Initié : les coups portés par le camp du joueur font 25 % de
+ * dégâts en plus que la normale.
+ */
+export const PLAYER_EDGE = 1.25;
+
+/** Part des PV en dessous de laquelle un Jinémon de bandit peut être capturé. */
+export const STEAL_HP = 0.3;
 
 interface Volatile {
   stages: Record<StatKey, number>;
@@ -141,7 +155,7 @@ export function computeDamage(
   defenderStages: Stages,
   move: DamageInput,
   rng: Rng,
-  opts: { allowCrit?: boolean; randomize?: boolean } = {},
+  opts: { allowCrit?: boolean; randomize?: boolean; edge?: number } = {},
 ): DamageResult {
   const allowCrit = opts.allowCrit ?? true;
   const randomize = opts.randomize ?? true;
@@ -170,6 +184,7 @@ export function computeDamage(
     modifier *= 1.5;
   }
   if (defTalent === 'ecaillesAntiques' && multiplier > 1) modifier *= 0.75;
+  modifier *= opts.edge ?? 1;
   if (randomize) modifier *= 0.85 + rng.next() * 0.15;
 
   return { damage: Math.max(1, Math.floor(base * modifier)), multiplier, critical };
@@ -196,6 +211,9 @@ export class Combat {
   outcome: Outcome | null = null;
   /** Jinémon capturé (issue « capture »). */
   captured: Jinemon | null = null;
+  /** Jinémon arrachés au bandit pendant le combat. */
+  readonly stolen: Jinemon[] = [];
+  readonly bandit: boolean;
   turn = 0;
 
   private readonly rng: Rng;
@@ -215,6 +233,7 @@ export class Combat {
     this.trainerName = opts.trainerName;
     this.intro = opts.intro;
     this.xpShare = opts.xpShare ?? false;
+    this.bandit = opts.bandit ?? false;
     this.rng = opts.rng ?? mathRng;
     this.ai = opts.ai ?? (opts.kind === 'dresseur' ? 'malin' : 'simple');
     this.playerIndex = opts.player.findIndex((j) => !isFainted(j));
@@ -235,6 +254,28 @@ export class Combat {
 
   isConfused(side: Side): boolean {
     return this.vol[side].confusion > 0;
+  }
+
+  /** Le Jinémon adverse est-il assez affaibli pour être arraché à son bandit ? */
+  isWeakened(): boolean {
+    const foe = this.foeActive;
+    const status = foe.status?.kind;
+    return foe.hp <= maxHp(foe) * STEAL_HP || status === 'sommeil' || status === 'paralysie' || this.vol.adversaire.confusion > 0;
+  }
+
+  /** Raison pour laquelle une calebasse ne peut pas être lancée (sinon null). */
+  captureRefusal(): string | null {
+    if (this.kind === 'sauvage') return null;
+    if (!this.bandit) return `${this.trainerName ?? 'Votre adversaire'} se bat dans les règles : on ne lui prend pas ses Jinémon.`;
+    if (!this.isWeakened()) {
+      return 'Le bandit tient son Jinémon d’une main de fer ! Affaiblissez-le d’abord : PV bas, sommeil, paralysie ou confusion.';
+    }
+    return null;
+  }
+
+  /** Jinémon adverse encore en lice (ni K.O., ni capturé). */
+  private inPlay(j: Jinemon): boolean {
+    return !isFainted(j) && !this.stolen.includes(j);
   }
 
   canSwitchTo(index: number): boolean {
@@ -267,12 +308,15 @@ export class Combat {
 
     // Actions refusées sans consommer le tour.
     if (action.kind === 'fuite' && this.kind === 'dresseur') {
-      this.say('Impossible de fuir un combat contre un dresseur !');
+      this.say(this.bandit ? 'Le bandit vous barre la route : impossible de fuir !' : 'Impossible de fuir un combat contre un dresseur !');
       return this.flush();
     }
-    if (action.kind === 'capture' && this.kind === 'dresseur') {
-      this.say('Le dresseur dévie la calebasse ! On ne capture pas les Jinémon des autres.');
-      return this.flush();
+    if (action.kind === 'capture') {
+      const refusal = this.captureRefusal();
+      if (refusal) {
+        this.say(refusal);
+        return this.flush();
+      }
     }
     if (action.kind === 'changer' && !this.canSwitchTo(action.partyIndex)) {
       this.say('Ce Jinémon ne peut pas combattre.');
@@ -373,6 +417,10 @@ export class Combat {
     return `${getSpecies(j.speciesId).name} ${this.kind === 'sauvage' ? 'sauvage' : 'adverse'}`;
   }
 
+  private edge(side: Side): number {
+    return side === 'joueur' ? PLAYER_EDGE : 1;
+  }
+
   private effectiveSpeed(side: Side): number {
     const j = this.active(side);
     const para = j.status?.kind === 'paralysie' ? 0.25 : 1;
@@ -433,7 +481,7 @@ export class Combat {
   }
 
   private sendNextFoe(): void {
-    const index = this.foe.findIndex((j) => !isFainted(j));
+    const index = this.foe.findIndex((j) => this.inPlay(j));
     this.foeIndex = index;
     this.vol.adversaire = freshVolatile();
     const foe = this.foeActive;
@@ -493,16 +541,27 @@ export class Combat {
     const success = checks === 4;
     this.emit({ type: 'capture', item, shakes: Math.min(3, checks), success });
 
+    if (success && this.kind === 'dresseur') {
+      this.say(`${species.name} est arraché à ${this.trainerName ?? 'son maître'} et scellé dans la calebasse !`);
+      this.stolen.push(foe);
+      this.vol.adversaire = freshVolatile();
+      if (this.foe.some((j) => this.inPlay(j))) this.sendNextFoe();
+      else {
+        this.say(`${this.trainerName ?? 'Le bandit'} n’a plus un seul Jinémon pour le protéger !`);
+        this.finish('victoire');
+      }
+      return true;
+    }
     if (success) {
-      this.say(`Et hop ! ${species.name} entre dans la calebasse !`);
+      this.say(`${species.name} est scellé dans la calebasse !`);
       this.captured = foe;
       this.finish('capture');
       return true;
     }
     const fails = [
-      'Oh non ! Le Jinémon s’est libéré aussitôt !',
+      'Le sceau cède aussitôt : le Jinémon se libère !',
       'Raté ! La calebasse a à peine bougé.',
-      'Mince ! Il y était presque !',
+      'Le sceau a failli tenir…',
       'Si près du but ! La calebasse s’est rouverte au dernier moment !',
     ];
     this.say(fails[checks]);
@@ -582,7 +641,7 @@ export class Combat {
     this.emit({ type: 'attaque', side, moveId: null });
     const { damage } = computeDamage(
       user, this.vol[side].stages, this.active(target), this.vol[target].stages,
-      { power: LUTTE.power, type: null }, this.rng,
+      { power: LUTTE.power, type: null }, this.rng, { edge: this.edge(side) },
     );
     this.damage(target, damage, 'coup');
     this.say(`${this.name(side)} subit le contrecoup !`);
@@ -593,7 +652,7 @@ export class Combat {
     const user = this.active(side);
     const tSide = this.opponent(side);
     const target = this.active(tSide);
-    const result = computeDamage(user, this.vol[side].stages, target, this.vol[tSide].stages, move, this.rng);
+    const result = computeDamage(user, this.vol[side].stages, target, this.vol[tSide].stages, move, this.rng, { edge: this.edge(side) });
     if (result.multiplier === 0) {
       this.say(`Ça n'affecte pas ${this.name(tSide)}…`);
       return;
@@ -758,7 +817,7 @@ export class Combat {
       if (!isFainted(j) || this.koHandled.has(j)) continue;
       this.koHandled.add(j);
       this.emit({ type: 'ko', side });
-      this.say(`${this.name(side)} est K.O. !`);
+      this.say(`${this.name(side)} est terrassé !`);
       this.vol[side] = freshVolatile();
       if (side === 'adversaire') this.awardXp(j);
       else this.participants.delete(j);
@@ -799,8 +858,9 @@ export class Combat {
   }
 
   private resolveTurnEnd(): void {
-    if (!this.foe.some((j) => !isFainted(j))) {
-      if (this.kind === 'dresseur') this.say(`Vous avez vaincu ${this.trainerName ?? 'le dresseur'} !`);
+    if (!this.foe.some((j) => this.inPlay(j))) {
+      if (this.bandit) this.say(`${this.trainerName ?? 'Le bandit'} n’a plus un seul Jinémon pour le protéger !`);
+      else if (this.kind === 'dresseur') this.say(`Vous avez vaincu ${this.trainerName ?? 'le dresseur'} !`);
       this.finish('victoire');
       return;
     }

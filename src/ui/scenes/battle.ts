@@ -3,15 +3,29 @@
 // les actions du joueur.
 import { MAX_LEVEL, getSpecies } from '../../data/ginedex';
 import { isCaptureItem, type ItemId } from '../../data/items';
-import { MOVES, type StatKey, type StatusKind } from '../../data/moves';
-import type { Trainer } from '../../data/trainers';
+import { MOVES, type MoveId, type StatKey, type StatusKind } from '../../data/moves';
+import type { CharacterLook, Trainer } from '../../data/trainers';
 import type { Theme } from '../../data/zones';
 import type { Combat, CombatEvent, Outcome, PlayerAction, Side } from '../../engine/combat';
 import { isNight } from '../../engine/clock';
-import { displayName, isShiny, xpForLevel } from '../../engine/creature';
-import { removeItem } from '../../engine/gameState';
+import { displayName, isShiny, maxHp, xpForLevel } from '../../engine/creature';
+import { itemCount, removeItem } from '../../engine/gameState';
+import {
+  ACTION_HINTS,
+  ACTION_LABELS,
+  Duel,
+  heroFighter,
+  monsterFighter,
+  setHeroHp,
+  type DuelBlow,
+  type DuelEvent,
+  type DuelKind,
+  type DuelOutcome,
+  type Fighter,
+} from '../../engine/hero';
 import { battleBackdrop } from '../backdrops';
 import { MoveAnim, type Anchor, type FxHost, type Pose } from '../battle/moveFx';
+import { fighterSprite, type FighterPose } from '../fighters';
 import { Particles, rnd } from '../battle/particles';
 import { PAL, bar, box, calabash, cursor, fillEllipse, hpBar, stamp, statusBadge, text, typeBadge } from '../draw';
 import { drawOutlinedText, wrapText } from '../font';
@@ -19,7 +33,7 @@ import type { Game } from '../game';
 import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
-import { PLAYER_LOOK, characterSprite, drawCreatureFx, type CreatureFx } from '../sprites';
+import { PLAYER_LOOK, characterSprite, drawCreatureFx, drawSpriteFx, type CreatureFx } from '../sprites';
 import { BagScene } from './bag';
 import { promptLearnMove } from './learnMove';
 import { TeamScene } from './team';
@@ -49,9 +63,55 @@ interface SideView {
   tintT: number;
   /** Rythme des effets d'altération (Z du sommeil, bulles de poison…). */
   statusClock: number;
+  /** Un humain (le héros, un bandit) plutôt qu'un Jinémon. */
+  fighter?: { look: CharacterLook; facing: 'face' | 'dos'; pose: FighterPose };
 }
 
-type AnimKind = 'entree' | 'emergence' | 'liberation' | 'sortie' | 'ko' | 'esquive' | 'stat' | 'niveau';
+/** Événements du duel (côté « heros » = côté joueur) et étapes de mise en scène. */
+type StageEvent =
+  | { type: 'duel-coup'; side: Side; blow: DuelBlow }
+  | { type: 'duel-pv'; side: Side; hp: number; maxHp: number; damage: number; critical: boolean; blocked: boolean }
+  | { type: 'duel-garde'; side: Side }
+  | { type: 'duel-fin'; outcome: DuelOutcome }
+  /** Étape scriptée : renvoie le temps à attendre avant la suite. */
+  | { type: 'script'; run: () => number };
+type SceneEvent = CombatEvent | StageEvent;
+
+export type Verdict = 'achever' | 'epargner';
+
+/** Ce qui s'est passé après le combat des Jinémon : duel du héros et sort du bandit. */
+export interface BattleEnd {
+  duel?: DuelOutcome;
+  verdict?: Verdict;
+}
+
+/** Chorégraphies (voir moveFx) prêtées aux coups des humains et des monstres. */
+const BLOW_FX: Record<DuelBlow, MoveId | null> = {
+  frapper: 'coupDePatte',
+  assommer: 'chargeBrousse',
+  parer: null,
+  fuir: null,
+  machette: 'lameFerForge',
+  coupBas: 'larcin',
+  griffes: 'embuscadeNocturne',
+  devorer: 'crocsNuit',
+};
+
+type AnimKind =
+  | 'entree'
+  | 'emergence'
+  | 'liberation'
+  | 'sortie'
+  | 'ko'
+  | 'esquive'
+  | 'stat'
+  | 'niveau'
+  /** Un humain entre en scène en marchant (depuis le bord de l'écran). */
+  | 'arrivee'
+  /** Le héros s'enfuit, ou le bandit détale. */
+  | 'depart'
+  /** Une Hantise surgit, immense, puis recule à sa place. */
+  | 'surgir';
 interface Anim {
   kind: AnimKind;
   side: Side;
@@ -106,13 +166,19 @@ export interface BattleOptions {
   theme: Theme;
   trainer?: Trainer;
   music: TrackId;
-  onEnd: (outcome: Outcome) => void;
+  /** Bandit : quand ses Jinémon sont à terre, le héros doit le mettre à terre lui-même. */
+  bandit?: { foe: Fighter };
+  /** La nuit : si toute l'équipe tombe, le monstre s'en prend au héros. */
+  prey?: boolean;
+  /** Apparition terrifiante (Hantises). */
+  scare?: boolean;
+  onEnd: (outcome: Outcome, end: BattleEnd) => void;
 }
 
 export class BattleScene implements Scene {
   readonly opaque = true;
-  private queue: CombatEvent[] = [];
-  private current: CombatEvent | null = null;
+  private queue: SceneEvent[] = [];
+  private current: SceneEvent | null = null;
   private wait = 0;
   /** Les événements suivants attendent que l'attaque en cours touche sa cible. */
   private gate = 0;
@@ -120,7 +186,15 @@ export class BattleScene implements Scene {
   /** Le message en cours annonce une attaque : il cède la place aux dégâts dès l'impact. */
   private moveMessage = false;
   private busy = false;
-  private mode: 'evenements' | 'menu' | 'attaques' | 'fin' = 'evenements';
+  private mode: 'evenements' | 'menu' | 'attaques' | 'fin' | 'duel' | 'verdict' = 'evenements';
+  /** Corps-à-corps du héros (contre le bandit, ou le monstre de la nuit). */
+  private duel: Duel | null = null;
+  private duelIndex = 0;
+  private verdict: Verdict | null = null;
+  private verdictIndex = 1;
+  /** Terreur : l'écran s'assombrit et rougit quand le monstre s'en prend au héros (0 à 1). */
+  private dread = 0;
+  private dreadBeat = 0;
   private message = '';
   private shown = 0;
   private hold = 0;
@@ -158,7 +232,7 @@ export class BattleScene implements Scene {
     veil: (color, alpha, duration) => (this.veilFx = { color, alpha, t: 0, duration }),
     warp: (amount, duration) => (this.warpFx = { amount, t: 0, duration }),
     sound: (kind) => this.game.audio.fx(kind),
-    dark: () => isNight(this.game.s.clock) || this.opts.theme === 'grotte' || (!!this.veilFx && this.veilFx.alpha >= 0.3),
+    dark: () => isNight(this.game.s.clock) || this.opts.theme === 'grotte' || this.dread > 0 || (!!this.veilFx && this.veilFx.alpha >= 0.3),
   };
 
   constructor(
@@ -169,8 +243,11 @@ export class BattleScene implements Scene {
     this.queue.push(...combat.start());
   }
 
-  get music(): TrackId {
-    if (this.opts.trainer && this.combat.isOver() && this.combat.outcome === 'victoire') return 'victoire';
+  get music(): TrackId | null {
+    // Seul le cœur bat quand le monstre se tourne vers vous.
+    if (this.duel?.kind === 'monstre') return null;
+    if (this.verdict === 'achever') return null;
+    if (this.opts.trainer && this.combat.isOver() && this.combat.outcome === 'victoire' && (!this.opts.bandit || this.verdict)) return 'victoire';
     return this.opts.music;
   }
 
@@ -192,6 +269,7 @@ export class BattleScene implements Scene {
   update(dt: number): void {
     this.time += dt;
     this.updateShake(dt);
+    this.updateDread(dt);
     // À l'impact, tout se fige un instant : le coup « porte ».
     if (this.hitStop > 0) {
       this.hitStop -= dt;
@@ -220,6 +298,7 @@ export class BattleScene implements Scene {
     }
     if (this.moves.length && this.combat.isOver()) return;
     if (this.combat.isOver()) {
+      if (this.duelStage()) return;
       this.mode = 'fin';
       this.endTimer += dt;
       if (this.endTimer > 0.5 && !this.ended) this.end();
@@ -250,7 +329,7 @@ export class BattleScene implements Scene {
   private end(): void {
     this.ended = true;
     this.game.scenes.pop(this);
-    this.opts.onEnd(this.combat.outcome ?? 'fuite');
+    this.opts.onEnd(this.combat.outcome ?? 'fuite', { duel: this.duel?.outcome ?? undefined, verdict: this.verdict ?? undefined });
   }
 
   resume(): void {
@@ -259,7 +338,7 @@ export class BattleScene implements Scene {
 
   // ── Événements ─────────────────────────────────────────────────────────
 
-  private begin(event: CombatEvent): void {
+  private begin(event: SceneEvent): void {
     this.current = event;
     this.wait = 0;
     switch (event.type) {
@@ -303,6 +382,12 @@ export class BattleScene implements Scene {
         }
         // Un Jinémon sauvage surgit des herbes ; les autres sortent de leur calebasse.
         const wild = event.side === 'adversaire' && this.combat.kind === 'sauvage';
+        if (event.side === 'adversaire') this.capture = null;
+        if (wild && this.opts.scare) {
+          this.anims.push({ kind: 'surgir', side: event.side, t: 0, duration: 1.3 });
+          this.wait = 1.3;
+          break;
+        }
         this.anims.push({ kind: wild ? 'emergence' : 'entree', side: event.side, t: 0, duration: wild ? 0.9 : 0.85 });
         if (!wild) this.game.audio.fx('lancer');
         this.wait = 0.9;
@@ -400,6 +485,26 @@ export class BattleScene implements Scene {
         break;
       case 'fin':
         this.wait = 0.1;
+        break;
+      case 'duel-coup':
+        this.duelBlow(event.side, event.blow);
+        break;
+      case 'duel-pv':
+        this.duelHit(event);
+        break;
+      case 'duel-garde': {
+        const a = this.anchor(event.side);
+        this.rings.push({ x: a.center.x, y: a.center.y, t: 0, duration: 0.4, color: '#80b8ff', r: 30 });
+        this.floaters.push({ text: 'EN GARDE', x: a.center.x, y: a.head.y - 6, t: 0, color: '#a8d0ff', scale: 1, label: true });
+        this.game.audio.fx('buff');
+        this.wait = 0.4;
+        break;
+      }
+      case 'duel-fin':
+        this.duelEnd(event.outcome);
+        break;
+      case 'script':
+        this.wait = event.run();
         break;
     }
   }
@@ -596,7 +701,7 @@ export class BattleScene implements Scene {
 
   private finishAnim(a: Anim): boolean {
     const view = this.views[a.side];
-    if (view && (a.kind === 'ko' || a.kind === 'sortie')) view.visible = false;
+    if (view && (a.kind === 'ko' || a.kind === 'sortie' || a.kind === 'depart')) view.visible = false;
     return false;
   }
 
@@ -614,6 +719,10 @@ export class BattleScene implements Scene {
         }
         if (this.views[a.side]) this.game.audio.cry(this.views[a.side]!.speciesId);
         if (this.views[a.side]?.shiny) setTimeout(() => this.game.sfx('niveau'), 250);
+      }
+      if (a.kind === 'surgir' && a.t > 0.05 && !a.fired) {
+        a.fired = true;
+        this.scareBurst();
       }
       if (a.kind === 'emergence' && a.t > 0.55 && !a.fired) {
         a.fired = true;
@@ -769,9 +878,347 @@ export class BattleScene implements Scene {
           this.game.audio.cry(foe.speciesId);
         }
       }
-    } else if (c.phase === 'resultat' && c.t > 0.6 && !c.success) {
+    } else if (c.phase === 'resultat' && ((c.t > 0.6 && !c.success) || (c.t > 1.1 && !this.combat.isOver()))) {
+      // Arraché à un bandit, le combat continue : la calebasse scellée disparaît.
       this.capture = null;
     }
+  }
+
+  // ── Duel du héros ──────────────────────────────────────────────────────
+
+  /**
+   * Après le combat des Jinémon : duel contre le bandit, ou le monstre de la nuit
+   * qui s'en prend au héros, puis le sort du bandit. Vrai tant que cela se joue.
+   */
+  private duelStage(): boolean {
+    if (!this.duel) {
+      const kind: DuelKind | null =
+        this.opts.bandit && this.combat.outcome === 'victoire'
+          ? 'bandit'
+          : this.opts.prey && this.combat.outcome === 'defaite'
+            ? 'monstre'
+            : null;
+      if (!kind) return false;
+      this.startDuel(kind);
+      return true;
+    }
+    if (this.duel.phase === 'choix') {
+      this.updateDuelMenu();
+      return true;
+    }
+    if (this.duel.kind === 'bandit' && this.duel.outcome === 'victoire' && !this.verdict) {
+      this.updateVerdict();
+      return true;
+    }
+    return false;
+  }
+
+  private startDuel(kind: DuelKind): void {
+    const state = this.game.s;
+    const hero = heroFighter(state, state.playerName);
+    const monster = this.combat.foeActive;
+    const foe = kind === 'bandit' ? { ...this.opts.bandit!.foe } : monsterFighter(getSpecies(monster.speciesId).name, monster.level, monster.hp, maxHp(monster));
+    const duel = new Duel(kind, hero, foe, this.game.rng);
+    this.duel = duel;
+    const trainer = this.opts.trainer;
+    const steps: SceneEvent[] = [];
+    if (kind === 'bandit') {
+      for (const text of trainer?.defeat ?? []) steps.push({ type: 'message', text });
+      steps.push({
+        type: 'script',
+        run: () => {
+          // Votre Jinémon recule ; le bandit s'avance en personne.
+          if (this.views.joueur?.visible) this.anims.push({ kind: 'sortie', side: 'joueur', t: 0, duration: 0.45 });
+          this.setView('adversaire', this.fighterView(foe, trainer?.look ?? PLAYER_LOOK, 'face', 'menace'));
+          this.anims.push({ kind: 'arrivee', side: 'adversaire', t: 0, duration: 0.75 });
+          this.game.audio.fx('metal');
+          return 0.8;
+        },
+      });
+    } else {
+      steps.push({ type: 'message', text: 'Vos Jinémon gisent dans la poussière, inanimés…' });
+      steps.push({
+        type: 'script',
+        run: () => {
+          // Le monstre se détourne d'eux… et s'approche.
+          this.dread = 0.01;
+          this.game.audio.cry(monster.speciesId, 0.55);
+          this.addShake(5, 0.7);
+          this.flashFx = { color: '#900010', alpha: 0.55, t: 0, duration: 0.6 };
+          return 0.9;
+        },
+      });
+    }
+    steps.push({
+      type: 'script',
+      run: () => {
+        this.setView('joueur', this.fighterView(hero, PLAYER_LOOK, 'dos', 'garde'));
+        this.anims.push({ kind: 'arrivee', side: 'joueur', t: 0, duration: 0.6 });
+        this.game.sfx('pas');
+        return 0.65;
+      },
+    });
+    steps.push(...this.stage(duel.start()));
+    this.queue.push(...steps);
+    this.mode = 'evenements';
+  }
+
+  /** Remplace ce qui occupe un côté de l'arène (les animations en cours s'arrêtent). */
+  private setView(side: Side, view: SideView): void {
+    this.anims = this.anims.filter((a) => a.side !== side);
+    this.views[side] = view;
+  }
+
+  private fighterView(f: Fighter, look: CharacterLook, facing: 'face' | 'dos', pose: FighterPose): SideView {
+    return {
+      speciesId: -1,
+      name: f.name,
+      level: f.level,
+      hp: f.hp,
+      shownHp: f.hp,
+      maxHp: f.maxHp,
+      status: null,
+      visible: true,
+      shiny: false,
+      since: 0,
+      ghostHp: f.hp,
+      ghostWait: 0,
+      hit: 9,
+      knock: 0,
+      tint: '#ffffff',
+      tintT: 0,
+      statusClock: 0,
+      fighter: { look, facing, pose },
+    };
+  }
+
+  /** Traduit les événements du duel (côté « héros » = côté joueur) en étapes de la scène. */
+  private stage(events: DuelEvent[]): SceneEvent[] {
+    const side = (s: 'heros' | 'adversaire'): Side => (s === 'heros' ? 'joueur' : 'adversaire');
+    return events.map((e): SceneEvent => {
+      switch (e.type) {
+        case 'message':
+          return e;
+        case 'coup':
+          return { type: 'duel-coup', side: side(e.side), blow: e.blow };
+        case 'pv':
+          return { type: 'duel-pv', side: side(e.side), hp: e.hp, maxHp: e.maxHp, damage: e.damage, critical: e.critical, blocked: e.blocked };
+        case 'rate':
+          return { type: 'rate', side: side(e.side) };
+        case 'garde':
+          return { type: 'duel-garde', side: side(e.side) };
+        case 'fin':
+          return { type: 'duel-fin', outcome: e.outcome };
+      }
+    });
+  }
+
+  /** Un coup part : la chorégraphie d'une attaque prête son élan et son impact. */
+  private duelBlow(side: Side, blow: DuelBlow): void {
+    if (blow === 'fuir') {
+      this.anims.push({ kind: 'esquive', side, t: 0, duration: 0.4 });
+      this.game.sfx('pas');
+      this.wait = 0.35;
+      return;
+    }
+    const id = BLOW_FX[blow];
+    if (!id) return;
+    const anim = new MoveAnim(this.host, id, side, side === 'joueur' ? 'adversaire' : 'joueur');
+    if (this.queue[0]?.type === 'rate') anim.missed = true;
+    this.moves.push(anim);
+    this.gate = Math.max(this.gate, anim.impact);
+    if (blow === 'machette') this.game.audio.fx('metal');
+  }
+
+  private duelHit(event: Extract<StageEvent, { type: 'duel-pv' }>): void {
+    const view = this.views[event.side];
+    this.wait = 0.55;
+    if (!view) return;
+    view.ghostHp = Math.max(view.ghostHp, view.hp);
+    view.ghostWait = 0.45;
+    view.hp = event.hp;
+    const a = this.anchor(event.side);
+    if (event.blocked) {
+      view.hit = 0.3;
+      view.knock = 3;
+      this.addShake(1.5, 0.2);
+      this.floaters.push({ text: `-${event.damage}`, x: a.center.x, y: a.head.y - 4, t: 0, color: '#c8d8f0', scale: 1 });
+      this.floaters.push({ text: 'PARÉ !', x: a.center.x, y: a.head.y - 16, t: 0, color: '#a8d0ff', scale: 1, label: true });
+      this.rings.push({ x: a.center.x, y: a.center.y, t: 0, duration: 0.35, color: '#80b8ff', r: 28 });
+      this.game.audio.fx('metal');
+      return;
+    }
+    this.hitReaction(event.side, event.damage, event.damage / Math.max(1, event.maxHp), event.critical, 1);
+    // Le monstre déchire : l'écran se teinte de sang.
+    if (event.side === 'joueur' && this.duel?.kind === 'monstre') this.flashFx = { color: '#a00010', alpha: 0.45, t: 0, duration: 0.35 };
+  }
+
+  private duelEnd(outcome: DuelOutcome): void {
+    const duel = this.duel!;
+    setHeroHp(this.game.s, duel.hero.hp);
+    this.wait = 0.5;
+    if (duel.kind === 'bandit') {
+      if (outcome === 'victoire') {
+        // À genoux, il implore.
+        const view = this.views.adversaire;
+        if (view?.fighter) view.fighter.pose = 'genoux';
+        this.dust('adversaire');
+        this.addShake(2, 0.25);
+        for (const text of this.opts.trainer?.bandit?.plea ?? []) this.queue.push({ type: 'message', text });
+      } else {
+        this.anims.push({ kind: 'ko', side: 'joueur', t: 0, duration: 1 });
+        this.game.sfx('ko');
+        this.wait = 1.1;
+      }
+      return;
+    }
+    if (outcome === 'victoire') {
+      this.anims.push({ kind: 'ko', side: 'adversaire', t: 0, duration: 1 });
+      this.game.audio.cry(this.combat.foeActive.speciesId, 0.5);
+      this.wait = 1.1;
+    } else if (outcome === 'fuite') {
+      this.anims.push({ kind: 'depart', side: 'joueur', t: 0, duration: 0.8 });
+      this.veilFx = { color: '#000000', alpha: 1, t: 0, duration: 4 };
+      this.wait = 1;
+    } else {
+      // Évanouissement : le héros s'effondre, tout devient noir.
+      this.anims.push({ kind: 'ko', side: 'joueur', t: 0, duration: 1.2 });
+      this.veilFx = { color: '#000000', alpha: 1, t: 0, duration: 4 };
+      this.game.sfx('ko');
+      this.wait = 1.6;
+    }
+  }
+
+  private dust(side: Side): void {
+    const a = this.anchor(side);
+    for (let i = 0; i < 12; i++) {
+      const dir = i % 2 ? 1 : -1;
+      this.particles.add({ x: a.foot.x + dir * rnd(i, 1) * 14, y: a.foot.y - 2, vx: dir * (20 + rnd(i, 2) * 40), vy: -10 - rnd(i, 3) * 20, drag: 3, life: 0.8, size: 3, sizeEnd: 6, shape: 'disque', colors: ['#f0e4c8', '#d8c8a8', '#b8a888'] });
+    }
+  }
+
+  private updateDuelMenu(): void {
+    const actions = this.duel!.actions;
+    this.mode = 'duel';
+    const input = this.game.input;
+    const before = this.duelIndex;
+    if (input.pressed('up') || input.pressed('down')) this.duelIndex ^= 2;
+    if (input.pressed('left') || input.pressed('right')) this.duelIndex ^= 1;
+    if (this.duelIndex >= actions.length) this.duelIndex = before < actions.length ? before : 0;
+    if (before !== this.duelIndex) this.game.sfx('curseur');
+    this.message = ACTION_HINTS[actions[this.duelIndex]];
+    this.shown = this.message.length;
+    if (!input.pressed('a')) return;
+    this.game.sfx('valider');
+    this.queue.push(...this.stage(this.duel!.submit(actions[this.duelIndex])));
+    this.mode = 'evenements';
+  }
+
+  /** Le bandit est à genoux : l'achever, ou l'épargner (et le menotter s'il est recherché). */
+  private updateVerdict(): void {
+    const prime = this.opts.trainer?.bandit?.prime ?? 0;
+    if (this.mode !== 'verdict') {
+      this.mode = 'verdict';
+      this.verdictIndex = 1;
+    }
+    this.message = prime > 0 ? `Sa tête est mise à prix : ${prime} cauris.` : 'Personne ne réclame sa tête.';
+    this.shown = this.message.length;
+    const input = this.game.input;
+    if (input.pressed('left') || input.pressed('right') || input.pressed('up') || input.pressed('down')) {
+      this.verdictIndex ^= 1;
+      this.game.sfx('curseur');
+    }
+    if (!input.pressed('a')) return;
+    this.game.sfx('valider');
+    this.choose(this.verdictIndex === 0 ? 'achever' : 'epargner');
+  }
+
+  private choose(verdict: Verdict): void {
+    this.verdict = verdict;
+    this.mode = 'evenements';
+    const name = this.duel!.foe.name;
+    const prime = this.opts.trainer?.bandit?.prime ?? 0;
+    if (verdict === 'achever') {
+      this.queue.push(
+        { type: 'message', text: 'Vous ramassez sa machette…' },
+        {
+          type: 'script',
+          run: () => {
+            const anim = new MoveAnim(this.host, 'lameFerForge', 'joueur', 'adversaire');
+            this.moves.push(anim);
+            this.gate = anim.impact;
+            return 0;
+          },
+        },
+        {
+          type: 'script',
+          run: () => {
+            this.flashFx = { color: '#a00010', alpha: 0.75, t: 0, duration: 0.6 };
+            this.hitStop = 0.22;
+            this.addShake(7, 0.5);
+            this.anims.push({ kind: 'ko', side: 'adversaire', t: 0, duration: 1.3 });
+            this.game.audio.fx('impactFort');
+            return 1.5;
+          },
+        },
+        { type: 'message', text: `${name} ne se relèvera plus.` },
+      );
+      return;
+    }
+    if (prime > 0 && itemCount(this.game.s, 'menottes') > 0) {
+      this.queue.push(
+        { type: 'message', text: `Vous passez les menottes à ${name}.` },
+        {
+          type: 'script',
+          run: () => {
+            const a = this.anchor('adversaire');
+            this.game.audio.fx('metal');
+            setTimeout(() => this.game.audio.fx('metal'), 180);
+            this.particles.add({ x: a.center.x, y: a.center.y, vy: -18, life: 1.2, shape: 'glyphe', glyph: 'menottes', colors: ['#f0f0f0', '#c8ccd0'], fade: true });
+            this.floaters.push({ text: 'ARRÊTÉ !', x: a.center.x, y: a.head.y - 6, t: 0, color: '#ffe060', scale: 1, label: true });
+            return 1;
+          },
+        },
+      );
+      return;
+    }
+    this.queue.push(
+      { type: 'message', text: prime > 0 ? 'Vous n’avez pas de menottes pour l’arrêter…' : 'Vous le laissez partir.' },
+      {
+        type: 'script',
+        run: () => {
+          const view = this.views.adversaire;
+          if (view?.fighter) view.fighter.pose = 'menace';
+          this.anims.push({ kind: 'depart', side: 'adversaire', t: 0, duration: 0.8 });
+          this.game.sfx('pas');
+          return 0.9;
+        },
+      },
+      { type: 'message', text: prime > 0 ? `${name} en profite pour détaler !` : `${name} détale sans demander son reste.` },
+    );
+  }
+
+  /** Terreur : le cœur bat de plus en plus vite, et l'écran se teinte de sang. */
+  private updateDread(dt: number): void {
+    if (this.dread <= 0) return;
+    const ending = this.duel?.phase === 'fini' && this.duel.outcome === 'victoire';
+    this.dread = ending ? Math.max(0, this.dread - dt) : Math.min(1, this.dread + dt * 0.8);
+    const hero = this.views.joueur;
+    const danger = hero?.fighter ? 1 - hero.hp / Math.max(1, hero.maxHp) : 0;
+    this.dreadBeat -= dt;
+    if (this.dreadBeat <= 0 && !ending) {
+      this.game.sfx('battement');
+      this.dreadBeat = 0.85 - danger * 0.5;
+    }
+  }
+
+  /** Apparition d'une Hantise : un éclair rouge, un hurlement, la terre tremble. */
+  private scareBurst(): void {
+    this.flashFx = { color: '#a00010', alpha: 0.7, t: 0, duration: 0.5 };
+    this.addShake(8, 0.8);
+    const foe = this.views.adversaire;
+    if (foe) this.game.audio.cry(foe.speciesId, 0.45);
+    this.game.sfx('battement');
   }
 
   // ── Menus ──────────────────────────────────────────────────────────────
@@ -809,7 +1256,7 @@ export class BattleScene implements Scene {
         break;
       case 3:
         if (this.combat.kind === 'dresseur') {
-          this.flash('Impossible de fuir un combat contre un dresseur !');
+          this.flash(this.combat.bandit ? 'Le bandit vous barre la route : impossible de fuir !' : 'Impossible de fuir un combat contre un dresseur !');
         } else {
           this.submit({ kind: 'fuite' });
         }
@@ -827,8 +1274,9 @@ export class BattleScene implements Scene {
     this.game.scenes.push(
       new BagScene(this.game, 'combat', (item: ItemId) => {
         if (isCaptureItem(item)) {
-          if (this.combat.kind === 'dresseur') {
-            this.flash('On ne capture pas les Jinémon des autres dresseurs !');
+          const refusal = this.combat.captureRefusal();
+          if (refusal) {
+            this.flash(refusal);
             return;
           }
           removeItem(this.game.s, item);
@@ -895,6 +1343,7 @@ export class BattleScene implements Scene {
     this.renderCapture(ctx);
     this.renderFloaters(ctx);
     ctx.restore();
+    this.renderDread(ctx);
     if (this.flashFx) {
       const f = this.flashFx;
       ctx.globalAlpha = f.alpha * (1 - f.t / f.duration);
@@ -944,6 +1393,27 @@ export class BattleScene implements Scene {
       ctx.drawImage(characterSprite(PLAYER_LOOK, 'haut', 0), 50 - Math.round(meOut * 60), 94, 32, 48);
       ctx.globalAlpha = 1;
     }
+  }
+
+  /** Bords de l'écran assombris et rougis, au rythme du cœur. */
+  private renderDread(ctx: CanvasRenderingContext2D): void {
+    if (this.dread <= 0) return;
+    const hero = this.views.joueur;
+    const danger = hero?.fighter ? 1 - hero.hp / Math.max(1, hero.maxHp) : 0;
+    const pulse = 0.5 + 0.5 * Math.max(0, Math.sin(this.time * (5 + danger * 6)));
+    for (let k = 0; k < 6; k++) {
+      ctx.globalAlpha = this.dread * (0.5 - k * 0.075) * (0.75 + 0.25 * pulse);
+      ctx.fillStyle = k < 2 ? '#000000' : '#4a0008';
+      const m = k * 5;
+      ctx.fillRect(m, m, W - 2 * m, 5);
+      ctx.fillRect(m, H - m - 5, W - 2 * m, 5);
+      ctx.fillRect(m, m + 5, 5, H - 2 * m - 10);
+      ctx.fillRect(W - m - 5, m + 5, 5, H - 2 * m - 10);
+    }
+    ctx.globalAlpha = 0.18 * this.dread;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
   }
 
   private renderVeil(ctx: CanvasRenderingContext2D): void {
@@ -1032,6 +1502,31 @@ export class BattleScene implements Scene {
           x += (1 - ease(clamp01(t / 0.45))) * 90;
           fx.silhouette = 1 - clamp01((t - 0.45) / 0.35);
           break;
+        case 'surgir': {
+          // Immense, presque contre vous… puis elle recule à sa place, sans vous quitter des yeux.
+          const u = ease(clamp01((t - 0.1) / 0.55));
+          const k = 2.6 - 1.6 * u;
+          fx.sx = (fx.sx ?? 1) * k;
+          fx.sy = (fx.sy ?? 1) * k;
+          x -= (1 - u) * 70;
+          y += (1 - u) * 80;
+          fx.silhouette = t < 0.1 ? 1 : 1 - clamp01((t - 0.1) / 0.5);
+          fx.tint = '#a00010';
+          fx.tintAmount = 0.6 * (1 - clamp01((t - 0.3) / 0.6));
+          break;
+        }
+        case 'arrivee': {
+          // Il entre en marchant depuis le bord de l'écran.
+          const u = ease(t);
+          x += (player ? -80 : 90) * (1 - u);
+          y -= Math.abs(Math.sin(t * Math.PI * 4)) * 2 * (1 - u);
+          break;
+        }
+        case 'depart':
+          x += (player ? -100 : 110) * t * t;
+          y -= Math.abs(Math.sin(t * Math.PI * 5)) * 2;
+          fx.alpha = 1 - clamp01((t - 0.55) / 0.45);
+          break;
         case 'sortie':
           fx.white = clamp01(t * 2.5);
           fx.sx = (fx.sx ?? 1) * (1 - t * 0.8);
@@ -1044,6 +1539,13 @@ export class BattleScene implements Scene {
             break;
           }
           const u = (t - 0.12) / 0.88;
+          if (view.fighter) {
+            // Un homme ne s'enfonce pas dans le sol : il bascule et s'effondre.
+            fx.rotate = (player ? -1 : 1) * ease(clamp01(u * 1.4)) * 1.45;
+            y += ease(clamp01(u * 1.4)) * 4;
+            fx.alpha = 1 - clamp01((u - 0.75) / 0.25);
+            break;
+          }
           y += ease(u) * anchor.size * 0.75;
           fx.clipBelow = anchor.foot.y + 1;
           fx.sx = (fx.sx ?? 1) * (1 + u * 0.12);
@@ -1066,6 +1568,16 @@ export class BattleScene implements Scene {
           break;
       }
     }
+    // La nuit, le monstre s'approche du héros sans défense.
+    if (!player && this.dread > 0 && !view.fighter) {
+      const k = 1 + ease(this.dread) * 0.32;
+      fx.sx = (fx.sx ?? 1) * k;
+      fx.sy = (fx.sy ?? 1) * k;
+      x -= ease(this.dread) * 22;
+      y += ease(this.dread) * 16;
+      fx.tint = '#200810';
+      fx.tintAmount = Math.max(fx.tintAmount ?? 0, 0.25 * this.dread);
+    }
     // Capture : le Jinémon blanchit et rapetisse, aspiré par la calebasse.
     if (!player && this.capture?.phase === 'absorber') {
       const u = clamp01(this.capture.t / 0.35);
@@ -1087,7 +1599,7 @@ export class BattleScene implements Scene {
       if (pose.trail) {
         // Images rémanentes entre la position de départ et la position actuelle.
         for (let k = 3; k >= 1; k--) {
-          drawCreatureFx(ctx, view.speciesId, anchor.foot.x + pose.dx * (1 - k * 0.22), anchor.foot.y + pose.dy * (1 - k * 0.22), anchor.size, {
+          this.drawView(ctx, side, view, anchor.foot.x + pose.dx * (1 - k * 0.22), anchor.foot.y + pose.dy * (1 - k * 0.22), {
             back: player,
             shiny: view.shiny,
             alpha: 0.18 + (3 - k) * 0.08,
@@ -1097,7 +1609,7 @@ export class BattleScene implements Scene {
         }
       }
     }
-    drawCreatureFx(ctx, view.speciesId, x, y, anchor.size, fx);
+    this.drawView(ctx, side, view, x, y, fx);
 
     if (view.shiny && view.since > 0.5 && view.since < 1.6) {
       // Étoiles qui jaillissent autour du Jinémon chatoyant.
@@ -1136,6 +1648,18 @@ export class BattleScene implements Scene {
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
     }
+  }
+
+  /** Un Jinémon, ou un humain sculpté (le héros de dos, le bandit de face). */
+  private drawView(ctx: CanvasRenderingContext2D, side: Side, view: SideView, x: number, y: number, fx: CreatureFx): void {
+    const f = view.fighter;
+    if (!f) {
+      drawCreatureFx(ctx, view.speciesId, x, y, this.anchor(side).size, fx);
+      return;
+    }
+    const size = side === 'joueur' ? 84 : 72;
+    const key = `humain:${f.look.skin}${f.look.outfit}${f.look.accent}${f.look.headwear}:${f.facing}:${f.pose}:${size}`;
+    drawSpriteFx(ctx, fighterSprite(f.look, f.facing, f.pose, size), key, x, y, fx);
   }
 
   /** Étoiles qui tournent au-dessus de la tête d'un Jinémon confus. */
@@ -1263,8 +1787,13 @@ export class BattleScene implements Scene {
       text(ctx, `N.${foe.level}`, 114, 10, { align: 'right' });
       this.healthBar(ctx, foe, 12, 26, 102);
       if (foe.status) statusBadge(ctx, foe.status, 90, 32);
-      if (this.combat.kind === 'dresseur') this.partyDots(ctx, this.combat.foe, 14, 36);
-      else if (this.game.s.dex.caught.includes(foe.speciesId)) calabash(ctx, 16, 38, 1);
+      if (foe.fighter) {
+        text(ctx, 'HORS-LA-LOI', 14, 33, { color: PAL.rust });
+      } else if (this.combat.kind === 'dresseur') {
+        this.partyDots(ctx, this.combat.foe.map((j) => ({ hp: this.combat.stolen.includes(j) ? 0 : j.hp })), 14, 36);
+        // Affaibli, le Jinémon du bandit peut lui être arraché : la calebasse clignote.
+        if (this.combat.bandit && !this.combat.isOver() && this.combat.isWeakened() && Math.floor(this.time * 2.5) % 2 === 0) calabash(ctx, 112, 38, 1);
+      } else if (this.game.s.dex.caught.includes(foe.speciesId)) calabash(ctx, 16, 38, 1);
     }
     const me = this.views.joueur;
     if (me && me.visible) {
@@ -1274,8 +1803,12 @@ export class BattleScene implements Scene {
       this.healthBar(ctx, me, 140, 110, 106);
       text(ctx, `${Math.ceil(me.shownHp)}/${me.maxHp}`, 246, 114, { align: 'right' });
       if (me.status) statusBadge(ctx, me.status, 140, 117);
-      stamp(ctx, ['#.#.###', '.#..#.#', '#.#.###', '....#..'], 140, 129, { '#': PAL.xp });
-      bar(ctx, 150, 130, 96, 2, this.xpShown, PAL.xp);
+      if (me.fighter) {
+        text(ctx, 'VOUS', 140, 126, { color: PAL.rust });
+      } else {
+        stamp(ctx, ['#.#.###', '.#..#.#', '#.#.###', '....#..'], 140, 129, { '#': PAL.xp });
+        bar(ctx, 150, 130, 96, 2, this.xpShown, PAL.xp);
+      }
     }
   }
 
@@ -1309,6 +1842,24 @@ export class BattleScene implements Scene {
   private renderBottom(ctx: CanvasRenderingContext2D): void {
     if (this.mode === 'attaques') {
       this.renderMoves(ctx);
+      return;
+    }
+    if (this.mode === 'duel' || this.mode === 'verdict') {
+      const labels = this.mode === 'duel' ? this.duel!.actions.map((a) => ACTION_LABELS[a]) : ['ACHEVER', 'ÉPARGNER'];
+      const index = this.mode === 'duel' ? this.duelIndex : this.verdictIndex;
+      box(ctx, 2, 144, 120, 46);
+      wrapText(this.message, 102)
+        .slice(0, 3)
+        .forEach((row, i) => text(ctx, row, 10, 149 + i * 12, { shadow: PAL.shadow }));
+      box(ctx, 122, 144, 132, 46);
+      labels.forEach((label, i) => {
+        const x = 129 + (i % 2) * 62;
+        const y = 152 + Math.floor(i / 2) * 15;
+        const red = label === 'ACHEVER';
+        text(ctx, label, x + 7, y, { color: red ? '#a01818' : PAL.ink, shadow: PAL.shadow });
+        if (i === index) cursor(ctx, x, y + 2);
+      });
+      if (this.mode === 'verdict') text(ctx, `Menottes : ${itemCount(this.game.s, 'menottes')}`, 136, 175, { color: PAL.grey });
       return;
     }
     const menu = this.mode === 'menu';

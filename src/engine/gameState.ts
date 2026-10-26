@@ -8,6 +8,8 @@ import type { Rng } from './rng';
 
 export const PARTY_SIZE = 6;
 
+export type OutlawFate = 'mort' | 'arrete' | 'enfui';
+
 export interface Position {
   zone: ZoneId;
   x: number;
@@ -27,8 +29,16 @@ export interface GameState {
   /** Espèce du starter choisi (0 tant que le Hogon ne l'a pas confié). */
   starter: number;
   position: Position;
-  /** Dernier lieu de soin visité : point de retour après une défaite. */
+  /** Dernier lit où l'on a dormi (auberge, maison, bivouac) : on s'y réveille après s'être évanoui. */
   lastHeal: Position;
+  /** Ce lit, tel qu’on le nomme au réveil (« Vous vous réveillez dans une chambre de l’auberge (Djenné) »). */
+  bed: string;
+  /** Points de vie perdus par le héros lui-même (0 = en pleine forme). */
+  heroWounds: number;
+  /** Sort des bandits vaincus : achevés, livrés à la garde, ou laissés filer. */
+  outlaws: Record<string, OutlawFate>;
+  /** Total des primes touchées. */
+  bounties: number;
   party: Jinemon[];
   /** Jinémon gardés dans la Grande Jarre. */
   storage: Jinemon[];
@@ -50,13 +60,20 @@ export interface GameState {
 /** On se réveille dans sa chambre, à côté de son lit. */
 export const START_POSITION: Position = { zone: 'chambre', x: 2, y: 3, dir: 'bas' };
 
+/** Le lit de la maison : le premier point de réveil. */
+export const HOME_BED: Position = { ...START_POSITION };
+
 export function newGameState(playerName: string): GameState {
   return {
     version: 1,
     playerName,
     starter: 0,
     position: { ...START_POSITION },
-    lastHeal: { zone: 'maison', x: 5, y: 6, dir: 'haut' },
+    lastHeal: { ...HOME_BED },
+    bed: 'votre lit, à la maison',
+    heroWounds: 0,
+    outlaws: {},
+    bounties: 0,
     party: [],
     storage: [],
     inventory: {},
@@ -109,6 +126,14 @@ export function giveStarter(state: GameState, speciesId: number, rng: Rng): Jine
 
 export function healParty(state: GameState): void {
   for (const j of state.party) healFully(j);
+}
+
+/** Une vraie nuit dans un lit : l'équipe et le héros sont remis sur pied, et l'on se réveillera ici. */
+export function sleepHere(state: GameState, pos: Position, bed: string): void {
+  healParty(state);
+  state.heroWounds = 0;
+  state.lastHeal = { ...pos };
+  state.bed = bed;
 }
 
 export function hasUsableJinemon(state: GameState): boolean {

@@ -85,6 +85,20 @@ export interface Trainer {
   rivalStage?: 1 | 2 | 3 | 4 | 5;
   /** Portée du regard en cases (0 : attend qu'on vienne lui parler). Par défaut, 4, ou 0 pour un Maître. */
   sight?: number;
+  /**
+   * Hors-la-loi : il veut votre argent. Quand ses Jinémon sont à terre, il faut le
+   * mettre à terre lui-même, puis l'achever ou le livrer à la garde. Pour un bandit,
+   * `defeat` est ce qu'il crie quand son dernier Jinémon tombe, et `after` ce qu'il
+   * avoue une fois menotté (ou épargné).
+   */
+  bandit?: Outlaw;
+}
+
+export interface Outlaw {
+  /** Tête mise à prix, en cauris (0 : personne ne la réclame). */
+  prime: number;
+  /** Ce qu'il implore, à genoux. */
+  plea: string[];
 }
 
 /** Starter choisi par la rivale : celui qui a l'avantage sur le vôtre. */
@@ -124,37 +138,60 @@ const ACTE1: Trainer[] = [
 
   // ── Savane des Termitières ──
   {
-    id: 'hamadou', name: 'Hamadou', title: 'Jeune Berger Peul', ai: 'simple', reward: 120,
+    id: 'hamadou', name: 'Hamadou', title: 'Racketteur des Termitières', ai: 'simple', reward: 120,
     team: [{ species: 33, level: 5 }, { species: 14, level: 6 }],
-    intro: ['Hamadou : Mon troupeau broute ici depuis l’aube. Tu veux te mesurer à nous ?'],
-    defeat: ['Hamadou : Mes zébus vont se moquer de moi…'],
-    after: ['Hamadou : Les Zébulle suivent la transhumance jusqu’au fleuve. Ils sont plus robustes qu’ils n’en ont l’air.'],
-    look: { skin: '#9a6a44', outfit: '#3a6ab8', accent: '#e8e0c8', headwear: 'chapeau' },
+    intro: [
+      'Hamadou : Halte. Cette piste est à moi, et on paie pour passer.',
+      'Hamadou : Ta bourse. Ou mes bêtes te piétinent.',
+    ],
+    defeat: ['Hamadou : Mes bêtes… tu les as massacrées ! Tu vas me le payer de ta peau !'],
+    after: [
+      'Hamadou : D’accord, d’accord… On est toute une bande sur la savane. On guette les Initiés qui quittent le village : leurs cauris sont faciles à prendre.',
+    ],
+    bandit: { prime: 300, plea: ['Hamadou : Arrête ! Je me rends ! Je n’ai jamais tué personne, je le jure…'] },
+    look: { skin: '#9a6a44', outfit: '#7a6238', accent: '#b83a1a', headwear: 'foulard' },
   },
   {
-    id: 'mariam', name: 'Mariam', title: 'Conteuse', ai: 'simple', reward: 150,
+    id: 'mariam', name: 'Mariam', title: 'Arnaqueuse des Pistes', ai: 'simple', reward: 150,
     team: [{ species: 18, level: 6 }, { species: 24, level: 7 }],
-    intro: ['Mariam : Connais-tu l’histoire de Leuk le Lièvre ? Laisse-moi te la raconter… en combat !'],
-    defeat: ['Mariam : Ton histoire se termine mieux que la mienne.'],
-    after: ['Mariam : Anansi l’araignée a acheté toutes les histoires du monde. Depuis, les conteurs les lui empruntent.'],
+    intro: [
+      'Mariam : Tu connais l’histoire du voyageur qui gardait sa bourse ? Moi non plus. Ils finissent tous par me la donner.',
+      'Mariam : Allez. Sois raisonnable.',
+    ],
+    defeat: ['Mariam : Mes Jinémon… Petite brute ! Je vais t’arracher les yeux !'],
+    after: [
+      'Mariam : Anansi l’araignée a volé toutes les histoires du monde. Moi, je volais seulement les bourses. Les juges vont me faire croupir au cachot…',
+    ],
+    bandit: { prime: 450, plea: ['Mariam : Pitié ! Je ne faisais que raconter des histoires…'] },
     look: { skin: '#7a4a2a', outfit: '#b84ae8', accent: '#f0c040', headwear: 'foulard' },
   },
   {
-    id: 'moussa', name: 'Moussa', title: 'Gamin des Termitières', ai: 'simple', reward: 100,
+    id: 'moussa', name: 'Moussa', title: 'Voleur à la Tire', ai: 'simple', reward: 100,
     team: [{ species: 16, level: 5 }, { species: 10, level: 5 }, { species: 16, level: 6 }],
-    intro: ['Moussa : J’ai attrapé plein de bestioles dans les termitières ! Regarde !'],
-    defeat: ['Moussa : Ouin ! Je retourne fouiller les termitières…'],
-    after: ['Moussa : Les Termiton évoluent quand ils deviennent forts. Ils construisent alors des forteresses !'],
+    intro: ['Moussa : Pas un geste. Tu vides ton sac par terre, et tu repars sans te retourner.'],
+    defeat: ['Moussa : Non… Non ! Tu les as tués ! Je vais te planter !'],
+    after: [
+      'Moussa : … Merci. Les Termiton évoluent quand ils deviennent forts : ils bâtissent alors des forteresses. C’est tout ce que je sais. Je m’en vais.',
+    ],
+    bandit: { prime: 0, plea: ['Moussa : Lâche-moi ! Je volais juste pour manger !'] },
     look: { skin: '#6a3a22', outfit: '#e8582a', accent: '#f0f0f0' },
   },
 
   // ── Terres Rouges ──
   {
-    id: 'bakary', name: 'Bakary', title: 'Apprenti Forgeron', ai: 'simple', reward: 350,
+    id: 'bakary', name: 'Bakary', title: 'Racketteur de la Forge', ai: 'simple', reward: 350,
     team: [{ species: 55, level: 10 }, { species: 12, level: 11 }],
-    intro: ['Bakary : Avant de voir le Maître, il faudra passer par mon enclume !'],
-    defeat: ['Bakary : Mon métal n’était pas assez trempé…'],
-    after: ['Bakary : Le Maître dit que le feu craint l’eau et la roche. Retiens-le !'],
+    intro: [
+      'Bakary : Le Maître ne reçoit que ceux qui paient le droit d’entrée.',
+      'Bakary : Cinq cents cauris. Tu ne les as pas ? Alors je me servirai sur ton cadavre.',
+    ],
+    defeat: ['Bakary : Tu crois que j’ai besoin de Jinémon pour te briser les os ?'],
+    after: [
+      'Bakary : Le Maître dit que le feu craint l’eau et la roche. Prends ce conseil, et laisse-moi la vie sauve.',
+    ],
+    bandit: { prime: 700, plea: [
+      'Bakary : Assez ! Le Maître Sirafa ne sait rien de mon petit commerce… Ne lui dis rien, je t’en supplie !',
+    ] },
     look: { skin: '#5a3420', outfit: '#6a6f78', accent: '#e2582a', headwear: 'bonnet' },
   },
   {
@@ -176,27 +213,42 @@ const ACTE1: Trainer[] = [
 
   // ── Marigot des Ancêtres ──
   {
-    id: 'sory', name: 'Sory', title: 'Pêcheur Bozo', ai: 'simple', reward: 450,
+    id: 'sory', name: 'Sory', title: 'Pirate du Fleuve', ai: 'simple', reward: 450,
     team: [{ species: 43, level: 15 }, { species: 49, level: 16 }],
-    intro: ['Sory : Mon peuple pêche ce fleuve depuis toujours. Tu ne m’effraies pas !'],
-    defeat: ['Sory : Le fleuve donne, le fleuve reprend…'],
-    after: ['Sory : On dit qu’un Ninkinou vit dans les eaux du marigot. Il devient un dragon quand il vieillit.'],
+    intro: ['Sory : Personne ne traverse le marigot sans payer le péage. Mon péage à moi.'],
+    defeat: ['Sory : Le fleuve a emporté mes Jinémon. Il va t’emporter aussi !'],
+    after: [
+      'Sory : Il y a un Ninkinou dans les eaux du marigot. On voulait le vendre à un riche marchand de Djenné… Il devient un dragon en vieillissant.',
+    ],
+    bandit: { prime: 900, plea: ['Sory : Je me rends ! Ne me jette pas aux crocodiles !'] },
     look: { skin: '#6a4028', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau' },
   },
   {
-    id: 'aissata', name: 'Aïssata', title: 'Pêcheuse', ai: 'simple', reward: 450,
+    id: 'aissata', name: 'Aïssata', title: 'Braconnière', ai: 'simple', reward: 450,
     team: [{ species: 47, level: 16 }, { species: 43, level: 17 }],
-    intro: ['Aïssata : Des feux follets dansent sur l’eau à la tombée de la nuit. Le mien est très joueur !'],
-    defeat: ['Aïssata : Mon Feufolet s’est égaré… comme moi.'],
-    after: ['Aïssata : Les feux follets viennent de très loin, au-delà du désert. Comme beaucoup de Jinémon de cette région.'],
+    intro: [
+      'Aïssata : Les feux follets du marigot se vendent une fortune. Et toi, tu m’as vue les chasser.',
+      'Aïssata : Mauvaise idée.',
+    ],
+    defeat: ['Aïssata : Tu as éteint mon Feufolet… Tu vas finir au fond de l’eau !'],
+    after: [
+      'Aïssata : Les feux follets viennent de très loin, au-delà du désert. Je les attrapais pour les marchands du Nord. Voilà, tu sais tout.',
+    ],
+    bandit: { prime: 800, plea: ['Aïssata : Tu as gagné ! Prends tout, mais laisse-moi vivre !'] },
     look: { skin: '#7a4a30', outfit: '#e85a8f', accent: '#f0f0f0', headwear: 'foulard' },
   },
   {
-    id: 'binta', name: 'Binta', title: 'Novice des Eaux', ai: 'simple', reward: 600,
+    id: 'binta', name: 'Binta', title: 'Pilleuse d’Offrandes', ai: 'simple', reward: 600,
     team: [{ species: 49, level: 19 }, { species: 43, level: 20 }],
-    intro: ['Binta : La Gardienne médite. Seuls ceux qui me battent peuvent troubler son silence.'],
-    defeat: ['Binta : L’eau dormante se réveille… Va, la Gardienne t’attend.'],
-    after: ['Binta : L’eau éteint le feu, mais la plante boit l’eau. Pense à tes Jinémon Plante !'],
+    intro: [
+      'Binta : Les pèlerins laissent des offrandes à la Gardienne. Moi, je les ramasse.',
+      'Binta : Et les tiennes, je vais les ramasser aussi.',
+    ],
+    defeat: ['Binta : Ma dernière bête… Je vais te noyer dans la mare sacrée !'],
+    after: [
+      'Binta : L’eau éteint le feu, mais la plante boit l’eau : c’est ce que dit la Gardienne. Je ne volerai plus ses offrandes, je le jure.',
+    ],
+    bandit: { prime: 1000, plea: ['Binta : Pitié ! La Gardienne me maudira si je meurs sur son seuil !'] },
     look: { skin: '#5a3420', outfit: '#2a7ab8', accent: '#c8f0ff', headwear: 'foulard' },
   },
   {
@@ -218,56 +270,89 @@ const ACTE1: Trainer[] = [
 
   // ── Forêt Sacrée ──
   {
-    id: 'seydou', name: 'Séydou', title: 'Initié du Bois Sacré', ai: 'simple', reward: 700,
+    id: 'seydou', name: 'Séydou', title: 'Profanateur du Bois Sacré', ai: 'simple', reward: 700,
     team: [{ species: 27, level: 22 }, { species: 26, level: 23 }],
-    intro: ['Séydou : Tu foules un sol sacré. Les génies veulent savoir qui tu es.'],
-    defeat: ['Séydou : Les génies sont satisfaits. Passe ton chemin en paix.'],
-    after: ['Séydou : Les Kontomblin vivent au pied des baobabs. Ils deviennent un avec l’arbre en grandissant.'],
+    intro: [
+      'Séydou : Les fétiches de ce bois valent leur pesant d’or. Tu n’as rien vu, d’accord ?',
+      'Séydou : Non ? Alors tu ne verras plus rien du tout.',
+    ],
+    defeat: ['Séydou : Les génies ne me protègent plus… Je vais te tuer de mes mains !'],
+    after: [
+      'Séydou : Les Kontomblin vivent au pied des baobabs. On les chassait pour leurs cheveux, qui portent chance… Je ne recommencerai plus.',
+    ],
+    bandit: { prime: 1200, plea: ['Séydou : Je rendrai les fétiches ! Tous ! Mais épargne-moi !'] },
     look: { skin: '#5a3420', outfit: '#e8e0c8', accent: '#5fa83a' },
   },
   {
-    id: 'ali', name: 'Ali', title: 'Gardien des Masques', ai: 'malin', reward: 750,
+    id: 'ali', name: 'Ali', title: 'Trafiquant de Masques', ai: 'malin', reward: 750,
     team: [{ species: 47, level: 23 }, { species: 51, level: 24 }],
-    intro: ['Ali : Les âmes errantes de cette forêt viennent de partout. Elles m’obéissent !'],
-    defeat: ['Ali : Mes esprits retournent au silence…'],
-    after: ['Ali : Les Spectre craignent l’Esprit et les Ténèbres. Mais les Normal ne peuvent pas les toucher.'],
+    intro: [
+      'Ali : Les âmes errantes de cette forêt m’obéissent. Et elles ont faim.',
+      'Ali : Pose ta bourse et recule. Lentement.',
+    ],
+    defeat: ['Ali : Mes esprits retournent au silence… Il ne me reste que ma lame.'],
+    after: [
+      'Ali : Les Spectre craignent l’Esprit et les Ténèbres, et les attaques Normal les traversent. Voilà… c’est tout ce que je sais.',
+    ],
+    bandit: { prime: 1400, plea: ['Ali : Arrête ! Je connais des secrets ! Laisse-moi vivre et je te dis tout !'] },
     look: { skin: '#4a2a1a', outfit: '#6d5a9c', accent: '#f0c040', headwear: 'masque' },
   },
   {
-    id: 'ingrid', name: 'Ingrid', title: 'Voyageuse du Grand Nord', ai: 'malin', reward: 800,
+    id: 'ingrid', name: 'Ingrid', title: 'Mercenaire du Grand Nord', ai: 'malin', reward: 800,
     team: [{ species: 53, level: 22 }, { species: 49, level: 23 }, { species: 52, level: 24 }],
     intro: [
-      'Ingrid : J’ai traversé la mer et le désert pour étudier les Jinémon d’ici.',
-      'Ingrid : Les miens viennent des fjords glacés. Prêt ?',
+      'Ingrid : J’ai traversé la mer et le désert pour la paye. On m’a payée pour te ralentir.',
+      'Ingrid : Rien de personnel.',
     ],
-    defeat: ['Ingrid : Les légendes de ton pays sont puissantes !'],
-    after: ['Ingrid : Chez moi, on raconte que le loup Fenrir finira par dévorer le soleil. Ici, c’est l’Éclipse Dévorante !'],
+    defeat: ['Ingrid : Mes loups… Tu les as abattus. Alors finissons-en à l’ancienne.'],
+    after: [
+      'Ingrid : Chez moi, on raconte que le loup Fenrir finira par dévorer le soleil. Ici, c’est l’Éclipse Dévorante. Méfie-toi de ceux qui la cherchent.',
+    ],
+    bandit: { prime: 1600, plea: ['Ingrid : C’est bon. Je me rends. Un mercenaire sait quand le contrat est perdu.'] },
     look: { skin: '#f0c8a8', outfit: '#3a5a8a', accent: '#f0f0f0', headwear: 'bonnet' },
   },
   {
-    id: 'kenji', name: 'Kenji', title: 'Pèlerin d’Orient', ai: 'malin', reward: 800,
+    id: 'kenji', name: 'Kenji', title: 'Rônin d’Orient', ai: 'malin', reward: 800,
     team: [{ species: 41, level: 24 }, { species: 43, level: 25 }, { species: 45, level: 26 }],
-    intro: ['Kenji : Les esprits de mon archipel se plaisent dans cette forêt. Combattons avec honneur !'],
-    defeat: ['Kenji : Une défaite honorable est aussi une leçon.'],
-    after: ['Kenji : Un kitsune gagne une queue tous les cent ans. Le mien n’en a que trois, il est encore jeune.'],
+    intro: [
+      'Kenji : Mon seigneur est mort. Mon sabre se vend au plus offrant.',
+      'Kenji : Aujourd’hui, le plus offrant veut ta bourse.',
+    ],
+    defeat: ['Kenji : Mes esprits sont tombés avec honneur. À mon tour.'],
+    after: [
+      'Kenji : Un kitsune gagne une queue tous les cent ans. Le mien n’en avait que trois… Emmène-moi. Je paierai ma dette.',
+    ],
+    bandit: { prime: 1600, plea: ['Kenji : Achève-moi, ou fais de moi ton prisonnier. Je ne supplierai pas.'] },
     look: { skin: '#e8c098', outfit: '#c83a3a', accent: '#2a2a3a', headwear: 'chapeau' },
   },
 
   // ── Piste des Chasseurs Donzos ──
   {
-    id: 'fode', name: 'Fodé', title: 'Chasseur Donzo', ai: 'malin', reward: 1000,
+    id: 'fode', name: 'Fodé', title: 'Braconnier', ai: 'malin', reward: 1000,
     team: [{ species: 30, level: 28 }, { species: 20, level: 29 }],
-    intro: ['Fodé : Les chasseurs ne laissent entrer dans la clairière que ceux qui ont prouvé leur courage.'],
-    defeat: ['Fodé : Tu as l’œil du chasseur.'],
-    after: ['Fodé : Le Grand Chasseur porte des gris-gris pour chaque bête qu’il a affrontée.'],
+    intro: [
+      'Fodé : Je porte l’habit des Donzo, mais je chasse pour moi.',
+      'Fodé : Et toi, tu as l’air d’un beau gibier bien gras.',
+    ],
+    defeat: ['Fodé : Le gibier mord… On va voir s’il saigne.'],
+    after: [
+      'Fodé : Le Grand Chasseur porte un gri-gri pour chaque bête qu’il a affrontée. Moi, je n’en ai aucun. Je n’ai jamais été un vrai chasseur…',
+    ],
+    bandit: { prime: 1800, plea: ['Fodé : Pitié ! Si les vrais Donzo apprennent ce que j’ai fait, ils me tueront !'] },
     look: { skin: '#5a3420', outfit: '#9c7a4a', accent: '#e8e0c8', headwear: 'bonnet' },
   },
   {
-    id: 'nantenin', name: 'Nanténin', title: 'Chasseuse Donzo', ai: 'malin', reward: 1000,
+    id: 'nantenin', name: 'Nanténin', title: 'Braconnière', ai: 'malin', reward: 1000,
     team: [{ species: 34, level: 28 }, { species: 21, level: 29 }],
-    intro: ['Nanténin : On dit que Soundiata lui-même a été protégé par les chasseurs. Montre-moi ta force !'],
-    defeat: ['Nanténin : Le Grand Chasseur sera fier de toi… ou furieux.'],
-    after: ['Nanténin : Le Buffle de Dô est une légende. Si tu en croises un dans les herbes, sois prudent !'],
+    intro: [
+      'Nanténin : Les peaux de Jinémon rares se vendent bien, à la côte.',
+      'Nanténin : La tienne aussi, peut-être.',
+    ],
+    defeat: ['Nanténin : Mes Jinémon… Bon. Je vais devoir te dépecer moi-même.'],
+    after: [
+      'Nanténin : Le Buffle de Dô rôde dans les hautes herbes de la piste. Une légende. Si tu le croises, sois prudent.',
+    ],
+    bandit: { prime: 1800, plea: ['Nanténin : Arrête ! Je te dirai où se cache le Buffle de Dô !'] },
     look: { skin: '#6a4028', outfit: '#7a5a32', accent: '#e8c040', headwear: 'foulard' },
   },
   {
@@ -289,19 +374,31 @@ const ACTE1: Trainer[] = [
 
   // ── Falaise des Ancêtres ──
   {
-    id: 'moctar', name: 'Moctar', title: 'Ascète de la Falaise', ai: 'malin', reward: 1800,
+    id: 'moctar', name: 'Moctar', title: 'Pilleur de Tombes', ai: 'malin', reward: 1800,
     team: [{ species: 66, level: 39 }, { species: 57, level: 40 }],
-    intro: ['Moctar : Résous l’énigme de mon combat, et tu pourras monter plus haut.'],
-    defeat: ['Moctar : La réponse était en toi depuis le début.'],
-    after: ['Moctar : La Sphynge garde ces falaises depuis que les caravanes ont relié le Nil au Niger.'],
+    intro: [
+      'Moctar : Les Tellem enterraient leurs morts avec de l’or, dans ces falaises.',
+      'Moctar : Tu tombes mal. Les témoins finissent dans les grottes, avec eux.',
+    ],
+    defeat: ['Moctar : Les morts ne me protègent plus… Je vais t’ajouter à leur collection !'],
+    after: [
+      'Moctar : La Sphynge garde ces falaises depuis que les caravanes ont relié le Nil au Niger. Elle nous a vus piller… Elle n’oublie rien.',
+    ],
+    bandit: { prime: 2600, plea: ['Moctar : Laisse-moi vivre ! Je rendrai tout aux Dogon, je le jure sur mes ancêtres !'] },
     look: { skin: '#4a2a1a', outfit: '#e8e0d0', accent: '#4a7ab8', headwear: 'turban' },
   },
   {
-    id: 'itzel', name: 'Itzel', title: 'Voyageuse de l’Ouest Lointain', ai: 'malin', reward: 1800,
+    id: 'itzel', name: 'Itzel', title: 'Chasseuse de Reliques', ai: 'malin', reward: 1800,
     team: [{ species: 67, level: 40 }, { species: 63, level: 41 }],
-    intro: ['Itzel : Mon Xolombre guide les âmes. Aujourd’hui, il va guider la tienne vers la défaite !'],
-    defeat: ['Itzel : Mon guide s’est perdu en chemin…'],
-    after: ['Itzel : Chez moi, le serpent à plumes apporte le vent et la pluie. On dit qu’il en vole un sur ces falaises.'],
+    intro: [
+      'Itzel : Mon Xolombre guide les âmes vers le monde des morts.',
+      'Itzel : Ton âme, et ta bourse, il les guidera vers moi.',
+    ],
+    defeat: ['Itzel : Mon guide s’est perdu… Alors je te conduirai moi-même jusqu’à la tombe.'],
+    after: [
+      'Itzel : Chez moi, le serpent à plumes apporte le vent et la pluie. On dit qu’il en vole un sur ces falaises… Je voulais le capturer pour le vendre.',
+    ],
+    bandit: { prime: 2600, plea: ['Itzel : Assez ! Je quitte ton pays, je le jure !'] },
     look: { skin: '#b07a50', outfit: '#3ab05a', accent: '#e8403a', headwear: 'foulard' },
   },
   {

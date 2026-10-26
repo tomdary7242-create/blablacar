@@ -13,7 +13,9 @@ export type ItemId =
   | 'mielSauvage'
   | 'baumeAnciens'
   | 'nasse'
-  | 'amulettePartage';
+  | 'amulettePartage'
+  | 'menottes'
+  | 'sacCouchage';
 
 export type ItemEffect =
   | { kind: 'capture'; bonus: number }
@@ -85,6 +87,14 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
   nasse: {
     name: 'Nasse du Pêcheur', price: 0, effect: { kind: 'cle' },
     description: 'Une nasse tressée par les pêcheurs bozos. Face à l’eau, appuyez sur A pour pêcher des Jinémon aquatiques.',
+  },
+  menottes: {
+    name: 'Menottes de Fer', price: 150, effect: { kind: 'cle' },
+    description: 'Forgées aux Terres Rouges. Un bandit mis à terre et menotté est livré à la garde : sa prime est pour vous.',
+  },
+  sacCouchage: {
+    name: 'Sac de Couchage', price: 0, effect: { kind: 'cle' },
+    description: 'Votre vieux sac de couchage. Déroulez-le pour dormir à la belle étoile : si un malheur arrive, c’est là que vous vous réveillerez.',
   },
 };
 

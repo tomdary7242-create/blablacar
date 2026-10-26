@@ -38,7 +38,7 @@ export const parole = (id: string, name: string, x: number, y: number, dir: Dir,
 // Les dresseurs ont leur apparence définie dans trainers.ts : on la reprend.
 export const T = (id: string) => TRAINERS[id].look;
 
-/** Case de Soins (5 × 3 cases, porte au milieu) ; `healer` : le soigneur de la ville, s'il a son propre visage. */
+/** Auberge (5 × 3 cases, porte au milieu) ; `healer` : l’aubergiste de la ville, s’il a son propre visage. */
 export const caseDeSoins = (x: number, y: number, healer?: Npc): Building => ({ kind: 'soins', x, y, healer });
 
 /** Marché (4 × 3 cases, porte en 2e colonne) et ses marchandises. */

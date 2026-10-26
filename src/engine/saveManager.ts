@@ -103,6 +103,12 @@ export function sanitize(data: unknown): GameState | null {
   // Une position devenue invalide (carte redessinée depuis la sauvegarde) est ramenée en lieu sûr.
   if (validPos(d.position)) state.position = safePosition(d.position!);
   if (validPos(d.lastHeal)) state.lastHeal = safePosition(d.lastHeal!);
+  if (typeof d.bed === 'string' && d.bed) state.bed = d.bed.slice(0, 60);
+  state.heroWounds = Math.max(0, Math.floor(Number(d.heroWounds) || 0));
+  for (const [id, fate] of Object.entries(d.outlaws ?? {})) {
+    if (fate === 'mort' || fate === 'arrete' || fate === 'enfui') state.outlaws[id] = fate;
+  }
+  state.bounties = Math.max(0, Math.floor(Number(d.bounties) || 0));
 
   state.party = (Array.isArray(d.party) ? d.party : []).map(sanitizeJinemon).filter((j): j is Jinemon => !!j).slice(0, 6);
   state.storage = (Array.isArray(d.storage) ? d.storage : []).map(sanitizeJinemon).filter((j): j is Jinemon => !!j);
@@ -133,6 +139,12 @@ export function sanitize(data: unknown): GameState | null {
   for (const [zone, night] of Object.entries(d.repelled ?? {})) {
     if (zone in ZONES && Number.isInteger(night)) state.repelled[zone as keyof typeof ZONES] = night as number;
   }
+  // Parties commencées avant le sac de couchage et les menottes : on les reçoit d'office.
+  if (state.starter && !state.flags['don:menottes']) {
+    state.inventory.menottes = (state.inventory.menottes ?? 0) + 5;
+    state.inventory.sacCouchage = 1;
+    state.flags['don:menottes'] = true;
+  }
   // Une partie sans Jinémon après le choix du starter est incohérente : on repart du début.
   if (state.starter && state.party.length === 0 && state.storage.length === 0) return null;
   if (state.party.length === 0 && state.storage.length > 0) state.party.push(state.storage.shift()!);
@@ -149,7 +161,7 @@ export function standable(p: Position): boolean {
   return !zone.warps.some((w) => w.x === p.x && w.y === p.y);
 }
 
-/** La position donnée si elle est praticable ; sinon, devant la Case de Soins de la zone (ou le point de départ). */
+/** La position donnée si elle est praticable ; sinon, devant l’auberge de la zone (ou le point de départ). */
 export function safePosition(p: Position): Position {
   if (standable(p)) return { ...p };
   const zone = ZONES[p.zone];

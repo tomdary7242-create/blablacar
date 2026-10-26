@@ -7,14 +7,16 @@ import type { Audio, Sfx } from './audio';
 import type { JingleId, TrackId } from './musicScore';
 import { box, text } from './draw';
 import type { Input } from './input';
-import { SceneManager } from './scene';
+import { SceneManager, type Scene } from './scene';
 import { DialogScene } from './scenes/dialog';
 import { H } from './screen';
 
 /** Ce que les autres scènes ont besoin de connaître de l'exploration. */
-export interface World {
+export interface World extends Scene {
   readonly zone: Zone;
   teleport(zone: ZoneId, x: number, y: number, dir: Dir): void;
+  /** Dérouler le sac de couchage ici (bivouac). */
+  camp(): void;
 }
 
 export class Game {
