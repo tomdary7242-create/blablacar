@@ -5,7 +5,7 @@
 // (cimes des arbres, toits) passe devant eux pour donner de la profondeur.
 import { BUILDING_SIZE } from '../data/interiors';
 import type { Building, Theme, Zone } from '../data/zones';
-import { grenierJinemonProp, maisonProp, marcheProp, sanctuaireProp, soinsProp, standSoinsProp } from './buildings';
+import { grandeJarreProp, maisonProp, marcheProp, sanctuaireProp, soinsProp, standSoinsProp } from './buildings';
 import { calabash } from './draw';
 import { noise3, shiftColor } from './sculpt';
 import {
@@ -533,7 +533,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
           place(base, over, standSoinsProp(), x, y, split);
           break;
         case 'g':
-          place(base, over, grenierJinemonProp(), x, y, split);
+          place(base, over, grandeJarreProp(), x, y, split);
           break;
         case 'S':
           place(base, over, signProp(), x, y, split);
@@ -640,6 +640,41 @@ export function animateTile(ctx: CanvasRenderingContext2D, ch: string, x: number
       y: '#ffd040',
     });
   }
+}
+
+/**
+ * Tourbillon magique vert et violet dans l'ouverture de la Grande Jarre posée sur la case
+ * (x, y) en pixels : deux bras en spirale qui tournent, un cœur clair et des étincelles qui montent.
+ */
+export function jarVortex(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+  const cx = x + 8;
+  const cy = y - 5;
+  const rx = 6;
+  const ry = 3;
+  for (let dy = -ry; dy <= ry; dy++) {
+    for (let dx = -rx; dx <= rx; dx++) {
+      const nx = dx / (rx + 0.5);
+      const ny = dy / (ry + 0.5);
+      const r = Math.hypot(nx, ny);
+      if (r > 1) continue;
+      const a = Math.atan2(ny, nx);
+      const swirl = Math.sin(a * 2 - r * 6 + time * 7);
+      const tint = Math.sin(a - time * 3);
+      ctx.fillStyle = r < 0.22 ? '#f4e8ff' : swirl > 0.45 ? (tint > 0 ? '#5cf0a0' : '#b674ff') : swirl > -0.1 ? (tint > 0 ? '#1f8a62' : '#6a2aa8') : '#1c0a2e';
+      ctx.fillRect(cx + dx, cy + dy, 1, 1);
+    }
+  }
+  // Étincelles qui s'échappent en tournoyant.
+  for (let i = 0; i < 6; i++) {
+    const p = (time * 0.6 + i / 6) % 1;
+    ctx.globalAlpha = Math.min(1, 1.6 * (1 - p));
+    ctx.fillStyle = i % 2 ? '#8cffc0' : '#e0b0ff';
+    const sx = cx + Math.round(Math.sin(time * 3 + i * 1.7) * (2 + p * 4));
+    const sy = cy - 2 - Math.round(p * 12);
+    ctx.fillRect(sx, sy, 1, 1);
+    if (p < 0.4) ctx.fillRect(sx, sy + 1, 1, 1);
+  }
+  ctx.globalAlpha = 1;
 }
 
 /** Herbe haute dessinée par-dessus les pieds du joueur. */

@@ -1,4 +1,4 @@
-// Grenier des Jinémon : dépôt, retrait et échange entre l'équipe et la réserve (comme un PC).
+// Grande Jarre : dépôt, retrait et échange entre l'équipe et les Jinémon en réserve (comme un PC).
 import { displayName, isFainted, isShiny, maxHp, type Jinemon } from '../../engine/creature';
 import { PARTY_SIZE } from '../../engine/gameState';
 import { PAL, box, cursor, hpColor, menuList, text } from '../draw';
@@ -76,7 +76,7 @@ export class StorageScene implements Scene {
     }
   }
 
-  /** Échange un Jinémon de l'équipe contre un Jinémon du grenier. */
+  /** Échange un Jinémon de l'équipe contre un Jinémon de la jarre. */
   private exchange(partyIndex: number, stockIndex: number): void {
     const state = this.game.s;
     const out = state.party[partyIndex];
@@ -122,7 +122,7 @@ export class StorageScene implements Scene {
       }
       state.party.splice(this.party.index, 1);
       state.storage.push(j);
-      this.message = `${displayName(j)} se repose au grenier.`;
+      this.message = `${displayName(j)} plonge dans la Grande Jarre.`;
     } else if (option === 'Retirer') {
       if (state.party.length >= PARTY_SIZE) {
         this.message = 'Équipe complète : choisis plutôt « Échanger ».';
@@ -159,15 +159,15 @@ export class StorageScene implements Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
-    text(ctx, 'GRENIER DES JINÉMON', 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    text(ctx, 'LA GRANDE JARRE', 6, 2, { color: PAL.cream, shadow: PAL.ink });
     const state = this.game.s;
     box(ctx, 2, 14, 126, 134, this.focus === 'equipe' ? 'actif' : 'papier');
     text(ctx, `ÉQUIPE (${state.party.length}/6)`, 10, 16, { color: PAL.rust });
     state.party.forEach((j, i) => this.row(ctx, j, 8, 28 + i * 19, this.focus === 'equipe' && i === this.party.index));
 
     box(ctx, 130, 14, 124, 134, this.focus === 'grenier' ? 'actif' : 'papier');
-    text(ctx, `GRENIER (${state.storage.length})`, 138, 16, { color: PAL.rust });
-    if (state.storage.length === 0) text(ctx, 'Le grenier est vide.', 138, 30, { color: PAL.grey });
+    text(ctx, `JARRE (${state.storage.length})`, 138, 16, { color: PAL.rust });
+    if (state.storage.length === 0) text(ctx, 'La jarre est vide.', 138, 30, { color: PAL.grey });
     for (const i of this.stock.window()) {
       const y = 28 + (i - this.stock.scroll) * 12;
       const j = state.storage[i];

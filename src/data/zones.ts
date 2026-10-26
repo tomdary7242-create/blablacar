@@ -13,7 +13,7 @@
 //   V  palmier                    Y  mirage (Insigne du Mirage)    Q  tour de banco à torons
 //   J  pirogue                    N  tente touareg                 Z  masque sur poteau
 //   I  phare
-//   g  grenier à Jinémon          C  stand de soins (on parle par-dessus, comme à un étal)
+//   g  Grande Jarre (Jinémon)     C  stand de soins (on parle par-dessus, comme à un étal)
 //   @  bâtiment où l'on entre (maison, Case de Soins, Marché, sanctuaire : voir `buildings`)
 //   d  sa porte (on la franchit pour entrer)
 //
@@ -52,7 +52,7 @@ export const SOLID_TILES = new Set([
   'T', 'B', '~', '#', 'H', 'R', 'D', 'G', 'K', 'A', 'M', 'E', 'O', 'U', 'S', 'X', 'w', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I', '@',
   // Intérieurs : murs, fenêtres, tentures et meubles.
   'W', 'n', 'q', 'b', 'c', 'l', 't', 'j', 'p', 'k', 'f', 'h', 'u', 'v',
-  // Grenier à Jinémon et stand de soins (aussi en plein air).
+  // Grande Jarre et stand de soins (aussi en plein air).
   'g', 'C',
 ]);
 export const GRASS_TILE = ',';

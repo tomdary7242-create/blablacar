@@ -6,7 +6,7 @@
 //   x  seuil (sortie) c  comptoir       l  lit (deux cases en hauteur)
 //   t  table basse    j  canari (jarre) p  plante        k  coffre    f  foyer et marmite
 //   h  étal           u  statue         v  brasero       A  autel
-//   g  grenier à Jinémon (on y range et échange ses Jinémon)
+//   g  Grande Jarre (on y range et échange ses Jinémon)
 import type { InteriorStyle, Zone } from '../data/zones';
 import {
   braseroProp,
@@ -14,7 +14,7 @@ import {
   etagereProp,
   etalProp,
   foyerProp,
-  grenierJinemonProp,
+  grandeJarreProp,
   jarreProp,
   litProp,
   planteProp,
@@ -56,7 +56,7 @@ const FURNITURE: Record<string, () => Prop> = {
   v: braseroProp,
   A: altarProp,
   b: etagereProp,
-  g: grenierJinemonProp,
+  g: grandeJarreProp,
 };
 
 export function renderInteriorLayers(zone: Zone, tileAt: (x: number, y: number) => string): ZoneLayers {

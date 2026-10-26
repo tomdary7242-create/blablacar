@@ -152,7 +152,7 @@ export class PlanScene implements Scene {
       if (target) star(ctx, ox + (b.x + size.w / 2) * k, oy + b.y * k - 2, time);
       legend.push({ color, label: b.label ?? BUILDING_LABEL[b.kind], star: target });
     }
-    // Stands des lieux sauvages : soigneur, marchand et grenier à Jinémon en plein air.
+    // Stands des lieux sauvages : soigneur, marchand et Grande Jarre en plein air.
     const marker = (x: number, y: number, color: string) => {
       ctx.fillStyle = PAL.ink;
       ctx.fillRect(ox + x * k - 1, oy + y * k - 1, k + 2, k + 2);
@@ -169,8 +169,8 @@ export class PlanScene implements Scene {
       marker(npc.x, npc.y + 1, color);
       legend.push({ color, label });
     }
-    zone.map.forEach((row, y) => [...row].forEach((c, x) => c === 'g' && marker(x, y, '#d4a050')));
-    if (zone.map.some((row) => row.includes('g'))) legend.push({ color: '#d4a050', label: 'Grenier à Jinémon' });
+    zone.map.forEach((row, y) => [...row].forEach((c, x) => c === 'g' && marker(x, y, '#9a5ae8')));
+    if (zone.map.some((row) => row.includes('g'))) legend.push({ color: '#9a5ae8', label: 'Grande Jarre' });
     // Sorties vers les zones voisines.
     for (const w of zone.warps) {
       const to = ZONES[w.to];

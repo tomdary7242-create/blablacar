@@ -30,7 +30,7 @@ export interface GameState {
   /** Dernier lieu de soin visité : point de retour après une défaite. */
   lastHeal: Position;
   party: Jinemon[];
-  /** Jinémon gardés au Grenier. */
+  /** Jinémon gardés dans la Grande Jarre. */
   storage: Jinemon[];
   inventory: Partial<Record<ItemId, number>>;
   /** Monnaie : les cauris. */
@@ -87,7 +87,7 @@ export function markCaught(state: GameState, speciesId: number): void {
   if (!state.dex.caught.includes(speciesId)) state.dex.caught.push(speciesId);
 }
 
-/** Ajoute un Jinémon à l'équipe, ou au Grenier si l'équipe est complète. */
+/** Ajoute un Jinémon à l'équipe, ou à la Grande Jarre si l'équipe est complète. */
 export function addJinemon(state: GameState, j: Jinemon): 'equipe' | 'grenier' {
   j.uid = takeUid(state);
   markCaught(state, j.speciesId);

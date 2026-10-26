@@ -69,7 +69,7 @@ function afterWild(game: Game, combat: Combat, outcome: Outcome, before: Map<Jin
     const where = addJinemon(state, caught);
     if (flag) state.flags[flag] = true;
     if (firstTime) lines.push(`Les données de ${species.name} sont ajoutées au Ginédex !`);
-    if (where === 'grenier') lines.push(`Votre équipe est complète : ${species.name} est envoyé au Grenier.`);
+    if (where === 'grenier') lines.push(`Votre équipe est complète : ${species.name} rejoint la Grande Jarre.`);
   }
   const finish = () => evolutions(game, before, () => game.save(true));
   if (lines.length) game.say(lines, finish);

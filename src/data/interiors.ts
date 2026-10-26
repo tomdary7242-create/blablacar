@@ -173,13 +173,13 @@ const GUERISSEUSE_NPC: Npc = {
 function soinsInterior(town: Zone, b: Building): Zone {
   const healer: Npc = { ...(b.healer ?? GUERISSEUSE_NPC), id: `${town.id}-soigneur`, x: 3, y: 2, dir: 'bas' };
   const keeper: Npc = {
-    id: `${town.id}-grenier`, name: 'Gardien du Grenier', x: 11, y: 2, dir: 'gauche',
+    id: `${town.id}-jarre`, name: 'Gardien de la Jarre', x: 11, y: 2, dir: 'gauche',
     look: { kind: 'personne', look: GARDIEN },
     script: {
       kind: 'grenier',
       lines: [
-        'Gardien : Voici le grenier à Jinémon. Ceux qui ne voyagent pas avec toi s’y reposent, et je les fais suivre de ville en ville.',
-        'Gardien : Tu peux y déposer un Jinémon, en reprendre un, ou les échanger directement. Il y a un grenier dans chaque Case de Soins.',
+        'Gardien : Voici la Grande Jarre. Au fond du tourbillon, les Jinémon qui ne voyagent pas avec toi se reposent dans le monde des esprits.',
+        'Gardien : Tu peux y déposer un Jinémon, en reprendre un, ou les échanger directement. Toutes les Grandes Jarres communiquent : il y en a une dans chaque Case de Soins.',
       ],
     },
   };
@@ -190,8 +190,8 @@ function soinsInterior(town: Zone, b: Building): Zone {
       kind: 'dialogue',
       lines: [
         'Voyageur : Il y a une Case de Soins comme celle-ci dans chaque ville. Le toit vert se voit de loin !',
-        'Voyageur : On y soigne ses Jinémon gratuitement. Et au fond, le grenier à Jinémon garde ceux qui ne voyagent pas avec toi.',
-        'Voyageur : Ton équipe est pleine ? Range un Jinémon au grenier, ou échange-le contre un autre.',
+        'Voyageur : On y soigne ses Jinémon gratuitement. Et au fond, la Grande Jarre garde ceux qui ne voyagent pas avec toi.',
+        'Voyageur : Ton équipe est pleine ? Confie un Jinémon à la jarre, ou échange-le contre un autre.',
       ],
     },
   };
@@ -199,7 +199,7 @@ function soinsInterior(town: Zone, b: Building): Zone {
     music: 'soins',
     decor: {
       b: 'Des pots de beurre de karité, des feuilles de moringa séchées et des racines à infuser.',
-      g: 'Le grenier à Jinémon. Tes Jinémon en réserve s’y reposent au frais.',
+      g: 'La Grande Jarre. Un tourbillon vert et violet tourne au fond…',
       q: 'Une tenture brodée de feuilles : l’emblème des Cases de Soins.',
       n: 'La lumière du jour entre à flots.',
       p: 'Une plante médicinale, soigneusement taillée.',

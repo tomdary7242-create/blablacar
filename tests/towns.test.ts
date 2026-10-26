@@ -32,7 +32,7 @@ describe('Villes et bâtiments', () => {
     }
   });
 
-  it('ont une Case de Soins identique dans chaque ville, avec soigneur et grenier à Jinémon', () => {
+  it('ont une Case de Soins identique dans chaque ville, avec soigneur et Grande Jarre', () => {
     const villes: TownId[] = ['village', 'terresRouges', 'marigot', 'djenne', 'cote', 'tombouctou'];
     const soinsMaps = new Set<string>();
     for (const id of villes) {
@@ -69,7 +69,7 @@ describe('Villes et bâtiments', () => {
       expect(tileAt(z, healer.x, healer.y + 1), id).toBe('C');
       expect(z.flyPoint, id).toEqual({ x: healer.x, y: healer.y + 2, dir: 'haut' });
       expect(standable({ zone: id, ...z.flyPoint! }), id).toBe(true);
-      // Un grenier à Jinémon tout près, et le marchand derrière son étal.
+      // Une Grande Jarre tout près, et le marchand derrière son étal.
       expect(z.map.some((row) => row.includes('g')), id).toBe(true);
       for (const shop of z.npcs.filter((n) => n.script.kind === 'boutique')) expect(tileAt(z, shop.x, shop.y + 1), `${id} marchand`).toBe('E');
       expect(z.npcs.some((n) => n.script.kind === 'grenier'), id).toBe(false);

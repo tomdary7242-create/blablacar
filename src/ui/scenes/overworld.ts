@@ -35,7 +35,7 @@ import { HauntActor, type HauntHost } from '../haunts';
 import { NightLayer, type Light } from '../night';
 import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
 import { renderInteriorLayers } from '../interiors';
-import { TILE, animateTile, grassOverlay, itemBall, renderZoneLayers, type ZoneLayers } from '../tiles';
+import { TILE, animateTile, grassOverlay, itemBall, jarVortex, renderZoneLayers, type ZoneLayers } from '../tiles';
 import { MenuScene } from './menu';
 import { ShopScene } from './shop';
 import { PlanScene } from './plan';
@@ -569,7 +569,7 @@ export class OverworldScene implements Scene, World {
     const t = this.tile(tx, ty);
     if (t === 'g') {
       this.game.sfx('valider');
-      this.game.say(['Tu ouvres le grenier à Jinémon.'], () => this.game.scenes.push(new StorageScene(this.game)));
+      this.game.say(['Tu te penches sur la Grande Jarre… Le tourbillon s’ouvre !'], () => this.game.scenes.push(new StorageScene(this.game)));
     } else if (t === 'X') {
       this.crackedRock(tx, ty);
     } else if (t === 'w') {
@@ -944,6 +944,12 @@ export class OverworldScene implements Scene, World {
     drawables.sort((a, b) => a.y - b.y).forEach((d) => d.draw());
     ctx.drawImage(this.layers.over, ox, oy);
     this.renderLighting(ctx, ox, oy, px, py, x0, y0);
+    // Le tourbillon des Grandes Jarres brille même au cœur de la nuit.
+    for (let ty = y0; ty < Math.min(this.zone.map.length, y0 + H / TILE + 3); ty++) {
+      for (let tx = x0; tx < Math.min(this.zone.map[0].length, x0 + W / TILE + 2); tx++) {
+        if (this.zone.map[ty][tx] === 'g') jarVortex(ctx, tx * TILE + ox, ty * TILE + oy, time);
+      }
+    }
 
     // Nom de la zone, ou changement de moment de la journée
     if (this.banner > 0) {
@@ -992,6 +998,7 @@ export class OverworldScene implements Scene, World {
         if (ch === 'K') lights.push({ x: cx, y: cy, r: 34 + Math.sin(time * 11 + tx) * 2 });
         else if (ch === 'D' || ch === 'd') lights.push({ x: cx, y: cy + 4, r: ch === 'd' ? 28 : 22 });
         else if (ch === 'A') lights.push({ x: cx, y: cy, r: 16 });
+        else if (ch === 'g') lights.push({ x: cx, y: cy - 13, r: 20 });
       }
     }
     const glow = this.haunt?.light(ox, oy, time);

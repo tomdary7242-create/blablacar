@@ -267,24 +267,25 @@ export function braseroProp(): Prop {
 }
 
 /**
- * Grenier à Jinémon : un grenier de banco sur pierres, porte sculptée d'une calebasse
- * et lanternes allumées. On y range et on y échange ses Jinémon (une case).
+ * Grande Jarre : un canari géant en terre cuite, cerclé de bandes peintes. Son ouverture
+ * plonge dans un tourbillon magique (animé par-dessus, voir `jarVortex`) où se reposent
+ * les Jinémon qui ne voyagent pas avec le joueur (une case).
  */
-export function grenierJinemonProp(): Prop {
-  return sculpted('meuble:grenier', (s, m) => {
-    const wall = banco(m, '#d49a68');
-    const straw = m('#d8b468', { pattern: { kind: 'rayures', color: '#b08a40', scale: 1.3, amount: 0.35, axis: 0 } });
-    const stone = m('#8a8070');
-    for (const [x, z] of [[-3.5, 2.5], [3.5, 2.5], [0, -3]] as const) s.sphere([x, 1, z], 1.6, stone, { amp: 0.3, freq: 0.8 });
-    s.capped([0, 2, 0], [0, 12, 0], 5.6, 6, wall, { round: 0.8 });
-    s.box([0, 7, 5.6], [2.4, 3.2, 0.6], 0.4, planks(m, '#6a3a1e'));
-    s.paint([0, 7.4, 6.3], [1.3, 1, 0.8], m('#f0c040'));
-    s.capped([0, 11.5, 0], [0, 22, 0], 8.2, 0.5, straw, { round: 0.6, amp: 0.5, freq: 0.8, stretch: 0.4 });
-    // Bandeau vert des lieux de soins, fanion au sommet et lanternes-calebasses allumées.
-    s.paint([0, 3.4, 0], [6.4, 1.2, 6.4], m('#3d9a4c'));
-    s.cone([0, 21, 0], [0, 27, 0], 0.4, 0.3, m('#5a3a1e'));
-    s.box([1.8, 25.6, 0], [1.6, 1, 0.3], 0.2, m('#3d9a4c', { edge: true }));
-    for (const x of [-6.5, 6.5]) s.sphere([x, 4, 4], 1.3, m('#ffd070', { glow: true }));
+export function grandeJarreProp(): Prop {
+  return sculpted('meuble:jarre-magique', (s, m) => {
+    const clay = m('#b8643a', { pattern: { kind: 'craquelures', color: '#94482a', scale: 4, amount: 0.05 } });
+    s.ellipsoid([0, 9.5, 0], [8.6, 9.6, 8.6], clay);
+    s.capped([0, 16.5, 0], [0, 20, 0], 5.6, 6.6, clay, { round: 0.6, k: 1.2 });
+    s.capped([0, 19.4, 0], [0, 20.6, 0], 7.2, 7.2, m('#a85430'), { round: 0.6 });
+    // Bandes peintes : ocre clair, puis une frise sombre ponctuée de vert et de violet.
+    s.paint([0, 5, 0], [9.4, 1, 9.4], m('#e8a868'));
+    s.paint([0, 12.4, 0], [9.6, 1.5, 9.6], m('#3a1a14'));
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      s.paint([Math.cos(a) * 8.4, 12.4, Math.sin(a) * 8.4], [1.2, 1, 1.2], m(i % 2 ? '#9a5ae8' : '#4ad888'));
+    }
+    // L'ouverture, sombre : le tourbillon y est dessiné à part, pour pouvoir tourner.
+    s.paint([0, 20.8, 0], [6, 0.7, 6], m('#1a0a24'));
   });
 }
 

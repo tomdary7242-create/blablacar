@@ -57,12 +57,13 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   salon et envoie au **sanctuaire du Hogon**, le chef spirituel du village, qui confie le premier Jinémon. Maman
   soigne aussi l’équipe à chaque visite.
 - **Des bâtiments qu’on reconnaît de loin**, identiques dans chaque ville : la **Case de Soins** blanche au toit vert
-  (soins gratuits et **grenier à Jinémon**), le **Marché** au toit de chaume et à l’auvent rayé orange. On y entre ;
+  (soins gratuits et **Grande Jarre**), le **Marché** au toit de chaume et à l’auvent rayé orange. On y entre ;
   on parle au soigneur et à la marchande par-dessus leur comptoir. Dans les lieux sauvages (Forêt Sacrée, camp de la
   Piste, sommet de la Falaise, oasis du désert, grotte de Hombori, Bois des Masques), ils sont remplacés par un **stand
-  de soins** vert, un grenier en plein air et l’étal d’un marchand.
-- **Le grenier à Jinémon**, comme le PC de Pokémon : déposer, retirer ou **échanger** directement un Jinémon de
-  l’équipe contre un Jinémon du grenier.
+  de soins** vert, une Grande Jarre en plein air et l’étal d’un marchand.
+- **La Grande Jarre**, comme le PC de Pokémon : un canari géant au tourbillon magique vert et violet, où l’on peut
+  déposer, retirer ou **échanger** directement un Jinémon de l’équipe contre un Jinémon en réserve. Toutes les jarres
+  communiquent entre elles.
 - **L’objectif du moment** est toujours affiché dans le menu (et rappelé par le Hogon et par Maman).
 - **CARTE** (menu) : la carte du Mandé avec « vous êtes ici », les lieux visités, les routes et une étoile sur
   l’objectif. Sur chaque lieu visité, A ouvre son **plan** (bâtiments, stands, sorties). Le Village des Greniers a aussi
@@ -95,7 +96,7 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   « Voler »), **pêcher** face à l’eau avec la Nasse du Pêcheur.
 - Calebasses de capture (Sacrée, Ornée, des Ancêtres, Royale), remèdes (karité, bissap, pain de singe, miel sauvage,
   baume des Anciens, moringa, noix de kola), Amulette du Partage (l’expérience profite à toute l’équipe), marché en
-  cauris, grenier à Jinémon (dépôt, retrait, échange), Ginédex avec habitats, évolutions animées (annulables avec B), Panthéon
+  cauris, Grande Jarre (dépôt, retrait, échange), Ginédex avec habitats, évolutions animées (annulables avec B), Panthéon
   des vainqueurs et générique.
 
 ## Jour, nuit et Hantises
