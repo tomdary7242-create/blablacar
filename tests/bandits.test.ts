@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TRAINERS } from '../src/data/trainers';
-import { Combat, PLAYER_EDGE, computeDamage } from '../src/engine/combat';
+import { Combat, PLAYER_EDGE, captureChance, computeDamage } from '../src/engine/combat';
 import { XP_BOOST, createJinemon, maxHp, xpYield, type Jinemon } from '../src/engine/creature';
 import { HOME_BED, newGameState, sleepHere } from '../src/engine/gameState';
 import {
@@ -55,6 +55,25 @@ describe('Un jeu un peu plus facile', () => {
     const foe = mon(14, 10);
     // 1.5 (dresseur) × 1.5 (bonus) : 2,25 fois l'expérience de base.
     expect(xpYield(foe, true)).toBeGreaterThan(xpYield(foe, false) * 1.4);
+  });
+
+  it('une calebasse ne rate presque jamais un jeune Jinémon affaibli', () => {
+    const weak = (species: number, level: number, frac: number) => {
+      const j = mon(species, level);
+      j.hp = Math.max(1, Math.round(maxHp(j) * frac));
+      return j;
+    };
+    // Début de partie : Pintadou ou Zébulle presque K.O., Calebasse Sacrée de base.
+    expect(captureChance(weak(14, 6, 0.13), 1)).toBe(1);
+    expect(captureChance(weak(33, 5, 0.3), 1)).toBe(1);
+    // Plus loin, il faut encore affaiblir, et les Légendes restent rétives.
+    expect(captureChance(weak(7, 30, 1), 1)).toBeLessThan(0.15);
+    expect(captureChance(weak(70, 50, 0.1), 1)).toBeLessThan(0.1);
+    // Endormi, c'est plus facile.
+    const asleep = weak(7, 30, 0.5);
+    const awake = captureChance(asleep, 1);
+    asleep.status = { kind: 'sommeil', turns: 2 };
+    expect(captureChance(asleep, 1)).toBeGreaterThan(awake * 1.9);
   });
 
   it('après un combat, le héros et ses Jinémon debout reprennent leur souffle', () => {

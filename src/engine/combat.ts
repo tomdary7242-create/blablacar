@@ -198,6 +198,22 @@ function targetsOnlySelf(move: Move): boolean {
   return move.power === 0 && !move.status && (move.stages ?? []).every((s) => s.target === 'self');
 }
 
+/** Les calebasses sont généreuses : la formule classique, multipliée par 1,5. */
+export const CAPTURE_EASE = 1.5;
+
+/**
+ * Chance qu'une calebasse retienne un Jinémon (0 à 1). Plus il est affaibli, plus c'est
+ * facile ; les jeunes Jinémon (jusqu'au niveau 20) se laissent bien plus volontiers
+ * enfermer ; le sommeil, la paralysie, le poison et la confusion aident aussi.
+ */
+export function captureChance(foe: Jinemon, bonus: number, confused = false): number {
+  const max = maxHp(foe);
+  const status = foe.status?.kind === 'sommeil' ? 2 : foe.status || confused ? 1.5 : 1;
+  const young = 1 + Math.max(0, 20 - foe.level) / 8;
+  const a = (((3 * max - 2 * foe.hp) * getSpecies(foe.speciesId).catchRate * bonus) / (3 * max)) * status * young * CAPTURE_EASE;
+  return Math.min(1, a / 255);
+}
+
 export class Combat {
   readonly kind: CombatKind;
   readonly player: Jinemon[];
@@ -531,10 +547,7 @@ export class Combat {
     this.emit({ type: 'objet', item });
     this.say(`Vous lancez une ${getItem(item).name} !`);
 
-    const max = maxHp(foe);
-    const statusBonus = foe.status?.kind === 'sommeil' ? 2 : foe.status ? 1.5 : 1;
-    const a = (((3 * max - 2 * foe.hp) * species.catchRate * bonus) / (3 * max)) * statusBonus;
-    const p = Math.min(1, a / 255);
+    const p = captureChance(foe, bonus, this.vol.adversaire.confusion > 0);
     const shakeChance = Math.pow(p, 1 / 4);
     let checks = 0;
     while (checks < 4 && chance(this.rng, shakeChance)) checks += 1;

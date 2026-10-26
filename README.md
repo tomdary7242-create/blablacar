@@ -84,7 +84,9 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Les Jinémon des bandits peuvent leur être arrachés** d’un coup de calebasse quand ils sont affaiblis : moins de 30 %
   de leurs PV, endormis, paralysés ou confus (une calebasse clignote alors à côté de leurs PV).
 - **Un peu plus facile** : les coups de votre camp portent 25 % de plus, l’expérience est multipliée par 1,5, et après
-  chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %.
+  chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %. Les calebasses sont plus
+  généreuses (×1,5), surtout avec les jeunes Jinémon (jusqu’au niveau 20) : en début de partie, un Jinémon commun
+  presque K.O. ne leur échappe plus.
 - **Lits et point de réveil** : dormir à l’auberge (lits ou aubergiste), dans sa chambre, chez Maman ou sous la tente
   d’un campement soigne tout le monde et fixe l’endroit où l’on se réveille après un malheur. Le **sac de couchage**
   (SAC) permet de bivouaquer n’importe où dehors : moins réparateur, et la nuit, une Hantise vient parfois renifler le
