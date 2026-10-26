@@ -123,6 +123,23 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   Un murmure annonce la Hantise à l’entrée de la zone, un battement de cœur s’accélère quand elle approche. Vaincue
   ou fuie, elle disparaît jusqu’à la nuit suivante ; capturée, elle ne revient plus.
 
+## Combats animés
+
+- **Chaque attaque a sa chorégraphie**, dans les couleurs de son type : le lanceur prend son élan et fonce (images
+  rémanentes), tire des projectiles en arc (boules de feu, feuilles tranchantes, rochers, dards, feux follets…),
+  crache un souffle continu, lance un rayon, fait tomber rochers, météores ou enclume du ciel, fend le sol, déferle
+  en vague, déchaîne un cyclone, une éclipse ou une colonne de feu, envoie une nuée de criquets, des ondes, un regard,
+  des spores… Les attaques **divines** commencent par une charge : l'écran s'assombrit, l'énergie converge.
+- **Des coups qui portent** : arrêt sur image à l'impact, tremblement de l'écran à la mesure des dégâts, éclair
+  blanc, recul, onde de choc, dégâts qui jaillissent (« -42 »), étiquettes CRITIQUE ! / SUPER EFFICACE ! / Peu
+  efficace…, esquive quand l'attaque rate. La part de PV perdue reste un instant en clair sur la barre.
+- **Des altérations visibles** : Z du sommeil, bulles de poison et teinte violette, étincelles de paralysie, étoiles
+  de la confusion ; flèches et anneaux pour les renforcements et affaiblissements ; étincelles vertes des soins.
+- **Entrées et sorties** : les dresseurs lancent leur calebasse, qui s'ouvre dans un éclat de lumière ; un Jinémon
+  sauvage surgit en silhouette puis se révèle ; le K.O. s'enfonce dans le sol dans un nuage de poussière ; la capture
+  aspire le Jinémon dans la calebasse, qui tremble avant de se sceller (ou de se rompre).
+- Bruitages synthétisés pour chaque type de coup (impact, feu, eau, vent, séisme, magie, éclair, métal, essaim…).
+
 ## Règles de combat
 
 - Combat 1 contre 1 au tour par tour ; 4 attaques par Jinémon.
@@ -181,7 +198,8 @@ src/
     tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
     interiors.ts        Rendu des intérieurs : murs enduits, sols, nattes, escaliers, comptoirs
     backdrops.ts        Fonds de combat, titre, sanctuaire du Hogon, halo d’évolution
-    effects.ts          Effets d’attaque par type
+    battle/particles.ts Particules du combat (braises, gouttes, feuilles, étincelles, poussière…)
+    battle/moveFx.ts    Chorégraphie de chacune des 100 attaques (corps à corps, projectiles, souffles, rayons…)
 tests/                  Tests Vitest : données, cartes, progression complète, moteur de combat, simulations,
                         sauvegarde, sprites, musique
 ```

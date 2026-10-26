@@ -42,7 +42,15 @@ export type CombatEvent =
     }
   | { type: 'retrait'; side: Side }
   | { type: 'attaque'; side: Side; moveId: MoveId | null }
-  | { type: 'pv'; side: Side; hp: number; maxHp: number }
+  /**
+   * Les PV changent. `cause` dit pourquoi (pour l'animation) ; sur un coup, `critical`
+   * et `multiplier` (efficacité du type) accompagnent les dégâts.
+   */
+  | { type: 'pv'; side: Side; hp: number; maxHp: number; cause?: HpCause; critical?: boolean; multiplier?: number }
+  /** L'attaque a raté : `side` est la cible, qui esquive. */
+  | { type: 'rate'; side: Side }
+  /** La cible est prise de confusion. */
+  | { type: 'confus'; side: Side }
   | { type: 'statut'; side: Side; status: StatusKind | null }
   | { type: 'stage'; side: Side; stat: StatKey; delta: number }
   | { type: 'ko'; side: Side }
@@ -52,6 +60,8 @@ export type CombatEvent =
   | { type: 'objet'; item: ItemId }
   | { type: 'capture'; item: ItemId; shakes: number; success: boolean }
   | { type: 'fin'; outcome: Outcome };
+
+export type HpCause = 'coup' | 'contrecoup' | 'confusion' | 'poison' | 'soin' | 'drain' | 'objet';
 
 export type PlayerAction =
   /** `moveIndex` = -1 pour la Lutte Désespérée (plus aucun PP). */
@@ -385,19 +395,19 @@ export class Combat {
     return playerFirst ? ['joueur', 'adversaire'] : ['adversaire', 'joueur'];
   }
 
-  private damage(side: Side, amount: number): number {
+  private damage(side: Side, amount: number, cause: HpCause, hit: { critical?: boolean; multiplier?: number } = {}): number {
     const j = this.active(side);
     const lost = Math.min(j.hp, Math.max(0, amount));
     j.hp -= lost;
-    this.emit({ type: 'pv', side, hp: j.hp, maxHp: maxHp(j) });
+    this.emit({ type: 'pv', side, hp: j.hp, maxHp: maxHp(j), cause, ...hit });
     return lost;
   }
 
-  private heal(side: Side, amount: number): number {
+  private heal(side: Side, amount: number, cause: HpCause): number {
     const j = this.active(side);
     const gained = Math.min(maxHp(j) - j.hp, Math.max(0, amount));
     j.hp += gained;
-    this.emit({ type: 'pv', side, hp: j.hp, maxHp: maxHp(j) });
+    this.emit({ type: 'pv', side, hp: j.hp, maxHp: maxHp(j), cause });
     return gained;
   }
 
@@ -460,7 +470,7 @@ export class Combat {
     this.say(message);
     if (wasFainted && !isFainted(target)) this.koHandled.delete(target);
     if (partyIndex === this.playerIndex) {
-      this.emit({ type: 'pv', side: 'joueur', hp: target.hp, maxHp: maxHp(target) });
+      this.emit({ type: 'pv', side: 'joueur', hp: target.hp, maxHp: maxHp(target), cause: 'objet' });
       this.emit({ type: 'statut', side: 'joueur', status: target.status?.kind ?? null });
     }
   }
@@ -540,7 +550,7 @@ export class Combat {
             allowCrit: false,
           });
           this.say(`Dans sa confusion, ${name} se blesse !`);
-          this.damage(side, damage);
+          this.damage(side, damage, 'confusion');
           return;
         }
       }
@@ -557,6 +567,7 @@ export class Combat {
     this.emit({ type: 'attaque', side, moveId: move.id });
 
     if (!targetsOnlySelf(move) && !chance(this.rng, move.accuracy / 100)) {
+      this.emit({ type: 'rate', side: this.opponent(side) });
       this.say(`${name} rate son attaque !`);
       return;
     }
@@ -573,9 +584,9 @@ export class Combat {
       user, this.vol[side].stages, this.active(target), this.vol[target].stages,
       { power: LUTTE.power, type: null }, this.rng,
     );
-    this.damage(target, damage);
+    this.damage(target, damage, 'coup');
     this.say(`${this.name(side)} subit le contrecoup !`);
-    this.damage(side, Math.max(1, Math.floor(maxHp(user) / 4)));
+    this.damage(side, Math.max(1, Math.floor(maxHp(user) / 4)), 'contrecoup');
   }
 
   private damagingMove(side: Side, move: Move): void {
@@ -587,18 +598,18 @@ export class Combat {
       this.say(`Ça n'affecte pas ${this.name(tSide)}…`);
       return;
     }
-    const dealt = this.damage(tSide, result.damage);
+    const dealt = this.damage(tSide, result.damage, 'coup', { critical: result.critical, multiplier: result.multiplier });
     if (result.critical) this.say('Coup critique !');
     const label = effectivenessLabel(result.multiplier);
     if (label) this.say(label);
 
     if (move.drain && dealt > 0 && user.hp < maxHp(user)) {
-      this.heal(side, Math.max(1, Math.floor(dealt * move.drain)));
+      this.heal(side, Math.max(1, Math.floor(dealt * move.drain)), 'drain');
       this.say(`${this.name(side)} draine l'énergie de ${this.name(tSide)} !`);
     }
     if (move.recoil && dealt > 0) {
       this.say(`${this.name(side)} subit le contrecoup !`);
-      this.damage(side, Math.max(1, Math.floor(dealt * move.recoil)));
+      this.damage(side, Math.max(1, Math.floor(dealt * move.recoil)), 'contrecoup');
     }
 
     const targetAlive = !isFainted(target);
@@ -632,7 +643,7 @@ export class Combat {
         this.say(`Le souffle des ancêtres purifie ${name} !`);
       }
       if (move.heal !== undefined && user.hp < maxHp(user)) {
-        this.heal(side, Math.max(1, Math.floor(maxHp(user) * move.heal)));
+        this.heal(side, Math.max(1, Math.floor(maxHp(user) * move.heal)), 'soin');
         this.say(`${name} récupère des PV !`);
       } else if (!cured) {
         this.say('Mais cela échoue !');
@@ -656,6 +667,7 @@ export class Combat {
         return false;
       }
       tv.confusion = randInt(this.rng, 2, 5);
+      this.emit({ type: 'confus', side: tSide });
       this.say(`La confusion gagne ${n} !`);
       return true;
     }
@@ -721,12 +733,12 @@ export class Combat {
       if (j.status?.kind === 'poison') {
         v.poisonTurns = Math.min(v.poisonTurns + 1, 8);
         this.say(`${n} souffre du poison !`);
-        this.damage(side, Math.max(1, Math.floor((maxHp(j) * v.poisonTurns) / 16)));
+        this.damage(side, Math.max(1, Math.floor((maxHp(j) * v.poisonTurns) / 16)), 'poison');
         if (isFainted(j)) continue;
       }
       const talent = talentOf(j);
       if (talent === 'auraMoissons' && j.hp < maxHp(j)) {
-        this.heal(side, Math.max(1, Math.floor(maxHp(j) / 16)));
+        this.heal(side, Math.max(1, Math.floor(maxHp(j) / 16)), 'soin');
         this.say(`L'Aura des Moissons rend des PV à ${n}.`);
       }
       if (talent === 'benedictionPluvieuse' && j.status && chance(this.rng, 1 / 3)) {

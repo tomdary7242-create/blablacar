@@ -122,6 +122,79 @@ export function drawCreature(
   if (opts.white && opts.white > 0) blit(creatureSprite(speciesId, size, 'blanc', pose), Math.min(1, opts.white));
 }
 
+/** Sprite teinté d'une couleur unie (halo, éclair de couleur), mis en cache. */
+function tintedSprite(base: HTMLCanvasElement, color: string, key: string): HTMLCanvasElement {
+  const full = `${key}:teinte:${color}`;
+  let c = creatureCache.get(full);
+  if (!c) {
+    c = tint(base, color);
+    creatureCache.set(full, c);
+  }
+  return c;
+}
+
+/** Effets d'un Jinémon en combat : étirement, rotation, éclair blanc, teinte, halo, enfoncement dans le sol. */
+export interface CreatureFx {
+  back?: boolean;
+  shiny?: boolean;
+  /** Échelle horizontale et verticale (écrasement et étirement), autour du point au sol. */
+  sx?: number;
+  sy?: number;
+  /** Rotation en radians, autour du point au sol. */
+  rotate?: number;
+  alpha?: number;
+  /** Recouvrement blanc (0 à 1). */
+  white?: number;
+  /** Recouvrement d'une couleur (0 à 1). */
+  tint?: string;
+  tintAmount?: number;
+  /** Halo coloré d'un pixel autour de la silhouette. */
+  glow?: string;
+  /** Silhouette sombre (Jinémon sauvage qui surgit des herbes). */
+  silhouette?: number;
+  /** Ne dessine que ce qui dépasse au-dessus de cette ligne (le Jinémon s'enfonce dans le sol). */
+  clipBelow?: number;
+}
+
+/** Dessine un Jinémon en combat avec ses effets ; (x, y) est le point au sol. */
+export function drawCreatureFx(ctx: CanvasRenderingContext2D, speciesId: number, x: number, y: number, size: number, fx: CreatureFx = {}): void {
+  const pose: Pose = fx.back ? 'dos' : 'face';
+  const variant = fx.shiny ? 'chatoyant' : 'normal';
+  const base = creatureSprite(speciesId, size, variant, pose);
+  const key = `${speciesId}:${size}:${variant}:${pose}`;
+  const sx = fx.sx ?? 1;
+  const sy = fx.sy ?? 1;
+  ctx.save();
+  if (fx.clipBelow !== undefined) {
+    ctx.beginPath();
+    ctx.rect(0, 0, 4096, fx.clipBelow);
+    ctx.clip();
+  }
+  ctx.translate(Math.round(x), Math.round(y));
+  if (fx.rotate) ctx.rotate(fx.rotate);
+  ctx.scale(sx, sy);
+  const left = -size / 2;
+  const top = -size + 2;
+  const alpha = fx.alpha ?? 1;
+  if (fx.glow) {
+    // Halo : la silhouette teintée, décalée d'un pixel dans les quatre directions.
+    ctx.globalAlpha = alpha * 0.85;
+    const halo = tintedSprite(base, fx.glow, key);
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(halo, left + dx, top + dy, size, size);
+  }
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(base, left, top, size, size);
+  const over = (color: string, amount: number) => {
+    if (amount <= 0) return;
+    ctx.globalAlpha = alpha * Math.min(1, amount);
+    ctx.drawImage(tintedSprite(base, color, key), left, top, size, size);
+  };
+  over('#201828', fx.silhouette ?? 0);
+  if (fx.tint) over(fx.tint, fx.tintAmount ?? 0.5);
+  over('#ffffff', fx.white ?? 0);
+  ctx.restore();
+}
+
 // ── Personnages (16×24, dessinés à la main) ──────────────────────────────
 
 /** L'Initié : boubou indigo et chapeau conique peul. */
