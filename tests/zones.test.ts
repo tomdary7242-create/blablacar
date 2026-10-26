@@ -102,7 +102,11 @@ describe('Cartes des zones', () => {
       const area = visited.get(z.id);
       expect(area, z.id).toBeDefined();
       for (const npc of z.npcs) {
-        const adjacent = Object.values(DIR_DELTA).some(({ dx, dy }) => area!.has(`${npc.x + dx},${npc.y + dy}`));
+        // On parle aux PNJ d'à côté, ou par-dessus un comptoir, un étal ou un stand.
+        const adjacent = Object.values(DIR_DELTA).some(
+          ({ dx, dy }) =>
+            area!.has(`${npc.x + dx},${npc.y + dy}`) || (['c', 'C', 'E'].includes(tileAt(z, npc.x + dx, npc.y + dy)) && area!.has(`${npc.x + 2 * dx},${npc.y + 2 * dy}`)),
+        );
         expect(adjacent, `${z.id}/${npc.id}`).toBe(true);
       }
       for (const w of z.warps) expect(area!.has(`${w.x},${w.y}`), `${z.id} sortie vers ${w.to}`).toBe(true);

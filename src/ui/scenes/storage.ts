@@ -1,4 +1,4 @@
-// Grenier des Jinémon : dépôt et retrait entre l'équipe et la réserve.
+// Grenier des Jinémon : dépôt, retrait et échange entre l'équipe et la réserve (comme un PC).
 import { displayName, isFainted, isShiny, maxHp, type Jinemon } from '../../engine/creature';
 import { PARTY_SIZE } from '../../engine/gameState';
 import { PAL, box, cursor, hpColor, menuList, text } from '../draw';
@@ -15,6 +15,8 @@ export class StorageScene implements Scene {
   private party = new ListCursor(0, 6, false);
   private stock = new ListCursor(0, 9, false);
   private submenu: { options: string[]; index: number } | null = null;
+  /** Échange en cours : le Jinémon choisi attend son remplaçant dans l'autre colonne. */
+  private swap: { from: 'equipe' | 'grenier'; index: number } | null = null;
   private message = 'Choisissez un Jinémon.';
 
   constructor(private readonly game: Game) {}
@@ -39,11 +41,17 @@ export class StorageScene implements Scene {
     }
     if (input.pressed('b')) {
       this.game.sfx('retour');
+      if (this.swap) {
+        this.focus = this.swap.from;
+        this.swap = null;
+        this.message = 'Échange annulé.';
+        return;
+      }
       this.game.scenes.pop(this);
       this.game.save(true);
       return;
     }
-    if (input.pressed('left') || input.pressed('right')) {
+    if ((input.pressed('left') || input.pressed('right')) && !this.swap) {
       this.focus = this.focus === 'equipe' ? 'grenier' : 'equipe';
       this.game.sfx('curseur');
       return;
@@ -56,9 +64,35 @@ export class StorageScene implements Scene {
       if (before !== list.index) this.game.sfx('curseur');
     }
     if (input.pressed('a') && list.count > 0) {
+      if (this.swap) {
+        this.exchange(this.swap.from === 'equipe' ? this.swap.index : this.party.index, this.swap.from === 'grenier' ? this.swap.index : this.stock.index);
+        return;
+      }
       this.game.sfx('valider');
-      this.submenu = { options: [this.focus === 'equipe' ? 'Déposer' : 'Retirer', 'Résumé', 'Retour'], index: 0 };
+      const state = this.game.s;
+      const other = this.focus === 'equipe' ? state.storage.length : state.party.length;
+      const options = [this.focus === 'equipe' ? 'Déposer' : 'Retirer', ...(other > 0 ? ['Échanger'] : []), 'Résumé', 'Retour'];
+      this.submenu = { options, index: 0 };
     }
+  }
+
+  /** Échange un Jinémon de l'équipe contre un Jinémon du grenier. */
+  private exchange(partyIndex: number, stockIndex: number): void {
+    const state = this.game.s;
+    const out = state.party[partyIndex];
+    const incoming = state.storage[stockIndex];
+    this.swap = null;
+    const othersReady = state.party.filter((o) => o !== out && !isFainted(o)).length;
+    if (othersReady === 0 && isFainted(incoming)) {
+      this.message = 'Garde au moins un Jinémon valide !';
+      this.game.sfx('erreur');
+      return;
+    }
+    state.party[partyIndex] = incoming;
+    state.storage[stockIndex] = out;
+    this.message = `${displayName(incoming)} rejoint l’équipe, ${displayName(out)} se repose.`;
+    this.game.sfx('valider');
+    this.sync();
   }
 
   private choose(option: string): void {
@@ -67,6 +101,15 @@ export class StorageScene implements Scene {
     if (option === 'Résumé') {
       const list = this.focus === 'equipe' ? state.party : state.storage;
       this.game.scenes.push(new SummaryScene(this.game, list, (this.focus === 'equipe' ? this.party : this.stock).index));
+      return;
+    }
+    if (option === 'Échanger') {
+      const from = this.focus;
+      this.swap = { from, index: (from === 'equipe' ? this.party : this.stock).index };
+      this.focus = from === 'equipe' ? 'grenier' : 'equipe';
+      const j = from === 'equipe' ? state.party[this.party.index] : state.storage[this.stock.index];
+      this.message = `Échanger ${displayName(j)} avec… ?`;
+      this.game.sfx('valider');
       return;
     }
     if (option === 'Déposer') {
@@ -82,7 +125,7 @@ export class StorageScene implements Scene {
       this.message = `${displayName(j)} se repose au grenier.`;
     } else if (option === 'Retirer') {
       if (state.party.length >= PARTY_SIZE) {
-        this.message = 'Ton équipe est complète (6 Jinémon).';
+        this.message = 'Équipe complète : choisis plutôt « Échanger ».';
         this.game.sfx('erreur');
         return;
       }
@@ -135,7 +178,7 @@ export class StorageScene implements Scene {
     }
     box(ctx, 2, 150, 252, 40);
     text(ctx, this.message, 10, 154, { shadow: PAL.shadow });
-    text(ctx, '◄ ► colonne · A choisir · B sortir', 10, 170, { color: PAL.grey });
+    text(ctx, this.swap ? 'A échanger · B annuler' : '◄ ► colonne · A choisir · B sortir', 10, 170, { color: PAL.grey });
     if (this.submenu) {
       box(ctx, 160, 100, 92, 46);
       menuList(ctx, this.submenu.options, 166, 106, this.submenu.index);

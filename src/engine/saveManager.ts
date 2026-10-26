@@ -4,9 +4,9 @@ import { SPECIES } from '../data/ginedex';
 import { ITEMS, type ItemId } from '../data/items';
 import { MOVES } from '../data/moves';
 import { BADGES, type BadgeId } from '../data/trainers';
-import { ZONES } from '../data/zones';
+import { SOLID_TILES, ZONES, tileAt } from '../data/zones';
 import { maxHp, type Jinemon } from './creature';
-import { newGameState, type GameState } from './gameState';
+import { START_POSITION, newGameState, type GameState, type Position } from './gameState';
 
 export const SAVE_KEY = 'ginemon:sauvegarde';
 export const SAVE_VERSION = 1;
@@ -100,8 +100,9 @@ export function sanitize(data: unknown): GameState | null {
 
   const validPos = (p: GameState['position'] | undefined) =>
     !!p && p.zone in ZONES && Number.isInteger(p.x) && Number.isInteger(p.y);
-  if (validPos(d.position)) state.position = { ...d.position! };
-  if (validPos(d.lastHeal)) state.lastHeal = { ...d.lastHeal! };
+  // Une position devenue invalide (carte redessinée depuis la sauvegarde) est ramenée en lieu sûr.
+  if (validPos(d.position)) state.position = safePosition(d.position!);
+  if (validPos(d.lastHeal)) state.lastHeal = safePosition(d.lastHeal!);
 
   state.party = (Array.isArray(d.party) ? d.party : []).map(sanitizeJinemon).filter((j): j is Jinemon => !!j).slice(0, 6);
   state.storage = (Array.isArray(d.storage) ? d.storage : []).map(sanitizeJinemon).filter((j): j is Jinemon => !!j);
@@ -136,4 +137,23 @@ export function sanitize(data: unknown): GameState | null {
   if (state.starter && state.party.length === 0 && state.storage.length === 0) return null;
   if (state.party.length === 0 && state.storage.length > 0) state.party.push(state.storage.shift()!);
   return state;
+}
+
+/** Peut-on se tenir sur cette case ? (Ni mur, ni décor, ni téléporteur.) */
+export function standable(p: Position): boolean {
+  const zone = ZONES[p.zone];
+  if (!zone || p.y < 0 || p.x < 0 || p.y >= zone.map.length || p.x >= zone.map[0].length) return false;
+  const t = tileAt(zone, p.x, p.y);
+  // Rochers brisés, gués et mirages dissipés restent praticables.
+  if (SOLID_TILES.has(t) && t !== 'X' && t !== 'w' && t !== 'Y') return false;
+  return !zone.warps.some((w) => w.x === p.x && w.y === p.y);
+}
+
+/** La position donnée si elle est praticable ; sinon, devant la Case de Soins de la zone (ou le point de départ). */
+export function safePosition(p: Position): Position {
+  if (standable(p)) return { ...p };
+  const zone = ZONES[p.zone];
+  const town = zone?.parent ? ZONES[zone.parent] : zone;
+  if (town?.flyPoint) return { zone: town.id, ...town.flyPoint };
+  return { ...START_POSITION };
 }

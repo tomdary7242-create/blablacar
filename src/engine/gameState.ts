@@ -24,7 +24,7 @@ export interface Options {
 export interface GameState {
   version: number;
   playerName: string;
-  /** Espèce du starter choisi (0 tant que l'Ancien ne l'a pas confié). */
+  /** Espèce du starter choisi (0 tant que le Hogon ne l'a pas confié). */
   starter: number;
   position: Position;
   /** Dernier lieu de soin visité : point de retour après une défaite. */
@@ -47,7 +47,8 @@ export interface GameState {
   repelled: Partial<Record<ZoneId, number>>;
 }
 
-export const START_POSITION: Position = { zone: 'village', x: 18, y: 15, dir: 'bas' };
+/** On se réveille dans sa chambre, à côté de son lit. */
+export const START_POSITION: Position = { zone: 'chambre', x: 2, y: 3, dir: 'bas' };
 
 export function newGameState(playerName: string): GameState {
   return {
@@ -55,7 +56,7 @@ export function newGameState(playerName: string): GameState {
     playerName,
     starter: 0,
     position: { ...START_POSITION },
-    lastHeal: { zone: 'village', x: 18, y: 6, dir: 'bas' },
+    lastHeal: { zone: 'maison', x: 5, y: 6, dir: 'haut' },
     party: [],
     storage: [],
     inventory: {},

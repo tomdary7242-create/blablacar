@@ -3,6 +3,7 @@ import { SPECIES } from '../../data/ginedex';
 import { BADGES, BADGE_ORDER, type BadgeId } from '../../data/trainers';
 import { formatClock, phaseOf } from '../../engine/clock';
 import { formatPlayTime } from '../../engine/gameState';
+import { currentObjective } from '../../engine/objective';
 import { PAL, box, fillEllipse, menuList, shade, stamp, text } from '../draw';
 import { wrapText } from '../font';
 import type { Game } from '../game';
@@ -12,14 +13,19 @@ import { menuBackground } from '../widgets';
 import { BagScene } from './bag';
 import { DexScene } from './dex';
 import { FlyScene, flyer } from './fly';
+import { WorldMapScene } from './plan';
 import { TeamScene } from './team';
 
-const OPTIONS = ['GINÉDEX', 'ÉQUIPE', 'SAC', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'];
-/** Le menu gagne « VOLER » quand un Jinémon Vol peut porter le joueur ; avant le premier Jinémon, pas d'équipe ni de Ginédex. */
+const OPTIONS = ['GINÉDEX', 'ÉQUIPE', 'SAC', 'CARTE', 'VOLER', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'];
+/** « VOLER » n'apparaît que si un Jinémon Vol peut porter le joueur ; avant le premier Jinémon, pas d'équipe ni de Ginédex. */
 const optionsFor = (game: Game) => {
   const s = game.s;
-  if (s.party.length === 0) return OPTIONS.filter((o) => o !== 'ÉQUIPE' && (o !== 'GINÉDEX' || s.flags.starter));
-  return flyer(s) ? ['GINÉDEX', 'ÉQUIPE', 'SAC', 'VOLER', 'INSIGNES', 'SAUVEGARDER', 'OPTIONS', 'RETOUR'] : OPTIONS;
+  return OPTIONS.filter((o) => {
+    if (o === 'VOLER') return !!flyer(s);
+    if (o === 'ÉQUIPE') return s.party.length > 0;
+    if (o === 'GINÉDEX') return s.party.length > 0 || !!s.flags.starter;
+    return true;
+  });
 };
 
 export class MenuScene implements Scene {
@@ -60,6 +66,9 @@ export class MenuScene implements Scene {
       case 'SAC':
         game.scenes.push(new BagScene(game, 'consulter'));
         break;
+      case 'CARTE':
+        game.scenes.push(new WorldMapScene(game));
+        break;
       case 'INSIGNES':
         game.scenes.push(new BadgesScene(game));
         break;
@@ -94,6 +103,13 @@ export class MenuScene implements Scene {
     const options = optionsFor(this.game);
     box(ctx, 150, 2, 104, options.length * 12 + 12);
     menuList(ctx, options, 156, 7, this.index);
+    // Objectif du moment, toujours sous les yeux.
+    const rows = wrapText(currentObjective(s).text, 128).slice(0, 7);
+    const top = 84;
+    box(ctx, 2, top, 144, rows.length * 10 + 20);
+    stamp(ctx, ['...k...', '..kyk..', 'kkkyykk', 'kyyyyyk', '.kyyyk.', '.kykyk.', 'kk...kk'], 9, top + 5, { k: PAL.ink, y: '#f0c040' });
+    text(ctx, 'OBJECTIF', 19, top + 4, { color: PAL.rust });
+    rows.forEach((row, i) => text(ctx, row, 9, top + 16 + i * 10));
   }
 }
 

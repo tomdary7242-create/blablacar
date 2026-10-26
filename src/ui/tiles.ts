@@ -3,7 +3,9 @@
 //
 // La couche « sol » est dessinée sous les personnages ; la couche « dessus »
 // (cimes des arbres, toits) passe devant eux pour donner de la profondeur.
-import type { Theme, Zone } from '../data/zones';
+import { BUILDING_SIZE } from '../data/interiors';
+import type { Building, Theme, Zone } from '../data/zones';
+import { grenierJinemonProp, maisonProp, marcheProp, sanctuaireProp, soinsProp, standSoinsProp } from './buildings';
 import { calabash } from './draw';
 import { noise3, shiftColor } from './sculpt';
 import {
@@ -74,18 +76,18 @@ const GROUND: Record<Theme, string> = {
   cite: ':',
 };
 
-function hash(x: number, y: number, k = 0): number {
+export function hash(x: number, y: number, k = 0): number {
   let h = (x * 374761393 + y * 668265263 + k * 2147483647) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-function px(ctx: CanvasRenderingContext2D, x: number, y: number, c: string): void {
+export function px(ctx: CanvasRenderingContext2D, x: number, y: number, c: string): void {
   ctx.fillStyle = c;
   ctx.fillRect(x, y, 1, 1);
 }
 
-function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number, pal: Record<string, string>): void {
+export function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number, pal: Record<string, string>): void {
   rows.forEach((row, j) => {
     for (let i = 0; i < row.length; i++) {
       const c = pal[row[i]];
@@ -100,12 +102,12 @@ function stamp(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: numb
 // monde : les plaques de tons se prolongent d'une tuile à l'autre sans couture,
 // et une trame ordonnée adoucit leurs frontières.
 
-type RGB = [number, number, number];
+export type RGB = [number, number, number];
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const toneCache = new Map<string, RGB[]>();
 
 /** Quatre tons d'un sol : clair, base, sombre, profond. */
-function tones(hex: string): RGB[] {
+export function tones(hex: string): RGB[] {
   let t = toneCache.get(hex);
   if (!t) {
     t = [shiftColor(hex, 0.12), shiftColor(hex, 0), shiftColor(hex, -0.1), shiftColor(hex, -0.2)];
@@ -114,10 +116,10 @@ function tones(hex: string): RGB[] {
   return t;
 }
 
-const css = ([r, g, b]: RGB) => `rgb(${r},${g},${b})`;
+export const css = ([r, g, b]: RGB) => `rgb(${r},${g},${b})`;
 
 /** Remplit une tuile pixel par pixel. */
-function pixels(ctx: CanvasRenderingContext2D, x: number, y: number, color: (wx: number, wy: number) => RGB): void {
+export function pixels(ctx: CanvasRenderingContext2D, x: number, y: number, color: (wx: number, wy: number) => RGB): void {
   const img = ctx.createImageData(TILE, TILE);
   for (let py = 0; py < TILE; py++) {
     for (let px = 0; px < TILE; px++) {
@@ -133,7 +135,7 @@ function pixels(ctx: CanvasRenderingContext2D, x: number, y: number, color: (wx:
 }
 
 /** Valeur de plaque (−1 à 1) tramée, pour choisir un ton de sol. */
-function patch(wx: number, wy: number, scale: number, seed: number): number {
+export function patch(wx: number, wy: number, scale: number, seed: number): number {
   const n = noise3(wx * scale, wy * scale, seed) * 0.65 + noise3(wx * scale * 2.8, wy * scale * 2.8, seed + 7) * 0.35;
   return n + (BAYER4[(wy & 3) * 4 + (wx & 3)] / 16 - 0.47) * 0.2;
 }
@@ -338,7 +340,7 @@ function flowers(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number
 // ── Objets sculptés ──────────────────────────────────────────────────────
 
 /** Ombre portée au sol, ellipse pixel nette assombrissant le sol. */
-function groundShadow(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number): void {
+export function groundShadow(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number): void {
   ctx.fillStyle = 'rgba(16, 24, 8, 0.22)';
   for (let y = -ry; y <= ry; y++) {
     const half = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
@@ -350,7 +352,7 @@ function groundShadow(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx:
  * Pose un objet dont le pied tombe en (x, y) : ce qui dépasse au-dessus de la
  * ligne `split` passe sur la couche « dessus », devant les personnages.
  */
-function place(base: CanvasRenderingContext2D, over: CanvasRenderingContext2D, prop: Prop, x: number, y: number, split: number): void {
+export function place(base: CanvasRenderingContext2D, over: CanvasRenderingContext2D, prop: Prop, x: number, y: number, split: number): void {
   const left = x - prop.ax;
   const top = y - prop.ay;
   const { img } = prop;
@@ -402,10 +404,12 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       const neighbor = around.find((c) => ['"', ',', '.', 'L', ':'].includes(c));
       // Sous un objet, on reprend le sol voisin (sable sous un palmier de plage, herbe ailleurs).
       const under = around.find((c) => ['"', '.', 'L', ':'].includes(c)) ?? groundTheme;
-      const ground = lone(tx, ty)
+      const ground = ch === 'd'
+        ? '='
+        : lone(tx, ty)
         ? (neighbor ?? groundTheme)
-        : ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I'].includes(ch)
-          ? ['R', 'H', 'D', 'M', 'T'].includes(ch) ? groundTheme : under
+        : ['T', 'B', 'G', 'U', 'O', 'S', 'F', 'A', 'K', 'X', 'R', 'H', 'D', 'M', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I', '@', 'g', 'C'].includes(ch)
+          ? ['R', 'H', 'D', 'M', 'T', '@'].includes(ch) ? groundTheme : under
           : ch;
       switch (ground) {
         case '"':
@@ -432,7 +436,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
           const color = ground === '=' || ground === 'E' ? pal.path : ground === 'L' ? '#c8704a' : pal.ground;
           dirtGround(base, x, y, color, tx, ty);
           if (ground === '=' || ground === 'E') {
-            const isPath = (c: string) => c === '=' || c === 'E' || c === 'S' || c === '' || c === 'P' || c === 'w';
+            const isPath = (c: string) => c === '=' || c === 'E' || c === 'S' || c === '' || c === 'P' || c === 'w' || c === 'd' || c === '@';
             if (!isPath(at(tx, ty - 1)) && !PATHLIKE.has(at(tx, ty - 1))) grassFringe(base, x, y, 'n', pal, color, tx, ty);
             if (!isPath(at(tx, ty + 1)) && !PATHLIKE.has(at(tx, ty + 1))) grassFringe(base, x, y, 's', pal, color, tx, ty);
             if (!isPath(at(tx - 1, ty)) && !PATHLIKE.has(at(tx - 1, ty))) grassFringe(base, x, y, 'w', pal, color, tx, ty);
@@ -485,7 +489,7 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       if (ch === 'T') groundShadow(base, cx + 2, cy + 1, pal.round ? 8 : 11, 3);
       else if (ch === 'B') groundShadow(base, cx + 3, cy + 1, 13, 4);
       else if (ch === 'R' && at(tx - 1, ty) !== 'R') groundShadow(base, tx * TILE + 26, (ty + 2) * TILE - 2, 22, 4);
-      else if (('GUOX'.includes(ch) && ch) || lone(tx, ty)) groundShadow(base, cx + 1, cy + 1, 6, 2);
+      else if (('GUOXgC'.includes(ch) && ch) || lone(tx, ty)) groundShadow(base, cx + 1, cy + 1, 6, 2);
       else if (ch === 'V') groundShadow(base, cx + 4, cy + 1, 9, 3);
       else if (ch === 'N') groundShadow(base, cx + 1, cy + 1, 12, 4);
       else if (ch === 'Q' || ch === 'I') groundShadow(base, cx + 2, cy + 1, 8, 3);
@@ -499,6 +503,8 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
       const x = tx * TILE + 8;
       const y = ty * TILE + 12;
       const split = ty * TILE;
+      const building = zone.buildings?.find((b) => b.x === tx && b.y === ty);
+      if (building) placeBuilding(base, over, building);
       switch (ch) {
         case 'T': {
           const surrounded = at(tx, ty + 1) === 'T' && at(tx - 1, ty) === 'T' && at(tx + 1, ty) === 'T' && pal.round;
@@ -522,6 +528,12 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
           break;
         case 'E':
           place(base, over, stallProp(), x, y, split);
+          break;
+        case 'C':
+          place(base, over, standSoinsProp(), x, y, split);
+          break;
+        case 'g':
+          place(base, over, grenierJinemonProp(), x, y, split);
           break;
         case 'S':
           place(base, over, signProp(), x, y, split);
@@ -593,6 +605,17 @@ export function renderZoneLayers(zone: Zone, tileAt: (x: number, y: number) => s
   return { base: baseCanvas, over: overCanvas };
 }
 
+const BUILDING_PROPS = { maison: maisonProp, soins: soinsProp, marche: marcheProp, sanctuaire: sanctuaireProp };
+
+/** Pose un bâtiment sur son emprise : le pied de la façade au bas de la dernière rangée. */
+function placeBuilding(base: CanvasRenderingContext2D, over: CanvasRenderingContext2D, b: Building): void {
+  const size = BUILDING_SIZE[b.kind];
+  const x = (b.x + size.w / 2) * TILE;
+  const y = (b.y + size.h) * TILE - 4;
+  groundShadow(base, x + 3, y, size.w * 8, 4);
+  place(base, over, BUILDING_PROPS[b.kind](), x, y, b.y * TILE);
+}
+
 /** Animation de l'eau et des foyers, dessinée par-dessus la couche « sol ». */
 export function animateTile(ctx: CanvasRenderingContext2D, ch: string, x: number, y: number, time: number): void {
   if (ch === '~' || ch === 'w') {
@@ -606,6 +629,10 @@ export function animateTile(ctx: CanvasRenderingContext2D, ch: string, x: number
       ctx.fillStyle = i % 2 ? 'rgba(255, 248, 220, 0.55)' : 'rgba(255, 236, 180, 0.4)';
       ctx.fillRect(x + 1 + Math.round(Math.sin(time * 4 + i) * 2), y + 2 + Math.round(phase * 2), 10 + i, 1);
     }
+  } else if (ch === 'v' || ch === 'f') {
+    // Flamme du brasero, ou feu sous la marmite.
+    const f = Math.floor(time * 9 + x) % 3;
+    stamp(ctx, f === 0 ? ['.r.', 'ryr', 'ryr'] : f === 1 ? ['r..', 'ryr', 'ryr'] : ['..r', 'ryr', 'ryr'], x + 6, ch === 'v' ? y + 1 : y + 10, { r: '#e8582a', y: '#ffd040' });
   } else if (ch === 'K') {
     const f = Math.floor(time * 8) % 3;
     stamp(ctx, f === 0 ? ['..r..', '.ryr.', '.ryyr', 'ryyyr'] : f === 1 ? ['.r...', '.rr.r', 'ryyr.', 'ryyyr'] : ['...r.', 'r.rr.', '.ryyr', 'ryyyr'], x + 5, y + 5, {

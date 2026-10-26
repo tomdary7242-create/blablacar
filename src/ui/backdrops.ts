@@ -563,7 +563,7 @@ export function titleBackdrop(): HTMLCanvasElement {
 
 let interior: HTMLCanvasElement | null = null;
 
-/** Intérieur de la case de l'Ancien (choix du premier Jinémon), 256×124. */
+/** Intérieur du sanctuaire du Hogon (choix du premier Jinémon), 256×124. */
 export function hutInterior(): HTMLCanvasElement {
   if (interior) return interior;
   const W = 256;

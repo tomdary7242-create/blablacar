@@ -47,7 +47,7 @@ export class StarterScene implements Scene {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    // Intérieur de la case de l'Ancien : murs de banco, frise bogolan et natte tressée.
+    // Intérieur du sanctuaire du Hogon : murs de banco, frise bogolan et natte tressée.
     ctx.drawImage(hutInterior(), 0, 0);
     text(ctx, 'Choisis ton premier compagnon', W / 2, 4, { align: 'center', color: PAL.cream, shadow: PAL.ink });
 

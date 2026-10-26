@@ -1,6 +1,6 @@
 // Acte II : la route de Tombouctou, du désert des djinns jusqu'au Conseil des Griots.
 import type { CharacterLook } from './trainers';
-import { T, VILLAGEOIS, boutique, dresseur, grenier, objet, parole, soin } from './zoneKit';
+import { T, VILLAGEOIS, boutique, caseDeSoins, dresseur, marche, objet, parole, soin } from './zoneKit';
 import type { Npc, Zone } from './zones';
 
 const TOUAREG_SOIN: CharacterLook = { skin: '#6a4028', outfit: '#3a4a9a', accent: '#f0e0a0', headwear: 'turban' };
@@ -27,7 +27,7 @@ export const desert: Zone = {
   name: 'Désert des Djinns',
   theme: 'desert',
   encounterRate: 0.1,
-  flyPoint: { x: 9, y: 17, dir: 'haut' },
+  flyPoint: { x: 7, y: 17, dir: 'haut' },
   encounters: [
     { species: 129, min: 40, max: 43, weight: 20 },
     { species: 81, min: 42, max: 45, weight: 10 },
@@ -72,7 +72,7 @@ export const desert: Zone = {
     '#:V:::::::::::::V:=:::::::MK:::::KM#',
     '#:::::::::::V=========V:::M:N:::N:M#',
     '#:::N::::N:::=:~~~~~:=::::M:::::::M#',
-    '#::::::::=====~~~~~~~=:::SM:::::::M#',
+    '#::::g:C:=====~~~~~~~=:::SM:::::::M#',
     '#::::::::::V:=~~~~~~~===========::M#',
     '#::::::::::::=:~~~~~:=::::M:::::::M#',
     '#:::::::::::V=========V:::M:::::::M#',
@@ -97,11 +97,10 @@ export const desert: Zone = {
     { x: 25, y: 16, text: ['Arène de l’Oasis', 'Maîtresse de Piste : Takama, Reine des Sables (Psy / Terre)'] },
   ],
   npcs: [
-    soin('guerisseuseDesert', 9, 16, 'bas', ['Guérisseuse : Le désert assèche les corps et les esprits. Bois, et laisse tes Jinémon se reposer à l’ombre.'], TOUAREG_SOIN),
+    soin('guerisseuseDesert', 7, 15, 'bas', ['Guérisseuse : Le désert assèche les corps et les esprits. Bois, et laisse tes Jinémon se reposer à l’ombre.'], TOUAREG_SOIN),
     boutique('marchandDesert', 6, 19, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola'], [
       'Marchande : Des dattes ? Du sel ? Non… des calebasses et du miel, voilà ce qu’il te faut pour traverser !',
     ]),
-    grenier('grenierDesert', 11, 21),
     parole('conteuseDesert', 'Conteuse', 24, 20, 'haut', { skin: '#6a4028', outfit: '#b84ae8', accent: '#f0c040', headwear: 'turban' }, [
       'Conteuse : On dit que Tin-Hinan, la reine des Touareg, a traversé ce désert sur son méhari blanc.',
       'Conteuse : Son tombeau est loin d’ici, à Abalessa. Mais son esprit veille encore sur les oasis.',
@@ -170,8 +169,8 @@ export const hombori: Zone = {
     '##################S...##################',
     '##############.............#############',
     '##############.............#############',
-    '##############......K......#############',
-    '##############.............#############',
+    '##############......K...EE.#############',
+    '##############g.C..........#############',
     '##############.............#############',
     '##############..,,,....,,,.#############',
     '##############..,,,....,,,.#############',
@@ -186,13 +185,12 @@ export const hombori: Zone = {
     { x: 18, y: 23, text: ['Grottes de Hombori', 'Galeries obscures. Un Jinémon Feu éclaire mieux qu’une lanterne.'] },
   ],
   npcs: [
-    soin('ermiteHombori', 16, 27, 'bas', ['Ermite : Assieds-toi près du feu. La montagne est froide et sombre, mais ici, tu es en sécurité.'], {
+    soin('ermiteHombori', 16, 26, 'bas', ['Ermite : Assieds-toi près du feu. La montagne est froide et sombre, mais ici, tu es en sécurité.'], {
       skin: '#3a2214', outfit: '#e8e0d0', accent: '#9c8a5a', headwear: 'turban',
     }),
-    boutique('colporteurHombori', 24, 26, ['calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola'], [
+    boutique('colporteurHombori', 24, 25, ['calebasseRoyale', 'painDeSinge', 'mielSauvage', 'moringa', 'kola'], [
       'Colporteur : Des torches ? J’en ai plus. Mais j’ai du miel et des calebasses !',
     ]),
-    grenier('grenierHombori', 24, 28),
     dresseur('issa', 10, 19, 'droite', T('issa')),
     dresseur('aicha', 30, 15, 'gauche', T('aicha')),
     dresseur('sbire3', 6, 13, 'bas', T('sbire3')),
@@ -222,7 +220,6 @@ export const djenne: Zone = {
   name: 'Djenné et le Delta',
   theme: 'delta',
   encounterRate: 0.1,
-  flyPoint: { x: 4, y: 19, dir: 'haut' },
   encounters: [
     { species: 23, min: 47, max: 50, weight: 12 },
     { species: 73, min: 47, max: 50, weight: 10 },
@@ -272,10 +269,10 @@ export const djenne: Zone = {
     'TB""""""""""""="""""=S"Q""Q"""QRRR"""""T',
     'T"""""""""""""="""""=""MMMMMMMMHDH"""""T',
     '==============="""""=""MMMMMMMM""""""""T',
-    'T""RRR"""RRR""="""""=""MMMMMMMM""""RRR"T',
-    'T""HDH"""HDH""="""""=""MMMMMMMM""""HDH"T',
-    'T"""="""""""""="""""=""MMMMMMMM""""""""T',
-    'T"""="""""""""="""""=""Q""""""Q""""""""T',
+    'T"@@@@@""RRR""="""""=""MMMMMMMM""""RRR"T',
+    'T"@@@@@""HDH""="""""=""MMMMMMMM@@@@HDH"T',
+    'T"@@d@@"""""""="""""=""MMMMMMMM@@@@""""T',
+    'T"""="""""""""="""""=""Q""""""Q@d@@""""T',
     'T"""""""=========================""""""T',
     'T"EEEEEE""""""""""""="""""""""""""""""BT',
     'T"""":::::::""""O"""=""""""""""""O"""""T',
@@ -287,6 +284,12 @@ export const djenne: Zone = {
     'T,,,,,,,,,,,,,,,,,,"=",,,,,,,,,,,,,,,,,T',
     'TTTTTTTTTTTTTTTTTTTT=TTTTTTTTTTTTTTTTTTT',
   ],
+  buildings: [
+    caseDeSoins(2, 16, soin('guerisseuseDjenne', 0, 0, 'bas', ['Guérisseuse : L’eau du fleuve et les plantes du Delta soignent tout. Approche.'])),
+    marche(31, 17, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'baumeAnciens', 'kola'], [
+        'Marchande : Bienvenue au grand marché de Djenné ! Tout le Delta vient ici le lundi.',
+      ]),
+  ],
   warps: [
     { x: 0, y: 15, to: 'hombori', tx: 38, ty: 11, dir: 'gauche' },
     { x: 20, y: 29, to: 'cote', tx: 20, ty: 1, dir: 'bas' },
@@ -296,11 +299,6 @@ export const djenne: Zone = {
     { x: 19, y: 10, text: ['↑ Arène du Fleuve', 'Maîtresse de Piste : Ténin, Gardienne de Ninki Nanka (Dragon / Eau)'] },
   ],
   npcs: [
-    soin('guerisseuseDjenne', 4, 18, 'bas', ['Guérisseuse : L’eau du fleuve et les plantes du Delta soignent tout. Approche.']),
-    boutique('marchandeDjenne', 4, 20, ['calebasseAncetres', 'calebasseRoyale', 'painDeSinge', 'mielSauvage', 'baumeAnciens', 'kola'], [
-      'Marchande : Bienvenue au grand marché de Djenné ! Tout le Delta vient ici le lundi.',
-    ]),
-    grenier('grenierDjenne', 10, 18),
     {
       id: 'vieuxBozo', name: 'Vieux Bozo', x: 11, y: 22, dir: 'gauche', look: { kind: 'personne', look: { skin: '#3a2214', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau' } },
       script: {
@@ -343,7 +341,6 @@ export const cote: Zone = {
   name: 'Côte des Alizés',
   theme: 'cote',
   encounterRate: 0.1,
-  flyPoint: { x: 14, y: 6, dir: 'haut' },
   encounters: [
     { species: 15, min: 50, max: 53, weight: 10 },
     { species: 104, min: 51, max: 54, weight: 6 },
@@ -378,12 +375,12 @@ export const cote: Zone = {
     '~~~~~~~TTTTTTTTTTTTT=TTTTTTTTTTTTTTTTTTT',
     '~~~~~~~:::::V"""""""=""""""""""""""""""T',
     '~~~~~~~:::::""""""""="""""B"""",,,,,,,"T',
-    '~~~~~~~:::::"RRR""""="RRR"""""",,,,,,,"T',
-    '~~~~~~~:J:::"HDH""""="HDH"""""",,,,,,,"T',
-    '~~~~~~~:::::""="""""=""=""""""",,,,,,,"T',
-    '~~~~~~~:::::V"="""""=""=""""""",,,,,,,"T',
-    '~~~~~~~:::::""="""""=""="EEE"""""""""""T',
-    '~~~~~~~:::::""="""""=""=""""""==========',
+    '~~~~~~~:::::"RRR""""="RRR"@@@@@,,,,,,,"T',
+    '~~~~~~~:J:::"HDH""""="HDH"@@@@@,,,,,,,"T',
+    '~~~~~~~:@@@@""="""""=""=""@@d@@,,,,,,,"T',
+    '~~~~~~~:@@@@V"="""""=""=""""""",,,,,,,"T',
+    '~~~~~~~:@d@@""="""""=""="""""""""""""""T',
+    '~~~~~~~:::EE""="""""=""=""""""==========',
     '~~~~~~~::J::""=======S==""""""=""""""""T',
     '~~~~~~~:::::===========================T',
     '~~~~~~~:::::""""""""""""""S="""""""""""T',
@@ -406,6 +403,14 @@ export const cote: Zone = {
     '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
     '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
   ],
+  buildings: [
+    caseDeSoins(26, 3, soin('guerisseuseCote', 0, 0, 'bas', ['Guérisseuse : L’air de la mer est bon pour les poumons. Et pour les Jinémon aussi !'], {
+        skin: '#4a2a1a', outfit: '#e8c040', accent: '#3a86c8', headwear: 'foulard',
+      })),
+    marche(8, 5, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
+        'Marchande : Poisson frais, coquillages… et calebasses ! Tout vient de la mer, ici.',
+      ]),
+  ],
   warps: [
     { x: 20, y: 0, to: 'djenne', tx: 20, ty: 28, dir: 'haut' },
     { x: 39, y: 8, to: 'masques', tx: 1, ty: 15, dir: 'droite' },
@@ -415,13 +420,6 @@ export const cote: Zone = {
     { x: 21, y: 9, text: ['Village de pêcheurs de Kayar', '→ Bois des Masques'] },
   ],
   npcs: [
-    soin('guerisseuseCote', 14, 5, 'bas', ['Guérisseuse : L’air de la mer est bon pour les poumons. Et pour les Jinémon aussi !'], {
-      skin: '#4a2a1a', outfit: '#e8c040', accent: '#3a86c8', headwear: 'foulard',
-    }),
-    boutique('marchandeCote', 26, 6, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
-      'Marchande : Poisson frais, coquillages… et calebasses ! Tout vient de la mer, ici.',
-    ]),
-    grenier('grenierCote', 23, 5),
     parole('pecheurCote', 'Pêcheur', 10, 12, 'gauche', { skin: '#3a2214', outfit: '#f0f0f0', accent: '#3a86c8', headwear: 'bonnet' }, [
       'Pêcheur : Les pirogues partent avant l’aube et rentrent quand le soleil est haut.',
       'Pêcheur : Avec une nasse, tu peux pêcher depuis la plage. La mer est généreuse.',
@@ -444,7 +442,7 @@ export const masques: Zone = {
   name: 'Bois des Masques',
   theme: 'masques',
   encounterRate: 0.11,
-  flyPoint: { x: 4, y: 14, dir: 'haut' },
+  flyPoint: { x: 4, y: 15, dir: 'haut' },
   encounters: [
     { species: 135, min: 54, max: 57, weight: 8 },
     { species: 51, min: 54, max: 57, weight: 10 },
@@ -482,10 +480,10 @@ export const masques: Zone = {
     'TTTTTTTTTTTTTTTT.,,,,,,,...........T',
     'TTTRRRTTTTTTTTTT.TTTTZTT.Z.......Z.T',
     'TTTHDHTTTTTTTTTZ.TTTTTTT...........T',
-    'T.......A.TTTTTT.TTTTTTTTT.TTTTTTTTT',
-    'T........STTTTTT.TTTTTTTTT.TTTTTTTTT',
+    'T.....g.A.TTTTTT.TTTTTTTTT.TTTTTTTTT',
+    'T...C....STTTTTT.TTTTTTTTT.TTTTTTTTT',
     '.................TTTTTTTTT.TTTTTTTTT',
-    'T........ZTTTTTT.TTTTTTTTT.TTTTTTTTT',
+    'T.E......ZTTTTTT.TTTTTTTTT.TTTTTTTTT',
     'T.........TTTTTT.TTTTTTTTT.TTTTTTTTT',
     'TTTTTTTTTT,,,,,,,TTTTTTTTT.TTTTTTTTT',
     'TTTTTTTTTT,,,,,,,TT,,,,,,,,,,,,TTTTT',
@@ -534,7 +532,6 @@ export const tombouctou: Zone = {
   name: 'Tombouctou',
   theme: 'cite',
   encounterRate: 0,
-  flyPoint: { x: 5, y: 25, dir: 'haut' },
   encounters: [],
   map: [
     '###############MMMMMMMMMMM##############',
@@ -559,10 +556,10 @@ export const tombouctou: Zone = {
     'M::::::::::::::MM.......MM:::::::::::::M',
     'M::::::::::::::MMMMM.MMMMM:::::::::::::M',
     'M::::::::::::::Q::::=::::Q:::::::::::::M',
-    'M:::RRR::RRR::::::::=:::::::::RRR::::::M',
-    'M:::HDH::HDH::::::::=S::::::::HDH::::::M',
-    'M::::=:::::::V::::::=::::::::::=:::::::M',
-    'M::::=::::::::::::::=::::::::::=:::::::M',
+    'M:::RRR::RRR:@@@@@::=:::::::::RRR::::::M',
+    'M:::HDH::HDH:@@@@@::=S::::@@@@HDH::::::M',
+    'M::::=:::::::@@d@@::=:::::@@@@:=:::::::M',
+    'M::::=::::::::::::::=:::::@d@@:=:::::::M',
     'M:====================================:M',
     'M:::::::::::::::::::=:::::::::::::RRR::M',
     'M:::::::::::::O:::::=:::::::::::::HDH::M',
@@ -570,17 +567,18 @@ export const tombouctou: Zone = {
     'M::::::::::::::::::S=::::::::::::::::::M',
     'MMMMMMMMMMMMMMMMMMMM=MMMMMMMMMMMMMMMMMMM',
   ],
+  buildings: [
+    caseDeSoins(13, 22, soin('guerisseuseTombouctou', 0, 0, 'bas', ['Guérisseuse : Le Conseil est une rude épreuve. Reviens me voir autant qu’il le faudra.'])),
+    marche(26, 23, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
+        'Marchand : Les caravanes de tout le Sahel s’arrêtent ici. J’ai le meilleur de chaque pays !',
+      ]),
+  ],
   warps: [{ x: 20, y: 31, to: 'masques', tx: 18, ty: 1, dir: 'bas' }],
   signs: [
     { x: 21, y: 23, text: ['Conseil des Griots', 'Seuls les porteurs des huit insignes peuvent en franchir le seuil.'] },
     { x: 19, y: 30, text: ['Tombouctou', 'La perle du désert, cité des savants et des manuscrits.'] },
   ],
   npcs: [
-    soin('guerisseuseTombouctou', 5, 24, 'bas', ['Guérisseuse : Le Conseil est une rude épreuve. Reviens me voir autant qu’il le faudra.']),
-    boutique('marchandTombouctou', 6, 28, ['calebasseRoyale', 'mielSauvage', 'baumeAnciens', 'moringa', 'kola'], [
-      'Marchand : Les caravanes de tout le Sahel s’arrêtent ici. J’ai le meilleur de chaque pays !',
-    ]),
-    grenier('grenierTombouctou', 10, 24),
     parole('bibliothecaire', 'Bibliothécaire', 32, 10, 'bas', { skin: '#4a2a1a', outfit: '#f0ead8', accent: '#3a6ab8', headwear: 'turban' }, [
       'Bibliothécaire : Cette bibliothèque garde des manuscrits vieux de plusieurs siècles.',
       'Bibliothécaire : Astronomie, médecine, poésie… et un traité entier consacré aux Jinémon du fleuve !',

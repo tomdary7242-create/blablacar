@@ -1,7 +1,7 @@
 // Aides pour décrire les zones : apparences des PNJ et fabriques de PNJ courants.
 import type { ItemId } from './items';
 import { TRAINERS, type CharacterLook } from './trainers';
-import type { Dir, Npc } from './zones';
+import type { Building, Dir, Npc } from './zones';
 
 // ── Apparences ───────────────────────────────────────────────────────────
 export const ANCIEN: CharacterLook = { skin: '#4a2a1a', outfit: '#f0ead8', accent: '#c8a060', headwear: 'bonnet' };
@@ -31,14 +31,15 @@ export const boutique = (id: string, x: number, y: number, items: ItemId[], line
   script: { kind: 'boutique', items, lines },
 });
 
-export const grenier = (id: string, x: number, y: number): Npc => ({
-  id, name: 'Gardien du Grenier', x, y, dir: 'bas', look: { kind: 'personne', look: GARDIEN },
-  script: { kind: 'grenier', lines: ['Je garde les Jinémon qui ne voyagent pas avec toi. Ils sont au frais dans le grenier.'] },
-});
-
 export const parole = (id: string, name: string, x: number, y: number, dir: Dir, look: CharacterLook, lines: string[]): Npc => ({
   id, name, x, y, dir, look: { kind: 'personne', look }, script: { kind: 'dialogue', lines },
 });
 
 // Les dresseurs ont leur apparence définie dans trainers.ts : on la reprend.
 export const T = (id: string) => TRAINERS[id].look;
+
+/** Case de Soins (5 × 3 cases, porte au milieu) ; `healer` : le soigneur de la ville, s'il a son propre visage. */
+export const caseDeSoins = (x: number, y: number, healer?: Npc): Building => ({ kind: 'soins', x, y, healer });
+
+/** Marché (4 × 3 cases, porte en 2e colonne) et ses marchandises. */
+export const marche = (x: number, y: number, items: ItemId[], lines: string[]): Building => ({ kind: 'marche', x, y, items, lines });

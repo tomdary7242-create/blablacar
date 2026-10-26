@@ -13,16 +13,23 @@
 //   V  palmier                    Y  mirage (Insigne du Mirage)    Q  tour de banco à torons
 //   J  pirogue                    N  tente touareg                 Z  masque sur poteau
 //   I  phare
+//   g  grenier à Jinémon          C  stand de soins (on parle par-dessus, comme à un étal)
+//   @  bâtiment où l'on entre (maison, Case de Soins, Marché, sanctuaire : voir `buildings`)
+//   d  sa porte (on la franchit pour entrer)
 //
 // Dans les grottes (thème « grotte »), « , » désigne les éboulis où rôdent les Jinémon.
+// Les intérieurs ont leur propre légende (voir src/ui/interiors.ts).
 
+import type { TrackId } from '../ui/musicScore';
 import type { ItemId } from './items';
 import type { MoveId } from './moves';
 import type { CharacterLook } from './trainers';
-import { ANCIEN, ENFANT, T, VILLAGEOIS, boutique, dresseur, grenier, objet, parole, soin } from './zoneKit';
+import { chambre, linkBuildings, maison, sanctuaire } from './interiors';
+import { ENFANT, T, VILLAGEOIS, boutique, caseDeSoins, dresseur, marche, objet, parole, soin } from './zoneKit';
 import { cote, desert, djenne, hombori, masques, tombouctou } from './zonesActe2';
 
-export type ZoneId =
+/** Zones extérieures : villages, routes, sites. */
+export type TownId =
   | 'village'
   | 'savane'
   | 'terresRouges'
@@ -36,10 +43,18 @@ export type ZoneId =
   | 'cote'
   | 'masques'
   | 'tombouctou';
+/** Toutes les zones : extérieurs, intérieurs uniques et bâtiments de service de chaque ville. */
+export type ZoneId = TownId | 'maison' | 'chambre' | 'sanctuaire' | `${TownId}:soins` | `${TownId}:marche`;
 export type Dir = 'haut' | 'bas' | 'gauche' | 'droite';
 export type Theme = 'village' | 'savane' | 'laterite' | 'marigot' | 'foret' | 'piste' | 'falaise' | 'desert' | 'grotte' | 'delta' | 'cote' | 'masques' | 'cite';
 
-export const SOLID_TILES = new Set(['T', 'B', '~', '#', 'H', 'R', 'D', 'G', 'K', 'A', 'M', 'E', 'O', 'U', 'S', 'X', 'w', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I']);
+export const SOLID_TILES = new Set([
+  'T', 'B', '~', '#', 'H', 'R', 'D', 'G', 'K', 'A', 'M', 'E', 'O', 'U', 'S', 'X', 'w', 'V', 'Y', 'Q', 'J', 'N', 'Z', 'I', '@',
+  // Intérieurs : murs, fenêtres, tentures et meubles.
+  'W', 'n', 'q', 'b', 'c', 'l', 't', 'j', 'p', 'k', 'f', 'h', 'u', 'v',
+  // Grenier à Jinémon et stand de soins (aussi en plein air).
+  'g', 'C',
+]);
 export const GRASS_TILE = ',';
 
 export interface Warp {
@@ -68,6 +83,8 @@ export type NpcScript =
   | { kind: 'grenier'; lines: string[] }
   | { kind: 'dresseur'; trainer: string }
   | { kind: 'starter' }
+  /** Maman : elle envoie le joueur au sanctuaire, puis soigne son équipe. */
+  | { kind: 'maman' }
   | { kind: 'gardien'; condition: Condition; flag: string; blocked: string[]; open: string[] }
   | { kind: 'objet'; item: ItemId; quantity: number; flag: string }
   /** Un PNJ offre un objet une seule fois, puis répète `after`. */
@@ -96,7 +113,30 @@ export interface Npc {
 export interface Sign {
   x: number;
   y: number;
+  /** « {nom} » est remplacé par le nom du joueur. */
   text: string[];
+  /** Panneau du plan de la ville : affiche la carte des lieux. */
+  plan?: boolean;
+}
+
+export type InteriorStyle = 'maison' | 'soins' | 'marche' | 'sanctuaire';
+export type BuildingKind = InteriorStyle;
+
+/** Bâtiment où l'on entre ; son emprise est marquée « @ » sur la carte, sa porte « d ». */
+export interface Building {
+  kind: BuildingKind;
+  /** Coin haut-gauche de l'emprise. */
+  x: number;
+  y: number;
+  /** Intérieur où mène la porte (par défaut, celui de la Case de Soins ou du Marché de la ville). */
+  to?: ZoneId;
+  /** Nom affiché sur le plan de la ville. */
+  label?: string;
+  /** Case de Soins : le soigneur de la ville (son apparence et ses mots). */
+  healer?: Npc;
+  /** Marché : marchandises et boniment. */
+  items?: ItemId[];
+  lines?: string[];
 }
 
 export interface Zone {
@@ -118,6 +158,16 @@ export interface Zone {
   dark?: boolean;
   /** Point d'arrivée quand on y vole (devant le lieu de soin). */
   flyPoint?: { x: number; y: number; dir: Dir };
+  /** Bâtiments où l'on peut entrer. */
+  buildings?: Building[];
+  /** Intérieur : zone extérieure où il se trouve (carte, musique). */
+  parent?: TownId;
+  /** Intérieur : toujours éclairé, rendu avec murs et meubles. */
+  interior?: InteriorStyle;
+  /** Musique propre au lieu (sinon celle de la zone extérieure). */
+  music?: TrackId;
+  /** Textes propres à ce lieu pour les objets du décor (lit, étagère…). */
+  decor?: Record<string, string>;
 }
 
 // ── Zones ────────────────────────────────────────────────────────────────
@@ -125,54 +175,80 @@ export interface Zone {
 const village: Zone = {
   id: 'village',
   name: 'Village des Greniers',
-  flyPoint: { x: 18, y: 6, dir: 'haut' },
   theme: 'village',
   encounterRate: 0,
   encounters: [],
   map: [
-    'TTTTTTTTTTT=TTTTTTTTTTTT',
-    'TT"""""""""=S""""""""""T',
-    'T"""""GG"""=""""""""GG"T',
-    'T""RRR"""""="""""RRR"""T',
-    'T""HDH"""""="""""HDH"""T',
-    'T"""=""""""=""""""=""""T',
-    'T"""=""""""=""""""=""T"T',
-    'T"T"=""""""="FF"""=""T"T',
-    'T"T"=""B"""="""O""=""""T',
-    'T"""=""""""=""""""=""""T',
-    'T"""="F""""=""""F"="GG"T',
-    'T"""=""""""=""""""=""""T',
-    'T"""===============""""T',
-    'T"F""""""""="""""RRR"""T',
-    'T"""""""FF"="""""HDH"""T',
-    'T""EEE"""""=""TT""=""""T',
-    'T""""""""""========""""T',
-    'TTTTTTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTT=TTTTTTTTTTT',
+    'TTT"""""""""""""""""""""=""""""""TTT',
+    'TT"RRR""""""""""""""""""="""""""""TT',
+    'T""HDH""""""""@@@@@@@"""=S"""""""""T',
+    'T""""""""""G""@@@@@@@"""=""""""""""T',
+    'T""GG""T""""""@@@@@@@"""=""""FFF"""T',
+    'T"""""""""""""@@@d@@@"""=""""FF""""T',
+    'T""""""""""""""""=""""""=""""""""""T',
+    'T"FFF""""""""""""=""""""="""""T""""T',
+    'T"FF"""""""""""""=""""""="""""""B""T',
+    'T""""""""""==============""""""""""T',
+    'T""""@@@@""==B=======O===""@@@@@"""T',
+    'T""""@@@@""==============""@@@@@""TT',
+    'T""""@d@@""==============""@@d@@""TT',
+    'T"""""========================"""""T',
+    'T""EE""""""==============""""""""""T',
+    'T"""""""E""==============""""""FF""T',
+    'T"T"""""""""""S=""""""""""F""""""""T',
+    'T"""""""""FF"""="""""""""""""""""""T',
+    'T""""@@@@""""""="""RRR"GRRR""RRRG""T',
+    'T""""@@@@""""""="""HDH""HDH""HDH"""T',
+    'T""""@d@@S"""""="""""""""""""""""""T',
+    'T"""""=========================="T"T',
+    'T""""""""""""""""""""""""""""""""""T',
+    'T""""""""RRR""""""G"""""""""G~~~~F"T',
+    'TT"""""""HDHFF"""""T""FF""T"F~~~~"TT',
+    'TTT""""""""""""""""""""""""""""""TTT',
+    'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
   ],
-  warps: [{ x: 11, y: 0, to: 'savane', tx: 8, ty: 26, dir: 'haut' }],
-  signs: [{ x: 12, y: 1, text: ['↑ Savane des Termitières', '→ Terres Rouges et la Forge'] }],
+  buildings: [
+    { kind: 'sanctuaire', x: 14, y: 3, to: 'sanctuaire', label: 'Sanctuaire du Hogon' },
+    { kind: 'soins', x: 27, y: 11 },
+    {
+      kind: 'marche', x: 5, y: 11,
+      items: ['calebasse', 'karite', 'moringa'],
+      lines: ['Marchande : Approche ! Calebasses, karité et moringa, tout ce qu’il faut pour ta première aventure !'],
+    },
+    { kind: 'maison', x: 5, y: 19, to: 'maison', label: 'Ta maison' },
+  ],
+  warps: [{ x: 24, y: 0, to: 'savane', tx: 8, ty: 26, dir: 'haut' }],
+  signs: [
+    { x: 14, y: 17, plan: true, text: ['Plan du Village des Greniers'] },
+    { x: 9, y: 21, text: ['Maison de {nom}'] },
+    { x: 25, y: 3, text: ['↑ Savane des Termitières', 'Au-delà : les Terres Rouges et la Forge.'] },
+  ],
   npcs: [
-    { id: 'ancien', name: 'Ancien', x: 4, y: 5, dir: 'bas', look: { kind: 'personne', look: ANCIEN }, script: { kind: 'starter' } },
-    soin('guerisseuse', 18, 5, 'bas', ['Bienvenue dans ma case. Laisse-moi soigner tes Jinémon avec mes plantes.']),
-    boutique('marchande', 4, 14, ['calebasse', 'karite', 'moringa'], ['Approche ! Calebasses et remèdes du marché !']),
-    grenier('gardienGrenier', 8, 3),
-    parole('maman', 'Maman', 20, 15, 'gauche', { skin: '#5a3420', outfit: '#b84ae8', accent: '#f0c040', headwear: 'foulard' }, [
-      'Maman : Tu pars déjà ? Sois prudent dans les hautes herbes.',
-      'Maman : Si tes Jinémon sont fatigués, la guérisseuse du village les soignera.',
-    ]),
-    parole('conteur', 'Vieux Conteur', 7, 9, 'bas', { skin: '#3a2214', outfit: '#e8e0c8', accent: '#9c8a5a', headwear: 'chapeau' }, [
+    parole('conteur', 'Vieux Conteur', 14, 11, 'bas', { skin: '#3a2214', outfit: '#e8e0c8', accent: '#9c8a5a', headwear: 'chapeau' }, [
       'Conteur : Sous ce baobab, on raconte les légendes depuis des siècles.',
       'Conteur : Les Jinémon naissent des forces de la nature et des histoires que les peuples se transmettent.',
       'Conteur : Ici, ce sont les contes du fleuve et de la savane : Ci Wara, les Nommo, Leuk le Lièvre…',
       'Conteur : Mais les caravanes ont aussi apporté des légendes venues de très loin : dragons, renards à neuf queues, feux follets…',
       'Conteur : Tous ont trouvé leur place dans notre monde. Le Ginédex les recense tous.',
     ]),
-    parole('enfant', 'Enfant', 14, 11, 'gauche', ENFANT, [
-      'Enfant : Au nord, il y a des termitières plus hautes que moi ! Et des Jinémon cachés dans les herbes !',
+    parole('enfant', 'Enfant', 20, 12, 'droite', ENFANT, [
+      'Enfant : Au nord, il y a des termitières plus hautes que moi ! Et des Jinémon cachés dans les hautes herbes !',
+    ]),
+    parole('voisine', 'Voisine', 12, 22, 'gauche', { skin: '#6a4028', outfit: '#e85a8f', accent: '#f0c040', headwear: 'foulard' }, [
+      'Voisine : Bonjour {nom} ! Tu cherches le sanctuaire du Hogon ? Remonte la rue jusqu’à la place : il est tout au nord.',
+      'Voisine : Si tu te perds, le plan du village est affiché sur la place, près du chemin.',
+    ]),
+    parole('cultivateur', 'Cultivateur', 25, 15, 'bas', VILLAGEOIS, [
+      'Cultivateur : Le bâtiment blanc au toit vert, c’est la Case de Soins. On y soigne les Jinémon, gratuitement.',
+      'Cultivateur : Il y en a une dans chaque ville, toujours la même. Et le toit de chaume à l’ouest de la place, c’est le Marché.',
+    ]),
+    parole('grandMere', 'Grand-mère', 22, 21, 'bas', { skin: '#3a2214', outfit: '#3a86c8', accent: '#f0f0f0', headwear: 'foulard' }, [
+      'Grand-mère : Les greniers du village ne désemplissent jamais. Les Jinémon des champs veillent sur le mil.',
     ]),
     {
-      id: 'sidiki', name: 'Sidiki', x: 11, y: 1, dir: 'bas', look: { kind: 'personne', look: VILLAGEOIS },
-      script: { kind: 'dialogue', lines: ['Sidiki : Attends ! L’Ancien veut te voir avant que tu partes. Sa case est à l’ouest du village.'] },
+      id: 'sidiki', name: 'Sidiki', x: 24, y: 2, dir: 'bas', look: { kind: 'personne', look: VILLAGEOIS },
+      script: { kind: 'dialogue', lines: ['Sidiki : Attends ! Le Hogon veut te voir avant que tu partes. Son sanctuaire est au nord de la place.'] },
       hideFlag: 'starter',
     },
   ],
@@ -241,7 +317,7 @@ const savane: Zone = {
     'TTTTTTTT=TTTTTTTTTTTTTTTTTTTTTTT',
   ],
   warps: [
-    { x: 8, y: 27, to: 'village', tx: 11, ty: 1, dir: 'bas' },
+    { x: 8, y: 27, to: 'village', tx: 24, ty: 1, dir: 'bas' },
     { x: 31, y: 6, to: 'terresRouges', tx: 1, ty: 8, dir: 'droite' },
   ],
   signs: [{ x: 9, y: 25, text: ['Savane des Termitières', 'Attention : des Jinémon sauvages se cachent dans les hautes herbes !'] }],
@@ -259,7 +335,6 @@ const savane: Zone = {
 const terresRouges: Zone = {
   id: 'terresRouges',
   name: 'Terres Rouges',
-  flyPoint: { x: 4, y: 8, dir: 'haut' },
   theme: 'laterite',
   encounterRate: 0.1,
   encounters: [
@@ -289,9 +364,9 @@ const terresRouges: Zone = {
     '#LLLLRRRLLLLLLL=LLLLLLRRRLLLL#',
     '#LLLLHDHLLLLLLL=LLLLLLHDHLLLL#',
     '###############X##############',
-    '#TLLLLLLLLLLLLL=LLLLLLLLLLLLL#',
-    '#LLRRRLLEEELGGL=LLLFFLLLLLLTL#',
-    '#LLHDHLLLLLLLLL=LLLLLLLLLLTLL#',
+    '#TLLLLLLL@@@@LL=LLL@@@@@LLLLL#',
+    '#LLRRRLEE@@@@GL=LLL@@@@@LLLTL#',
+    '#LLHDHLLL@d@@LL=LLL@@d@@LLTLL#',
     '#LLLLLLLLLLLLLL=LLLLLLLLLLLLL#',
     '========================LLLLL#',
     '#LLLLLLLLLLLLLSLLLLLLLL=LLLLL#',
@@ -310,6 +385,10 @@ const terresRouges: Zone = {
     '#LLLLLLLLLLLLLLLLLLLLLLLLLLLL#',
     '##############################',
   ],
+  buildings: [
+    caseDeSoins(19, 4, soin('guerisseuseTR', 0, 0, 'bas', ['Les Terres Rouges sont rudes. Repose tes Jinémon ici.'])),
+    marche(9, 4, ['calebasse', 'calebasseOrnee', 'karite', 'bissap', 'moringa'], ['Du solide, du forgé, du testé ! Que veux-tu ?']),
+  ],
   warps: [
     { x: 0, y: 8, to: 'savane', tx: 30, ty: 6, dir: 'gauche' },
     { x: 15, y: 0, to: 'marigot', tx: 16, ty: 26, dir: 'haut' },
@@ -319,9 +398,6 @@ const terresRouges: Zone = {
     { x: 14, y: 9, text: ['↑ Marigot des Ancêtres', 'Le passage est obstrué par des rochers fissurés.'] },
   ],
   npcs: [
-    soin('guerisseuseTR', 4, 7, 'bas', ['Les Terres Rouges sont rudes. Repose tes Jinémon ici.']),
-    boutique('marchandTR', 9, 6, ['calebasse', 'calebasseOrnee', 'karite', 'bissap', 'moringa'], ['Du solide, du forgé, du testé ! Que veux-tu ?']),
-    grenier('grenierTR', 12, 6),
     parole('mineur', 'Mineur', 16, 4, 'bas', VILLAGEOIS, [
       'Mineur : Ces rochers fissurés bloquent la route du Marigot.',
       'Mineur : Seul un Jinémon maîtrisant le Métal pourrait les briser… avec la permission du Maître Sirafa et son Insigne de l’Enclume.',
@@ -356,7 +432,6 @@ const marigot: Zone = {
     { species: 93, min: 16, max: 19, weight: 6 },
     { species: 37, min: 18, max: 20, weight: 2 },
   ],
-  flyPoint: { x: 3, y: 24, dir: 'droite' },
   theme: 'marigot',
   encounterRate: 0.1,
   encounters: [
@@ -406,16 +481,22 @@ const marigot: Zone = {
     'T",,,,,,"~~~~~""""""~~~~~""="~~~~T',
     'T",,,,,,"~~~~~B""""B~~~~~""="~~~~T',
     'T",,,,,,"~~~~~~~P~~~~~~~~""="~~~~T',
-    'T",,,,,,"~~~~~~~P~~~~~~~~""="~~~~T',
-    'T""""""""~~~~~~~P~~~~~~~~""="~~~~T',
-    'T"T""""""""""""S=""""""""""="~~~~T',
+    'T",@@@@@"~~~~~~~P~~~~~~~~""="~~~~T',
+    'T""@@@@@"~~~~~~~P~~~~~~~~""="~~~~T',
+    'T"T@@d@@"""""""S=""""""""""="~~~~T',
     'T""==========================~~~~T',
-    'T""RRR""""""""""=""""""""""""~~~~T',
-    'T""HDH""""GG""""="""""""EEE""~~~~T',
-    'T"""""""T"""""""="""""T""""""~~~~T',
-    'T",,,,,,,"""FF""=""""F"""""""~~~~T',
+    'T""RRR""""""""""="""@@@@"""""~~~~T',
+    'T""HDH""""GG""""="""@@@@EEE""~~~~T',
+    'T"""""""T"""""""="""@d@@"""""~~~~T',
+    'T",,,,,,,"""FF""======"""""""~~~~T',
     'T",,,,,,,"""""""="""F""""""""~~~~T',
     'TTTTTTTTTTTTTTTT=TTTTTTTTTTTTTTTTT',
+  ],
+  buildings: [
+    caseDeSoins(3, 18, soin('pecheurSoin', 0, 0, 'bas', ['Vieux Pêcheur : Assieds-toi, petit. L’eau du marigot guérit bien des maux.'], {
+        skin: '#4a2a1a', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau',
+      })),
+    marche(20, 22, ['calebasse', 'calebasseOrnee', 'bissap', 'moringa', 'kola'], ['Poisson séché ? Non ? Alors des calebasses, peut-être !']),
   ],
   warps: [
     { x: 16, y: 27, to: 'terresRouges', tx: 15, ty: 1, dir: 'bas' },
@@ -426,11 +507,6 @@ const marigot: Zone = {
     { x: 28, y: 9, text: ['Gué du Marigot', 'Seul un Jinémon Eau, guidé par l’Insigne de la Pluie, peut vous faire traverser.'] },
   ],
   npcs: [
-    soin('pecheurSoin', 4, 24, 'bas', ['Vieux Pêcheur : Assieds-toi, petit. L’eau du marigot guérit bien des maux.'], {
-      skin: '#4a2a1a', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau',
-    }),
-    boutique('marchandeMarigot', 25, 22, ['calebasse', 'calebasseOrnee', 'bissap', 'moringa', 'kola'], ['Poisson séché ? Non ? Alors des calebasses, peut-être !']),
-    grenier('grenierMarigot', 10, 22),
     parole('passeuse', 'Passeuse', 28, 11, 'haut', VILLAGEOIS, [
       'Passeuse : Le gué mène à la Forêt Sacrée. Le courant y est trop fort pour traverser à pied.',
       'Passeuse : Avec l’Insigne de la Pluie, un Jinémon Eau pourra te porter de l’autre côté.',
@@ -504,7 +580,7 @@ const foret: Zone = {
     'TT"""."""TTTTTTTTTTT...........TTTTT',
     'TTF""A"""TTTTTTTTTTTT,,,,,,B,,TTTTTT',
     'TT"""""""TTTTTTTTTTTT,,,,,,,,,TTTTTT',
-    'TT"""""F"TTTTTTTTTTTT,,,,,,,,,TTTTTT',
+    'TT"g"C"F"TTTTTTTTTTTT,,,,,,,,,TTTTTT',
     'TT"F"""""TTTTTTTTTTTT,,,,,,,,,TTTTTT',
     'TT"""""""TTTTTTTTTTTTTTTTTTTTTTTTTTT',
     'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
@@ -516,7 +592,7 @@ const foret: Zone = {
   ],
   signs: [{ x: 11, y: 12, text: ['Forêt Sacrée', 'Ne cueillez rien sans demander la permission aux génies.'] }],
   npcs: [
-    soin('pretresse', 5, 21, 'haut', ['Prêtresse : Les génies de l’autel veillent sur les voyageurs. Que tes Jinémon retrouvent leurs forces.'], {
+    soin('pretresse', 5, 20, 'bas', ['Prêtresse : Les génies de l’autel veillent sur les voyageurs. Que tes Jinémon retrouvent leurs forces.'], {
       skin: '#3a2214', outfit: '#e4b6e8', accent: '#f0f0f0', headwear: 'turban',
     }),
     dresseur('rival2', 20, 11, 'haut', T('rival2'), 'dresseur:rival2'),
@@ -533,7 +609,7 @@ const foret: Zone = {
 const piste: Zone = {
   id: 'piste',
   name: 'Piste des Chasseurs Donzos',
-  flyPoint: { x: 4, y: 18, dir: 'haut' },
+  flyPoint: { x: 14, y: 18, dir: 'haut' },
   theme: 'piste',
   encounterRate: 0.1,
   encounters: [
@@ -582,7 +658,7 @@ const piste: Zone = {
     'T""===========""""T.........TT',
     'T""RRR""""""""""""T.........TT',
     'T""HDH""EEE"G"""""T....K....TT',
-    'T"""""""""""""""""T.........TT',
+    'T"""""""""""""C"g"T.........TT',
     'T""""""""""F""""U"T.........TT',
     'T",,,,,,,,,,,"""""TB.......BTT',
     'T",,U,,,,,,,,"""""TTTTTTTTTTTT',
@@ -599,13 +675,12 @@ const piste: Zone = {
     { x: 16, y: 3, text: ['↑ Falaise des Ancêtres', 'Accès réservé aux porteurs des trois insignes.'] },
   ],
   npcs: [
-    soin('guerisseurDonzo', 4, 17, 'bas', ['Guérisseur : Les chasseurs connaissent les plantes de la brousse. Tes Jinémon seront vite sur pied.'], {
+    soin('guerisseurDonzo', 14, 16, 'bas', ['Guérisseur : Les chasseurs connaissent les plantes de la brousse. Tes Jinémon seront vite sur pied.'], {
       skin: '#3a2214', outfit: '#9c7a4a', accent: '#e8e0c8', headwear: 'bonnet',
     }),
     boutique('marchandPiste', 9, 15, ['calebasseOrnee', 'calebasseAncetres', 'bissap', 'painDeSinge', 'moringa', 'kola'], [
       'Les chasseurs ne partent jamais sans provisions. Toi non plus, j’espère !',
     ]),
-    grenier('grenierPiste', 12, 15),
     {
       id: 'gardienFalaise', name: 'Gardien de la Falaise', x: 15, y: 2, dir: 'bas',
       look: { kind: 'personne', look: { skin: '#3a2214', outfit: '#f0ead8', accent: '#c8401a', headwear: 'masque' } },
@@ -638,7 +713,7 @@ const falaise: Zone = {
     { species: 92, min: 38, max: 41, weight: 8 },
     { species: 39, min: 40, max: 42, weight: 2 },
   ],
-  flyPoint: { x: 13, y: 24, dir: 'gauche' },
+  flyPoint: { x: 12, y: 25, dir: 'haut' },
   theme: 'falaise',
   encounterRate: 0.1,
   encounters: [
@@ -704,7 +779,7 @@ const falaise: Zone = {
     '###############.S###############',
     '##########...........###########',
     '##########...........###########',
-    '##########...........###########',
+    '##########g.C.....EE.###########',
     '##########...........###########',
     '##########.T.......T.###########',
     '##########...........###########',
@@ -717,10 +792,10 @@ const falaise: Zone = {
   ],
   signs: [{ x: 16, y: 21, text: ['Falaise des Ancêtres', 'Au sommet : le Panthéon des Légendes.'] }],
   npcs: [
-    soin('ermite', 12, 24, 'droite', ['Ermite : L’air de la falaise est pur. Que tes Jinémon s’y reposent.'], {
+    soin('ermite', 12, 23, 'bas', ['Ermite : L’air de la falaise est pur. Que tes Jinémon s’y reposent.'], {
       skin: '#3a2214', outfit: '#e8e0d0', accent: '#9c8a5a', headwear: 'turban',
     }),
-    boutique('colporteur', 18, 24, ['calebasseAncetres', 'painDeSinge', 'moringa', 'kola'], [
+    boutique('colporteur', 18, 23, ['calebasseAncetres', 'painDeSinge', 'moringa', 'kola'], [
       'Colporteur : J’ai traîné ma charrette jusqu’ici. Mes prix tiennent compte de l’altitude !',
     ]),
     dresseur('moctar', 10, 15, 'droite', T('moctar')),
@@ -766,7 +841,9 @@ const falaise: Zone = {
   ],
 };
 
-export const ZONES: Record<ZoneId, Zone> = { village, savane, terresRouges, marigot, foret, piste, falaise, desert, hombori, djenne, cote, masques, tombouctou };
+const OUTDOOR = [village, savane, terresRouges, marigot, foret, piste, falaise, desert, hombori, djenne, cote, masques, tombouctou];
+const UNIQUE = [maison, chambre, sanctuaire];
+export const ZONES = Object.fromEntries([...OUTDOOR, ...UNIQUE, ...linkBuildings(OUTDOOR, UNIQUE)].map((z) => [z.id, z])) as Record<ZoneId, Zone>;
 
 /** Lieux où l'on rencontre une espèce (« Savane des Termitières (nuit) »…). */
 export function habitats(speciesId: number): string[] {

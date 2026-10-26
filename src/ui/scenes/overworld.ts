@@ -13,11 +13,13 @@ import {
   ZONES,
   type Dir,
   type Npc,
+  type TownId,
   type Zone,
   type ZoneId,
 } from '../../data/zones';
 import { MINUTES_PER_SECOND, advance, advanceTo, darknessOf, isNight, nightId, phaseOf, warmthOf } from '../../engine/clock';
 import { createJinemon, displayName } from '../../engine/creature';
+import { currentObjective } from '../../engine/objective';
 import { addItem, giveStarter, hasBadge, healParty, itemCount } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { startTrainerBattle, startWildBattle } from '../battleFlow';
@@ -32,9 +34,11 @@ import { battleBackdrop } from '../backdrops';
 import { HauntActor, type HauntHost } from '../haunts';
 import { NightLayer, type Light } from '../night';
 import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
+import { renderInteriorLayers } from '../interiors';
 import { TILE, animateTile, grassOverlay, itemBall, renderZoneLayers, type ZoneLayers } from '../tiles';
 import { MenuScene } from './menu';
 import { ShopScene } from './shop';
+import { PlanScene } from './plan';
 import { StarterScene } from './starter';
 import { StorageScene } from './storage';
 import { CoverScene, RevealScene } from './transition';
@@ -51,7 +55,22 @@ const DECOR_TEXT: Record<string, string> = {
   E: 'L’étal déborde de tissus, d’épices et de calebasses.',
   D: 'La porte est fermée. Une bonne odeur de tô s’échappe de la case.',
   '~': "L'eau est profonde ici. Mieux vaut ne pas s'y aventurer.",
+  l: 'Un lit bien fait, couvert d’un pagne.',
+  t: 'Une table basse. Quelques bols y attendent le repas.',
+  j: 'Le canari garde l’eau bien fraîche.',
+  b: 'Une étagère chargée de pots et de calebasses.',
+  p: 'Une plante en pot.',
+  k: 'Un coffre fermé. Mieux vaut ne pas fouiller chez les autres.',
+  f: 'Une marmite mijote sur le foyer.',
+  h: 'Un étal de marchandises.',
+  u: 'Une statue d’ancêtre sculptée dans l’ébène.',
+  v: 'Les flammes du brasero dansent doucement.',
+  n: 'La lumière du jour entre par la fenêtre.',
+  q: 'Une tenture colorée orne le mur.',
 };
+
+/** Meubles par-dessus lesquels on parle à la personne qui se tient derrière. */
+const COUNTERS = new Set(['c', 'C', 'E']);
 
 /** Portée du regard des dresseurs, en cases. */
 const SIGHT = 4;
@@ -67,8 +86,8 @@ function exclamation(ctx: CanvasRenderingContext2D, x: number, y: number): void 
   ctx.fillRect(x + 3, y + 8, 3, 2);
 }
 
-/** Thème musical de chaque zone. */
-const ZONE_MUSIC: Record<ZoneId, TrackId> = {
+/** Thème musical de chaque zone extérieure (les intérieurs ont le leur, ou reprennent celui de leur ville). */
+const ZONE_MUSIC: Record<TownId, TrackId> = {
   village: 'village',
   savane: 'route',
   terresRouges: 'ville',
@@ -124,10 +143,12 @@ export class OverworldScene implements Scene, World {
 
   /** Musique de la zone ; la nuit, une berceuse inquiète, et le silence quand une Hantise approche. */
   get music(): TrackId | null {
+    const zone = this.zone;
+    if (zone.interior) return zone.music ?? ZONE_MUSIC[zone.parent ?? 'village'];
     const night = isNight(this.game.s.clock);
     if (night && this.haunt && this.haunt.distance() <= 7) return null;
-    if (night && !this.zone.dark && this.zone.id !== 'tombouctou') return 'nuit';
-    return ZONE_MUSIC[this.zone.id];
+    if (night && !zone.dark && zone.id !== 'tombouctou') return 'nuit';
+    return zone.music ?? ZONE_MUSIC[zone.id as TownId];
   }
 
   /** Sculpte à l'avance les sprites de l'équipe (menus et combat). */
@@ -172,7 +193,8 @@ export class OverworldScene implements Scene, World {
   }
 
   private redrawMap(): void {
-    this.layers = renderZoneLayers(this.zone, (x, y) => this.tile(x, y));
+    const tile = (x: number, y: number) => this.tile(x, y);
+    this.layers = this.zone.interior ? renderInteriorLayers(this.zone, tile) : renderZoneLayers(this.zone, tile);
   }
 
   teleport(zone: ZoneId, x: number, y: number, dir: Dir): void {
@@ -531,7 +553,8 @@ export class OverworldScene implements Scene, World {
       this.game.say(['Excusez-moi… vous savez où mène cette piste ?', '…', '… … …']);
       return;
     }
-    const npc = this.npcAt(tx, ty);
+    // Par-dessus un comptoir, un étal ou un stand, on parle à la personne qui se tient derrière.
+    const npc = this.npcAt(tx, ty) ?? (COUNTERS.has(this.tile(tx, ty)) ? this.npcAt(tx + dx, ty + dy) : undefined);
     if (npc) {
       if (npc.look.kind === 'personne') this.npcDirs.set(npc.id, OPPOSITE[this.dir]);
       this.runNpc(npc);
@@ -539,11 +562,15 @@ export class OverworldScene implements Scene, World {
     }
     const sign = this.zone.signs.find((s) => s.x === tx && s.y === ty);
     if (sign) {
-      this.game.say(sign.text);
+      if (sign.plan) this.game.scenes.push(new PlanScene(this.game, this.zone, { x: this.x, y: this.y }));
+      else this.game.say(this.personal(sign.text));
       return;
     }
     const t = this.tile(tx, ty);
-    if (t === 'X') {
+    if (t === 'g') {
+      this.game.sfx('valider');
+      this.game.say(['Tu ouvres le grenier à Jinémon.'], () => this.game.scenes.push(new StorageScene(this.game)));
+    } else if (t === 'X') {
       this.crackedRock(tx, ty);
     } else if (t === 'w') {
       this.ford();
@@ -551,9 +578,14 @@ export class OverworldScene implements Scene, World {
       this.mirage();
     } else if (t === '~' && itemCount(this.game.s, 'nasse') > 0 && this.zone.fishing?.length) {
       this.fish();
-    } else if (DECOR_TEXT[t]) {
-      this.game.say([DECOR_TEXT[t]]);
+    } else if (this.zone.decor?.[t] ?? DECOR_TEXT[t]) {
+      this.game.say([this.zone.decor?.[t] ?? DECOR_TEXT[t]]);
     }
+  }
+
+  /** Remplace « {nom} » par le nom du joueur. */
+  private personal(lines: string[]): string[] {
+    return lines.map((l) => l.replaceAll('{nom}', this.game.s.playerName));
   }
 
   private crackedRock(x: number, y: number): void {
@@ -636,7 +668,10 @@ export class OverworldScene implements Scene, World {
     const s = npc.script;
     switch (s.kind) {
       case 'dialogue':
-        game.say(s.lines);
+        game.say(this.personal(s.lines));
+        break;
+      case 'maman':
+        this.maman();
         break;
       case 'soin':
         game.ask([...s.lines, 'Veux-tu que je soigne tes Jinémon ?'], ['Oui', 'Se reposer', 'Non'], (i) => {
@@ -667,7 +702,7 @@ export class OverworldScene implements Scene, World {
         break;
       }
       case 'starter':
-        this.ancien();
+        this.hogon();
         break;
       case 'gardien': {
         const c = s.condition;
@@ -739,16 +774,51 @@ export class OverworldScene implements Scene, World {
     });
   }
 
-  private ancien(): void {
+  /** Maman : au réveil, elle envoie le joueur au sanctuaire ; ensuite, elle soigne son équipe. */
+  private maman(): void {
+    const game = this.game;
+    const state = game.s;
+    const name = state.playerName;
+    if (!state.flags.maman && !state.flags.starter) {
+      game.say(
+        [
+          `Maman : Ah, ${name} ! Enfin debout ! Le soleil est levé depuis longtemps, tu sais.`,
+          'Maman : Tu as oublié quel jour on est ? C’est aujourd’hui ton initiation !',
+          'Maman : Le Hogon t’attend au sanctuaire depuis l’aube. Il va te confier ton premier Jinémon.',
+          'Maman : Le sanctuaire est tout au nord de la place du village. Sors, remonte la rue, et suis le chemin.',
+          'Maman : Si tu te perds, regarde le plan sur la place, ou ouvre ton menu : la CARTE te rappelle toujours où aller.',
+          'Maman : Allez, file ! Et reviens me voir quand tu veux : un bon repas et une sieste, rien de tel pour tes Jinémon.',
+        ],
+        () => {
+          state.flags.maman = true;
+          game.save(true);
+        },
+      );
+      return;
+    }
+    if (!state.party.length) {
+      game.say(['Maman : Qu’est-ce que tu fais encore là ? Le Hogon t’attend au sanctuaire, au nord de la place !']);
+      return;
+    }
+    game.say([`Maman : ${name} ! Tu as l’air à bout de forces. Assieds-toi, et laisse tes Jinémon se reposer un peu.`], () => {
+      healParty(state);
+      state.lastHeal = { zone: this.zone.id, x: this.x, y: this.y, dir: this.dir };
+      game.jingle('soin');
+      game.say(['… … …', 'Maman : Voilà, tout le monde est en pleine forme ! Fais attention à toi, mon enfant.'], () => game.save());
+    });
+  }
+
+  /** Le Hogon, chef spirituel du village : il confie le premier Jinémon, puis guide le joueur. */
+  private hogon(): void {
     const game = this.game;
     const state = game.s;
     if (!state.flags.starter) {
       game.say(
         [
-          `Ancien : Ah, ${state.playerName}. Approche, mon enfant.`,
-          'Ancien : Depuis toujours, notre peuple vit aux côtés des Jinémon, ces créatures nées des forces de la nature et des légendes.',
-          "Ancien : Aujourd'hui commence ton initiation. Comme le veut la tradition, je vais te confier ton premier compagnon.",
-          'Ancien : Trois Calebasses Sacrées t’attendent. Choisis avec ton cœur.',
+          `Hogon : Ah, ${state.playerName}. Te voilà enfin. Approche, mon enfant.`,
+          'Hogon : Depuis toujours, notre peuple vit aux côtés des Jinémon, ces créatures nées des forces de la nature et des légendes.',
+          "Hogon : Aujourd'hui commence ton initiation. Comme le veut la tradition, je vais te confier ton premier compagnon.",
+          'Hogon : Trois Calebasses Sacrées reposent sur l’autel. Choisis avec ton cœur.',
         ],
         () =>
           game.scenes.push(
@@ -760,11 +830,12 @@ export class OverworldScene implements Scene, World {
               game.say(
                 [
                   `Vous recevez ${displayName(j)} !`,
-                  `Ancien : ${displayName(j)} t’a choisi autant que tu l’as choisi.`,
-                  'Ancien : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
-                  "Ancien : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
-                  'Ancien : Ma petite-fille Kady est partie devant avec son propre Jinémon. Elle t’attend sûrement dans la savane.',
-                  'Ancien : Plus loin, les Maîtres de Piste gardent les Arènes. Gagne leurs insignes, et peut-être atteindras-tu un jour le Panthéon des Légendes.',
+                  `Hogon : ${displayName(j)} t’a choisi autant que tu l’as choisi.`,
+                  'Hogon : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
+                  "Hogon : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
+                  'Hogon : Ma petite-fille Kady est partie devant avec son propre Jinémon. Elle t’attend dans la Savane des Termitières, au nord du village.',
+                  'Hogon : Si tes Jinémon sont fatigués, va à la Case de Soins : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
+                  'Hogon : Plus loin, les Maîtres de Piste gardent les Arènes. Gagne leurs insignes, et peut-être atteindras-tu un jour le Panthéon des Légendes.',
                 ],
                 () => game.save(),
               );
@@ -774,26 +845,10 @@ export class OverworldScene implements Scene, World {
       return;
     }
     const caught = state.dex.caught.length;
-    const hints = [
-      'La Forge des Terres Rouges se trouve à l’est de la savane. Le Maître Sirafa y attend les Initiés.',
-      'Le Marigot des Ancêtres est au nord des Terres Rouges, derrière les rochers fissurés.',
-      'Au-delà du gué du marigot s’étend la Forêt Sacrée, puis la piste des chasseurs.',
-      'Avec trois insignes, la Falaise des Ancêtres t’est ouverte. La Gardienne du Panthéon t’y attend.',
-    ];
-    const acte2 = [
-      'Au nord de la falaise commence le Désert des Djinns. La Reine des Sables règne sur l’oasis.',
-      'Les mirages dissipés, la route mène aux monts de Hombori. Dogo y garde la Main de Fatma.',
-      'Au-delà de Hombori, Djenné et le Delta. Ténin y parle au dragon du fleuve.',
-      'Le pont du sud mène à la Côte des Alizés. Ndiaga règne sur les vents depuis son phare.',
-      'Le Bois des Masques cache le repaire des Masques Brisés… et le dernier Maître de Piste.',
-      'Huit insignes ! Le Conseil des Griots t’attend à Tombouctou.',
-    ];
     const hint = state.flags['dresseur:kadyChampion']
       ? 'Champion du Mandé… Mon enfant, les griots chanteront ton nom pendant des siècles.'
-      : state.flags['dresseur:assa']
-        ? acte2[Math.max(0, Math.min(state.badges.length - 3, 5))]
-        : hints[Math.min(state.badges.length, 3)];
-    game.say([`Ancien : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${SPECIES.length}.`, `Ancien : ${hint}`]);
+      : currentObjective(state).text;
+    game.say([`Hogon : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${SPECIES.length}.`, `Hogon : ${hint}`]);
   }
 
   // ── Rendu ──────────────────────────────────────────────────────────────
@@ -829,7 +884,7 @@ export class OverworldScene implements Scene, World {
     for (let ty = y0; ty < Math.min(this.zone.map.length, y0 + H / TILE + 2); ty++) {
       for (let tx = x0; tx < Math.min(this.zone.map[0].length, x0 + W / TILE + 2); tx++) {
         const ch = this.zone.map[ty][tx];
-        if (ch === '~' || ch === 'w' || ch === 'K') animateTile(ctx, ch, tx * TILE + ox, ty * TILE + oy, time);
+        if (ch === '~' || ch === 'w' || ch === 'K' || ch === 'v' || ch === 'f') animateTile(ctx, ch, tx * TILE + ox, ty * TILE + oy, time);
       }
     }
 
@@ -920,6 +975,8 @@ export class OverworldScene implements Scene, World {
     const clock = this.game.s.clock;
     const time = this.game.time;
     // Dans les grottes, il fait toujours noir : seul un Jinémon Feu éclaire vraiment.
+    // Les intérieurs restent éclairés à toute heure.
+    if (this.zone.interior) return;
     const dark = !!this.zone.dark;
     const darkness = dark ? Math.max(0.9, darknessOf(clock.minute)) : darknessOf(clock.minute);
     const warmth = dark ? 0 : warmthOf(clock.minute);
@@ -933,7 +990,7 @@ export class OverworldScene implements Scene, World {
         const cx = tx * TILE + ox + 8;
         const cy = ty * TILE + oy + 8;
         if (ch === 'K') lights.push({ x: cx, y: cy, r: 34 + Math.sin(time * 11 + tx) * 2 });
-        else if (ch === 'D') lights.push({ x: cx, y: cy + 4, r: 22 });
+        else if (ch === 'D' || ch === 'd') lights.push({ x: cx, y: cy + 4, r: ch === 'd' ? 28 : 22 });
         else if (ch === 'A') lights.push({ x: cx, y: cy, r: 16 });
       }
     }

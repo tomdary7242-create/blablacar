@@ -139,14 +139,17 @@ export function startWorld(game: Game, state: ReturnType<typeof newGameState>, i
     return;
   }
   game.save(true);
-  // Le dialogue d'accueil s'ouvre une fois le fondu terminé.
+  // Réveil dans la chambre : Maman appelle depuis le salon.
+  const touch = document.body.classList.contains('tactile');
   game.scenes.push(
-    new RevealScene(game, 0.6, () =>
+    new RevealScene(game, 0.9, () =>
       game.say([
-      `Bienvenue dans le monde de Ginémon, ${state.playerName} !`,
-      'Ici, au Village des Greniers, les Jinémon vivent aux côtés des hommes depuis la nuit des temps.',
-      "Aujourd'hui est le jour de ton initiation. L'Ancien t'attend dans sa case, à l'ouest du village.",
-      'Flèches ou ZQSD pour te déplacer, Entrée ou Espace pour parler, Échap pour le menu, Maj pour courir.',
+        '… … …',
+        `Maman (d’en bas) : ${state.playerName} ! Debout ! Tu as encore beaucoup trop dormi !`,
+        'Maman : Descends vite, je t’attends au salon. C’est un grand jour aujourd’hui !',
+        touch
+          ? 'Croix pour te déplacer, A pour parler, B maintenu pour courir, ☰ pour le menu. L’escalier est en haut à droite de ta chambre.'
+          : 'Flèches ou ZQSD pour te déplacer, Entrée pour parler, Maj pour courir, Échap pour le menu. L’escalier est en haut à droite de ta chambre.',
       ]),
     ),
   );

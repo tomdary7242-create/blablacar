@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { addItem, giveStarter, markSeen, newGameState } from '../src/engine/gameState';
-import { SAVE_KEY, deleteSave, hasSave, loadGame, saveGame, type StorageLike } from '../src/engine/saveManager';
+import { ZONES } from '../src/data/zones';
+import { START_POSITION, addItem, giveStarter, markSeen, newGameState } from '../src/engine/gameState';
+import { SAVE_KEY, deleteSave, hasSave, loadGame, saveGame, standable, type StorageLike } from '../src/engine/saveManager';
 import { seededRng } from '../src/engine/rng';
 
 function memoryStorage(): StorageLike & { data: Map<string, string> } {
@@ -59,7 +60,21 @@ describe('Gestionnaire de sauvegarde', () => {
     expect(loaded.party).toHaveLength(1);
     expect(loaded.inventory).toEqual({});
     expect(loaded.badges).toEqual([]);
-    expect(loaded.position.zone).toBe('village');
+    expect(loaded.position).toEqual(START_POSITION);
+  });
+
+  it('ramène en lieu sûr une position devenue invalide (carte redessinée)', () => {
+    const storage = memoryStorage();
+    const state = newGameState('Ama');
+    giveStarter(state, 1, seededRng(3));
+    // Dans l'ancien village, on se tenait là où s'élève aujourd'hui le sanctuaire.
+    state.position = { zone: 'village', x: 18, y: 4, dir: 'bas' };
+    state.lastHeal = { zone: 'terresRouges', x: 4, y: 5, dir: 'bas' };
+    saveGame(state, storage);
+    const loaded = loadGame(storage)!;
+    expect(loaded.position).toEqual({ zone: 'village', ...ZONES.village.flyPoint! });
+    expect(loaded.lastHeal).toEqual({ zone: 'terresRouges', ...ZONES.terresRouges.flyPoint! });
+    expect(standable(loaded.position)).toBe(true);
   });
 
   it('efface la sauvegarde', () => {

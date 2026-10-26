@@ -50,7 +50,9 @@ export type TrackId =
   | 'hantise'
   | 'legende'
   | 'victoire'
-  | 'evolution';
+  | 'evolution'
+  | 'soins'
+  | 'maison';
 
 export type JingleId = 'soin' | 'capture' | 'insigne' | 'evolue' | 'objet';
 
@@ -158,6 +160,8 @@ const HANTISE_CH = ['Em', 'Em', 'Em', 'Bb', 'Em', 'Em', 'Bdim', 'Bb'];
 const LEGENDE_CH = ['Cm', 'Ab', 'Eb', 'Bb', 'Cm', 'Ab', 'Fm|G', 'G'];
 const VICTOIRE_CH = ['C', 'F|G', 'C|G', 'C'];
 const EVOLUTION_CH = ['Am', 'F', 'G', 'E'];
+const SOINS_CH = ['F', 'C', 'Dm', 'Bb', 'F', 'Am|Dm', 'Gm|C', 'F'];
+const MAISON_CH = ['G', 'Em', 'C', 'D', 'G', 'Em', 'Am|D', 'G'];
 
 export const TRACKS: Record<TrackId, TrackDef> = {
   // Écran titre : la kora égrène, la mélodie s'élève sur la savane.
@@ -173,6 +177,36 @@ export const TRACKS: Record<TrackId, TrackDef> = {
       { inst: 'basse', notes: bass(TITRE_CH, 'R---------R-F---') },
     ],
     drums: 'B...h...B.T.S...',
+  },
+  // Case de Soins : flûte apaisante sur la kora, comme une berceuse.
+  soins: {
+    bpm: 96,
+    loop: true,
+    voices: [
+      { inst: 'flute', notes: bars(
+        'A5:4 C6:4 A5:2 G5:2 F5:4', 'G5:4 E5:4 C5:8', 'F5:4 A5:4 D6:4 C6:4', 'Bb5:6 A5:2 F5:8',
+        'A5:4 C6:4 F6:4 E6:2 D6:2', 'C6:4 A5:4 D6:4 A5:4', 'Bb5:4 G5:4 E5:4 G5:4', 'F5:12 .:4',
+      ), gain: 0.85 },
+      { inst: 'kora', notes: arp(SOINS_CH, '0.1.2.3.2.1.2.1.', 4), gain: 0.6 },
+      { inst: 'basse', notes: bass(SOINS_CH, 'R-------F-------'), gain: 0.8 },
+    ],
+    drums: '....h.......h...',
+  },
+  // Maison : balafon tranquille, le matin au village.
+  maison: {
+    bpm: 88,
+    loop: true,
+    voices: [
+      { inst: 'balafon', notes: bars(
+        'B4:2 D5:2 G5:4 F#5:2 E5:2 D5:4', 'E5:2 G5:2 B5:4 A5:2 G5:2 E5:4',
+        'C5:2 E5:2 G5:4 E5:2 D5:2 C5:4', 'D5:4 F#5:4 A5:8',
+        'B5:2 A5:2 G5:4 D5:2 E5:2 G5:4', 'E5:2 F#5:2 G5:4 B5:4 A5:4',
+        'A5:2 G5:2 E5:4 F#5:2 E5:2 D5:4', 'G5:12 .:4',
+      ) },
+      { inst: 'kora', notes: arp(MAISON_CH, '0.2.1.2.0.2.1.2.', 4), gain: 0.55 },
+      { inst: 'basse', notes: bass(MAISON_CH, 'R...F...R...F...'), gain: 0.8 },
+    ],
+    drums: 'B.......T...h...',
   },
   // Village : balafon guilleret en gamme pentatonique.
   village: {

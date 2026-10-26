@@ -103,7 +103,7 @@ const ACTE1: Trainer[] = [
     // Comme le veut la tradition, la rivale ne connaît encore que des attaques de base.
     team: [{ species: 0, level: 4, moves: ['coupDePatte', 'criDeGuerre'] }],
     intro: [
-      'Kady : Te voilà enfin ! L’Ancien m’a confié un Jinémon, à moi aussi.',
+      'Kady : Te voilà enfin ! Grand-père m’a confié un Jinémon, à moi aussi.',
       'Kady : Voyons lequel de nous deux a été le mieux choisi !',
     ],
     defeat: ['Kady : Pas mal… Mais la route est longue jusqu’au Panthéon !'],

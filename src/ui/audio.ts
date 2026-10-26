@@ -103,6 +103,8 @@ export function cryOf(speciesId: number): CrySegment[] {
 
 export class Audio {
   private ctx: AudioContext | null = null;
+  /** Sortie commune (musique, bruitages, cris) protégée par un limiteur. */
+  private master!: AudioNode;
   enabled = true;
   readonly music = new Music();
 
@@ -110,11 +112,21 @@ export class Audio {
     if (this.ctx) return;
     try {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      this.ctx = Ctor ? new Ctor() : null;
+      // Tampons audio plus larges : sur téléphone, c'est ce qui évite les grésillements.
+      this.ctx = Ctor ? new Ctor({ latencyHint: 'playback' }) : null;
     } catch {
       this.ctx = null;
     }
-    if (this.ctx) this.music.attach(this.ctx);
+    if (!this.ctx) return;
+    const limiter = this.ctx.createDynamicsCompressor();
+    limiter.threshold.value = -4;
+    limiter.knee.value = 2;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.12;
+    limiter.connect(this.ctx.destination);
+    this.master = limiter;
+    this.music.attach(this.ctx, limiter);
   }
 
   /** Cri d'un Jinémon ; `pitch` < 1 pour un cri plus grave (K.O.). */
@@ -143,9 +155,9 @@ export class Audio {
         lfo.start(t);
         lfo.stop(t + dur + 0.05);
       }
-      osc.connect(gain).connect(ctx.destination);
+      osc.connect(gain).connect(this.master);
       osc.start(t);
-      osc.stop(t + dur + 0.1);
+      osc.stop(t + dur * 0.7 + dur * 0.2 * 8);
       t += dur * 0.85;
     }
   }
@@ -159,9 +171,11 @@ export class Audio {
       const gain = ctx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(name === 'battement' ? 0.16 : 0.06, t);
+      // Attaque de quelques millisecondes : le son démarre sans « clac ».
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(name === 'battement' ? 0.16 : 0.06, t + 0.004);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-      osc.connect(gain).connect(ctx.destination);
+      osc.connect(gain).connect(this.master);
       osc.start(t);
       osc.stop(t + duration);
       t += duration * 0.9;

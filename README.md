@@ -51,6 +51,23 @@ npm run dev        # http://localhost:5173
 La partie est sauvegardée automatiquement (changement de zone, après chaque combat, capture, soin, achat, et toutes les
 30 secondes) ; le menu permet aussi de sauvegarder à la main.
 
+## Ne jamais être perdu
+
+- **Un vrai départ** : on se réveille dans sa chambre (on a trop dormi !), on descend l’escalier, Maman attend au
+  salon et envoie au **sanctuaire du Hogon**, le chef spirituel du village, qui confie le premier Jinémon. Maman
+  soigne aussi l’équipe à chaque visite.
+- **Des bâtiments qu’on reconnaît de loin**, identiques dans chaque ville : la **Case de Soins** blanche au toit vert
+  (soins gratuits et **grenier à Jinémon**), le **Marché** au toit de chaume et à l’auvent rayé orange. On y entre ;
+  on parle au soigneur et à la marchande par-dessus leur comptoir. Dans les lieux sauvages (Forêt Sacrée, camp de la
+  Piste, sommet de la Falaise, oasis du désert, grotte de Hombori, Bois des Masques), ils sont remplacés par un **stand
+  de soins** vert, un grenier en plein air et l’étal d’un marchand.
+- **Le grenier à Jinémon**, comme le PC de Pokémon : déposer, retirer ou **échanger** directement un Jinémon de
+  l’équipe contre un Jinémon du grenier.
+- **L’objectif du moment** est toujours affiché dans le menu (et rappelé par le Hogon et par Maman).
+- **CARTE** (menu) : la carte du Mandé avec « vous êtes ici », les lieux visités, les routes et une étoile sur
+  l’objectif. Sur chaque lieu visité, A ouvre son **plan** (bâtiments, stands, sorties). Le Village des Greniers a aussi
+  son plan affiché sur la place.
+
 ## Contenu
 
 - **137 Jinémon** répartis en 91 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
@@ -64,7 +81,7 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Bassins d’attaques** d’environ 15 attaques par lignée, apprises du niveau 1 au niveau 70 ; au-delà de 4 attaques,
   le jeu propose d’en oublier une. Depuis l’équipe, on peut à tout moment remplacer une attaque par une autre déjà
   apprise.
-- **13 zones** : Village des Greniers, Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
+- **13 zones** et une trentaine d’intérieurs : Village des Greniers (maison, sanctuaire, Case de Soins, Marché), Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
   Piste des Chasseurs Donzos, Falaise des Ancêtres (Panthéon des Légendes), puis Désert des Djinns, Monts de Hombori
   (grottes obscures), Djenné et le Delta, Côte des Alizés, Bois des Masques et Tombouctou.
 - **8 Arènes et leurs insignes** : Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos, Oasis
@@ -78,14 +95,14 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   « Voler »), **pêcher** face à l’eau avec la Nasse du Pêcheur.
 - Calebasses de capture (Sacrée, Ornée, des Ancêtres, Royale), remèdes (karité, bissap, pain de singe, miel sauvage,
   baume des Anciens, moringa, noix de kola), Amulette du Partage (l’expérience profite à toute l’équipe), marché en
-  cauris, Grenier pour les Jinémon en surplus, Ginédex avec habitats, évolutions animées (annulables avec B), Panthéon
+  cauris, grenier à Jinémon (dépôt, retrait, échange), Ginédex avec habitats, évolutions animées (annulables avec B), Panthéon
   des vainqueurs et générique.
 
 ## Jour, nuit et Hantises
 
 - **Horloge** : une seconde réelle vaut une minute de jeu, une journée dure donc 24 minutes. Aube de 5 h à 7 h, jour
-  jusqu’à 18 h, crépuscule jusqu’à 20 h, puis nuit. L’heure s’affiche dans le menu ; chez la guérisseuse, on peut
-  se reposer jusqu’au matin ou jusqu’à la nuit.
+  jusqu’à 18 h, crépuscule jusqu’à 20 h, puis nuit. L’heure s’affiche dans le menu ; chez le soigneur, on peut
+  se reposer jusqu’au matin ou jusqu’à la nuit. Les intérieurs restent éclairés à toute heure.
 - **La nuit**, la carte s’assombrit (tramage en pixel art) : seuls la lanterne du joueur, les forges, les portes des
   cases et les autels éclairent. Les combats se déroulent sous un ciel étoilé.
 - **14 Jinémon nocturnes** ne sortent des hautes herbes qu’entre 20 h et 5 h (Hiboulet, Roussetin, Bakeneko,
@@ -134,9 +151,10 @@ src/
     talents.ts          Talents passifs
     items.ts            Calebasses et remèdes
     trainers.ts         Dresseurs, rivale, Maîtres de Piste, insignes
-    zones.ts            Cartes ASCII de l’Acte I, PNJ, rencontres de jour, de nuit et de pêche, téléporteurs
+    zones.ts            Cartes ASCII de l’Acte I, PNJ, bâtiments, rencontres de jour, de nuit et de pêche, téléporteurs
     zonesActe2.ts       Les six zones de l’Acte II
-    zoneKit.ts          Fabriques de PNJ (guérisseuses, marchands, dresseurs, objets…)
+    interiors.ts        Intérieurs (chambre, salon, sanctuaire, Case de Soins et Marché de chaque ville), portes reliées
+    zoneKit.ts          Fabriques de PNJ et de bâtiments (soigneurs, marchands, dresseurs, objets…)
     trainersActe2.ts    Maîtres de Piste, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
   engine/               Logique pure, testée sans navigateur
@@ -144,7 +162,8 @@ src/
     creature.ts         Statistiques, expérience, apprentissage, évolution, objets
     gameState.ts        État de partie
     clock.ts            Horloge du jeu : phases du jour, obscurité, nuits
-    saveManager.ts      Sauvegarde automatique dans le LocalStorage (avec validation)
+    saveManager.ts      Sauvegarde automatique dans le LocalStorage (avec validation et remise en lieu sûr)
+    objective.ts        Objectif du moment, déduit de la progression
     rng.ts              Aléatoire injectable (déterministe dans les tests)
   ui/                   Rendu Canvas et scènes (titre, exploration, combat, menus…)
     sculpt.ts           Sculpteur de volumes et conversion en pixel art
@@ -157,8 +176,10 @@ src/
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
     props.ts            Objets du décor sculptés
+    buildings.ts        Bâtiments (maison, Case de Soins, Marché, sanctuaire), stands et meubles sculptés
     tiles.ts            Sols, ombres portées et assemblage des cartes en deux couches
-    backdrops.ts        Fonds de combat, titre, case de l’Ancien, halo d’évolution
+    interiors.ts        Rendu des intérieurs : murs enduits, sols, nattes, escaliers, comptoirs
+    backdrops.ts        Fonds de combat, titre, sanctuaire du Hogon, halo d’évolution
     effects.ts          Effets d’attaque par type
 tests/                  Tests Vitest : données, cartes, progression complète, moteur de combat, simulations,
                         sauvegarde, sprites, musique
