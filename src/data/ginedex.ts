@@ -104,6 +104,11 @@ export interface Species {
   description: string;
   look: SpeciesLook;
   legendary?: boolean;
+  /**
+   * Terreur nocturne : elle ne vit pas dans les herbes, elle chasse sur la carte la nuit,
+   * chacune à sa façon (voir data/nightMobs.ts).
+   */
+  terreur?: boolean;
   /** Ne se montre qu'à la nuit tombée. */
   nocturne?: boolean;
   /** Hantise : monstre nocturne qui rôde, visible, sur la carte. */
@@ -572,6 +577,42 @@ const LS = {
     [1, 'queueFouettante'], [1, 'murmureAncetres'], [6, 'piegeBoue'], [12, 'souffleDragon'], [18, 'danseEcailles'],
     [24, 'miroirEmeraude'], [30, 'voileGenies'], [36, 'fissureLaterite'], [40, 'griffeDraconique'], [45, 'lueurSacree'],
     [50, 'grondementFalaise'], [55, 'courrouxDraconique'], [60, 'colereAncetres'], [65, 'souffleNinkiNanka'], [70, 'souffleVital'],
+  ],
+  // ── Terreurs nocturnes ──
+  tissombre: [
+    [1, 'piqureTermite'], [1, 'regardMalefique'], [5, 'toileAnansi'], [9, 'larcin'], [13, 'dardVenimeux'],
+    [18, 'embuscadeNocturne'], [23, 'ombreRampante'], [28, 'nueeCriquets'], [33, 'crocsNuit'], [38, 'regardHypnotique'],
+    [43, 'mandibules'], [49, 'maledictionTertre'], [55, 'rondeAmes'], [62, 'essaimDevastateur'], [68, 'eclipseDevorante'],
+  ],
+  yaramaya: [
+    [1, 'larcin'], [1, 'seveCollante'], [5, 'pousseMil'], [9, 'regardMalefique'], [13, 'racineEpineuse'],
+    [18, 'embuscadeNocturne'], [23, 'sporesToxiques'], [28, 'lameRonier'], [33, 'crocsNuit'], [38, 'seveNourriciere'],
+    [43, 'ombreRampante'], [49, 'etreinteBaobab'], [55, 'danseChasseurs'], [62, 'eclipseDevorante'], [68, 'moissonSacree'],
+  ],
+  olgoikhor: [
+    [1, 'piqureTermite'], [1, 'piegeBoue'], [6, 'armureBanco'], [11, 'dardVenimeux'], [16, 'fissureLaterite'],
+    [21, 'assautTermitiere'], [26, 'nueeCriquets'], [31, 'sporesToxiques'], [36, 'eboulement'], [41, 'mandibules'],
+    [46, 'grondementFalaise'], [52, 'crocsNuit'], [58, 'dalleLaterite'], [64, 'essaimDevastateur'], [70, 'rueeSauvage'],
+  ],
+  kongamato: [
+    [1, 'coupDeBec'], [1, 'queueFouettante'], [5, 'ventArriere'], [10, 'piqueCalao'], [15, 'souffleDragon'],
+    [20, 'ventHarmattan'], [25, 'griffeDraconique'], [30, 'ailesTonnerre'], [35, 'embuscadeNocturne'], [40, 'danseEcailles'],
+    [45, 'crocsNuit'], [51, 'courrouxDraconique'], [57, 'cycloneCeleste'], [63, 'souffleNinkiNanka'], [68, 'eclipseDevorante'],
+  ],
+  dodombre: [
+    [1, 'ondeMentale'], [1, 'regardHypnotique'], [5, 'larcin'], [9, 'maledictionTertre'], [14, 'illusionKitsune'],
+    [19, 'ombreRampante'], [24, 'regardMalefique'], [29, 'lamentation'], [34, 'enigmeSphinx'], [39, 'embuscadeNocturne'],
+    [44, 'chocPsychique'], [50, 'rondeAmes'], [56, 'lectureSable'], [62, 'appelMictlan'], [68, 'eclipseDevorante'],
+  ],
+  elokloche: [
+    [1, 'murmureAncetres'], [1, 'regardHypnotique'], [5, 'larcin'], [9, 'danseMasques'], [14, 'embuscadeNocturne'],
+    [19, 'voileGenies'], [24, 'brumeSoporifique'], [29, 'crocsNuit'], [34, 'paroleGriot'], [39, 'lueurSacree'],
+    [44, 'ombreRampante'], [50, 'lamentation'], [56, 'rondeAmes'], [62, 'eclipseDevorante'], [68, 'colereAncetres'],
+  ],
+  mngwa: [
+    [1, 'coupDePatte'], [1, 'regardMalefique'], [5, 'bondLievre'], [9, 'larcin'], [13, 'morsureHyene'],
+    [18, 'chargeBrousse'], [20, 'ruseLievre'], [23, 'embuscadeNocturne'], [28, 'danseChasseurs'], [33, 'crocsNuit'],
+    [38, 'regardPenetrant'], [43, 'ombreRampante'], [49, 'rueeSauvage'], [62, 'eclipseDevorante'],
   ],
 } satisfies Record<string, readonly LearnsetEntry[]>;
 
@@ -1736,6 +1777,64 @@ export const SPECIES: readonly Species[] = [
     folklore: 'Fon (Bénin) — Aïdo-Hwédo, le serpent arc-en-ciel qui porta la créatrice Mawu et s’enroule sous la terre pour la soutenir.',
     description: 'Lové sous le monde, il le porte depuis l’aube des temps. Quand il remue, la terre tremble ; quand il boit, l’arc-en-ciel apparaît.',
     look: { plan: 'serpent', colors: ['#c83a3a', '#3a8ac8', '#f0d040'], features: ['aura'], size: 1.25 },
+  },
+
+  // ── Terreurs nocturnes : elles ne vivent pas dans les herbes, elles chassent la nuit ──
+  {
+    id: 138, name: 'Tissombre', category: 'Jinémon Araignée des Toits', types: ['Insecte', 'Ténèbres'],
+    baseStats: stats(70, 95, 70, 105), catchRate: 35, baseXp: 175, terreur: true,
+    learnset: LS.tissombre, talent: 'oeilVigilant',
+    folklore: 'Japon — le tsuchigumo, araignée géante tapie dans les hauteurs, qui fond sur les voyageurs attardés.',
+    description: 'Tapie sur les toits et les branches, elle suit les passants de ses huit yeux rouges. Quand on s’approche trop, elle saute.',
+    look: { plan: 'araignee', colors: ['#2a2228', '#5a2a3a', '#ff3a2a'], features: ['yeux'], size: 0.85 },
+  },
+  {
+    id: 139, name: 'Yaramaya', category: 'Jinémon Guetteur des Figuiers', types: ['Plante', 'Ténèbres'],
+    baseStats: stats(85, 105, 85, 70), catchRate: 30, baseXp: 180, terreur: true,
+    learnset: LS.yaramaya, talent: 'prestance',
+    folklore: 'Australie (peuples aborigènes) — le yara-ma-yha-who, petit homme rouge à grosse tête qui vit dans les figuiers et tombe sur ceux qui se reposent à leur ombre.',
+    description: 'Il pend tête en bas dans le feuillage, accroché par ses longs doigts à ventouses. Il attend qu’on passe dessous pour se laisser tomber.',
+    look: { plan: 'bipede', colors: ['#b8402a', '#3a5a2a', '#ffe060'], features: ['yeux'], size: 0.8 },
+  },
+  {
+    id: 140, name: 'Olgoïkhor', category: 'Jinémon Ver de la Mort', types: ['Terre', 'Insecte'],
+    baseStats: stats(105, 110, 100, 55), catchRate: 25, baseXp: 190, terreur: true,
+    learnset: LS.olgoikhor, talent: 'toucherToxique',
+    folklore: 'Mongolie (désert de Gobi) — l’olgoï-khorkhoï, ver géant rouge sang qui vit sous le sable et jaillit sous les pas des voyageurs.',
+    description: 'Il nage sous la terre et sent chacun de vos pas. Restez immobile : il ne vous trouve plus. Marchez sur lui : il jaillit.',
+    look: { plan: 'serpent', colors: ['#9a2a26', '#3a1a16', '#f0e0c0'], features: [], size: 1.15 },
+  },
+  {
+    id: 141, name: 'Kongamato', category: 'Jinémon Briseur de Barques', types: ['Vol', 'Dragon'],
+    baseStats: stats(80, 100, 70, 115), catchRate: 35, baseXp: 175, terreur: true,
+    learnset: LS.kongamato, talent: 'levitation',
+    folklore: 'Kaonde (Zambie, Congo) — le Kongamato, « briseur de barques », reptile volant des marais qui renverse les pirogues.',
+    description: 'Ses ailes de cuir claquent comme des voiles. Il tournoie si haut qu’on ne voit que son ombre, puis tombe en piqué sur sa proie.',
+    look: { plan: 'dragon', colors: ['#8a3a2a', '#3a2420', '#ffd040'], features: ['ailes', 'crete'], size: 1 },
+  },
+  {
+    id: 142, name: 'Dodombre', category: 'Jinémon Faux Villageois', types: ['Spectre', 'Psy'],
+    baseStats: stats(75, 95, 75, 100), catchRate: 30, baseXp: 180, terreur: true,
+    learnset: LS.dodombre, talent: 'ruse',
+    folklore: 'Haoussa (Nigeria, Niger) — le Dodo des contes, monstre qui prend l’apparence des gens pour entrer dans les cases la nuit.',
+    description: 'Il porte une lanterne et le visage d’un villageois, volé à un voyageur égaré. Il appelle à l’aide… et attend qu’on approche.',
+    look: { plan: 'bipede', colors: ['#2a2430', '#e8dcc8', '#c8f0ff'], features: ['yeux'], size: 1 },
+  },
+  {
+    id: 143, name: 'Elokloche', category: 'Jinémon Clochette des Bois', types: ['Esprit', 'Ténèbres'],
+    baseStats: stats(65, 95, 60, 120), catchRate: 35, baseXp: 170, terreur: true,
+    learnset: LS.elokloche, talent: 'ruse',
+    folklore: 'Mongo (Congo) — les biloko, nains des forêts vêtus de feuilles, qui ensorcellent les voyageurs au tintement de leur clochette.',
+    description: 'On entend une clochette, on voit une petite lueur qui danse entre les arbres. On s’approche… et sa bouche s’ouvre jusqu’aux oreilles.',
+    look: { plan: 'bipede', colors: ['#4a6a2a', '#2a2a1e', '#ffd860'], features: ['yeux'], size: 0.6 },
+  },
+  {
+    id: 144, name: 'Mngwa', category: 'Jinémon Fauve Gris', types: ['Ténèbres', 'Normal'],
+    baseStats: stats(95, 115, 75, 105), catchRate: 30, baseXp: 185, terreur: true,
+    learnset: LS.mngwa, talent: 'prestance',
+    folklore: 'Swahili (Tanzanie) — le Mngwa, « l’étrange », fauve gris grand comme un âne qui rôde la nuit autour des villages de la côte.',
+    description: 'Il rôde sans un bruit autour des villages et suit votre odeur, de plus en plus près. Quand il vous voit enfin, il charge.',
+    look: { plan: 'quadrupede', colors: ['#7a7a74', '#3a3836', '#ffd040'], features: ['yeux'], size: 1.05 },
   },
 
 ];

@@ -1,18 +1,22 @@
-// Créatures de la nuit : dès que le soleil se couche, des Jinémon sortent de leurs
-// terriers et chassent sur la carte. Trois façons de chasser :
+// Terreurs nocturnes : dès que le soleil se couche, des Jinémon qu'on ne croise jamais
+// dans les herbes sortent chasser sur la carte. Chacune a sa façon de surprendre, et
+// son corps va avec :
 //
-//   rodeur     rôde puis vous flaire, se rapproche peu à peu, et fonce quand il vous voit
-//   volant     tournoie dans le ciel (on ne voit que son ombre) puis tombe sur vous en piqué
-//   imposteur  un villageois à la lanterne… qui n'en est pas un
+//   rodeur     Mngwa, le fauve gris : rôde, vous flaire, se rapproche, et charge quand il vous voit
+//   volant     Kongamato : tournoie dans le ciel (on ne voit que son ombre) et tombe en piqué
+//   imposteur  Dodombre : un villageois à la lanterne… qui porte un visage volé
+//   guetteur   Tissombre, l'araignée des toits : vous suit de ses huit yeux et saute quand on passe trop près
+//   pendu      Yaramaya : pend tête en bas dans un arbre, et se laisse tomber sur qui passe dessous
+//   fouisseur  Olgoïkhor, le ver de la mort : nage sous la terre vers vos pas ; immobile, il vous perd
+//   leurre     Elokloche : une clochette et une petite lueur qui danse… jusqu'à ce que sa bouche s'ouvre
 //
-// Chaque zone sauvage en lâche trois, tirés de ses rencontres nocturnes ; dans les villes,
-// un imposteur se mêle parfois aux habitants, et des villageois traversent la place en
-// hurlant, poursuivis par une bête venue de la brousse voisine.
-import { getSpecies } from './ginedex';
+// Chaque zone sauvage en lâche trois ; dans les villes, l'araignée guette sur les toits,
+// un faux villageois se mêle aux habitants une nuit sur deux, et des villageois traversent
+// la place en hurlant, le fauve gris sur les talons.
 import type { CharacterLook } from './trainers';
 import { ZONES, type ZoneId } from './zones';
 
-export type MobKind = 'rodeur' | 'volant' | 'imposteur';
+export type MobKind = 'rodeur' | 'volant' | 'imposteur' | 'guetteur' | 'pendu' | 'fouisseur' | 'leurre';
 
 export interface MobDef {
   /** Identifiant stable (« savane:1 ») : une créature vaincue ne revient pas de la nuit. */
@@ -25,8 +29,32 @@ export interface MobDef {
   disguise?: CharacterLook;
 }
 
-/** Les chasseurs de la nuit sont un peu plus forts que la faune nocturne de leur zone. */
-const HUNTER_BONUS = 2;
+/** La Terreur qui chasse de chaque façon. */
+export const TERRORS: Record<MobKind, number> = {
+  rodeur: 144,
+  volant: 141,
+  imposteur: 142,
+  guetteur: 138,
+  pendu: 139,
+  fouisseur: 140,
+  leurre: 143,
+};
+
+/** Qui chasse où : selon le terrain (toits et arbres, sable, marais…). */
+const HUNTERS: Partial<Record<ZoneId, MobKind[]>> = {
+  savane: ['rodeur', 'guetteur', 'fouisseur'],
+  terresRouges: ['fouisseur', 'volant', 'guetteur'],
+  marigot: ['leurre', 'pendu', 'imposteur'],
+  foret: ['pendu', 'guetteur', 'leurre'],
+  piste: ['rodeur', 'volant', 'imposteur'],
+  falaise: ['volant', 'fouisseur', 'rodeur'],
+  desert: ['fouisseur', 'volant', 'imposteur'],
+  djenne: ['imposteur', 'guetteur', 'leurre'],
+  cote: ['volant', 'leurre', 'rodeur'],
+  masques: ['pendu', 'guetteur', 'imposteur'],
+};
+/** Ailleurs (une zone ajoutée plus tard) : le fauve, l'oiseau et le faux villageois. */
+const DEFAULT_HUNTERS: MobKind[] = ['rodeur', 'volant', 'imposteur'];
 
 const DISGUISES: CharacterLook[] = [
   { skin: '#7a4a30', outfit: '#3a86c8', accent: '#f0f0f0' },
@@ -36,12 +64,10 @@ const DISGUISES: CharacterLook[] = [
   { skin: '#7a4a30', outfit: '#5fa83a', accent: '#f0f0f0', headwear: 'turban' },
 ];
 
-/** Volant s'il a des ailes (type Vol) ; imposteur s'il est esprit, spectre ou créature des ténèbres. */
+/** Façon de chasser d'une Terreur (une autre espèce, lancée sur un villageois, rôde). */
 export function mobKindOf(speciesId: number): MobKind {
-  const types = getSpecies(speciesId).types;
-  if (types.includes('Vol')) return 'volant';
-  if (types.some((t) => t === 'Spectre' || t === 'Ténèbres' || t === 'Psy' || t === 'Esprit')) return 'imposteur';
-  return 'rodeur';
+  const kind = (Object.keys(TERRORS) as MobKind[]).find((k) => TERRORS[k] === speciesId);
+  return kind ?? 'rodeur';
 }
 
 function hash(text: string): number {
@@ -50,36 +76,28 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-/** Les trois créatures qui chassent dans une zone sauvage, la nuit (aucune ailleurs). */
+/** Les Terreurs, plus robustes que la faune, chassent au niveau des plus forts Jinémon nocturnes du coin. */
+function huntingLevel(wild: ZoneId): number {
+  return Math.max(...ZONES[wild].nightEncounters!.map((e) => e.max));
+}
+
+function mob(id: string, zone: ZoneId, kind: MobKind, level: number): MobDef {
+  return {
+    id,
+    zone,
+    species: TERRORS[kind],
+    level,
+    kind,
+    disguise: kind === 'imposteur' ? DISGUISES[hash(id) % DISGUISES.length] : undefined,
+  };
+}
+
+/** Les trois Terreurs qui chassent dans une zone sauvage, la nuit (aucune ailleurs). */
 export function nightMobsOf(zoneId: ZoneId): MobDef[] {
   const zone = ZONES[zoneId];
-  const table = zone?.nightEncounters ?? [];
-  if (!zone || zone.interior || zone.dark || table.length === 0) return [];
-  // Les plus forts d'abord : ce sont eux qui chassent.
-  const pool = [...table].sort((a, b) => b.max - a.max || a.species - b.species);
-  const used = new Set<number>();
-  const pick = (accept: (k: MobKind) => boolean) => {
-    const entry = pool.find((e) => !used.has(e.species) && accept(mobKindOf(e.species)));
-    if (entry) used.add(entry.species);
-    return entry;
-  };
-  const grounded = (k: MobKind) => k !== 'volant';
-  const wanted: MobKind[] = ['rodeur', 'volant', 'imposteur'];
-  return wanted.map((kind, i): MobDef => {
-    // Le rôdeur marche (tout ce qui n'a pas d'ailes) ; faute de volant, un second rôdeur prend sa place.
-    const entry =
-      (kind === 'rodeur' ? pick(grounded) : pick((k) => k === kind)) ?? pick(grounded) ?? pick(() => true) ?? pool[i % pool.length];
-    const actual = kind === 'imposteur' || mobKindOf(entry.species) === kind ? kind : 'rodeur';
-    const id = `${zoneId}:${i}`;
-    return {
-      id,
-      zone: zoneId,
-      species: entry.species,
-      level: entry.max + HUNTER_BONUS,
-      kind: actual,
-      disguise: actual === 'imposteur' ? DISGUISES[hash(id) % DISGUISES.length] : undefined,
-    };
-  });
+  if (!zone || zone.interior || zone.dark || !zone.nightEncounters?.length) return [];
+  const level = huntingLevel(zoneId);
+  return (HUNTERS[zoneId] ?? DEFAULT_HUNTERS).map((kind, i) => mob(`${zoneId}:${i}`, zoneId, kind, level));
 }
 
 /** La brousse la plus proche d'une ville : celle qu'on rejoint par une de ses sorties. */
@@ -91,26 +109,42 @@ function wildNeighbour(zoneId: ZoneId): ZoneId | null {
   return exit ? exit.to : null;
 }
 
-/** La bête qui poursuit les villageois attardés (dans cette zone, ou venue de la brousse voisine). */
+/** Le fauve gris qui poursuit les villageois attardés (dans cette zone, ou venu de la brousse voisine). */
 export function chaserOf(zoneId: ZoneId): { species: number; level: number } | null {
   const wild = wildNeighbour(zoneId);
   if (!wild) return null;
-  const table = ZONES[wild].nightEncounters!;
-  const prowlers = table.filter((e) => mobKindOf(e.species) !== 'volant');
-  const list = prowlers.length ? prowlers : table;
-  const entry = list[hash(zoneId) % list.length];
-  return { species: entry.species, level: entry.max + HUNTER_BONUS };
+  return { species: TERRORS.rodeur, level: huntingLevel(wild) };
 }
 
-/** Dans une ville, la nuit, un imposteur se glisse parmi les habitants une nuit sur deux. */
-export function townImpostor(zoneId: ZoneId, night: number): MobDef | null {
+/**
+ * Dans une ville, la nuit : l'araignée guette sur les toits, et un faux villageois se
+ * glisse parmi les habitants une nuit sur deux.
+ */
+export function townMobs(zoneId: ZoneId, night: number): MobDef[] {
   const zone = ZONES[zoneId];
-  if (!zone || zone.interior || zone.nightEncounters?.length) return null;
+  if (!zone || zone.interior || zone.nightEncounters?.length) return [];
   const wild = wildNeighbour(zoneId);
-  if (!wild || (hash(`${zoneId}:${night}`) & 1) === 0) return null;
-  const table = ZONES[wild].nightEncounters!;
-  const sneaky = table.filter((e) => mobKindOf(e.species) === 'imposteur');
-  const entry = (sneaky.length ? sneaky : table)[0];
-  const id = `${zoneId}:imposteur`;
-  return { id, zone: zoneId, species: entry.species, level: entry.max + HUNTER_BONUS, kind: 'imposteur', disguise: DISGUISES[hash(id) % DISGUISES.length] };
+  if (!wild) return [];
+  const level = huntingLevel(wild);
+  const mobs = [mob(`${zoneId}:guetteur`, zoneId, 'guetteur', level)];
+  if (hash(`${zoneId}:${night}`) & 1) mobs.push(mob(`${zoneId}:imposteur`, zoneId, 'imposteur', level));
+  return mobs;
+}
+
+/** Ce que le Ginédex dit de chaque façon de chasser. */
+export const HUNT_HINTS: Record<MobKind, string> = {
+  rodeur: 'rôde, vous flaire et charge',
+  volant: 'tombe du ciel en piqué',
+  imposteur: 'se fait passer pour un villageois',
+  guetteur: 'guette sur les toits et les arbres',
+  pendu: 'se laisse tomber des arbres',
+  fouisseur: 'nage sous la terre vers vos pas',
+  leurre: 'attire les voyageurs avec sa lueur',
+};
+
+/** Les zones où cette Terreur chasse la nuit (brousse et villes). */
+export function huntingGrounds(speciesId: number): ZoneId[] {
+  return (Object.keys(ZONES) as ZoneId[]).filter((id) =>
+    [...nightMobsOf(id), ...[0, 1, 2, 3].flatMap((n) => townMobs(id, n))].some((m) => m.species === speciesId),
+  );
 }

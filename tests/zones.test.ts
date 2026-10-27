@@ -3,6 +3,7 @@ import { SPECIES, getSpecies } from '../src/data/ginedex';
 import { ITEMS } from '../src/data/items';
 import { TRAINERS } from '../src/data/trainers';
 import { HAUNTS } from '../src/data/hantises';
+import { nightMobsOf, townMobs } from '../src/data/nightMobs';
 import { DIR_DELTA, GRASS_TILE, SOLID_TILES, ZONES, tileAt, type Zone, type ZoneId } from '../src/data/zones';
 import { START_POSITION } from '../src/engine/gameState';
 
@@ -122,6 +123,8 @@ describe('Cartes des zones', () => {
       z.npcs.forEach((n) => n.script.kind === 'legendaire' && obtainable.add(n.script.species));
     }
     HAUNTS.forEach((h) => obtainable.add(h.species));
+    // Les Terreurs nocturnes se capturent quand elles vous tombent dessus.
+    for (const z of zones) [...nightMobsOf(z.id), ...townMobs(z.id, 1)].forEach((m) => obtainable.add(m.species));
     let grew = true;
     while (grew) {
       grew = false;

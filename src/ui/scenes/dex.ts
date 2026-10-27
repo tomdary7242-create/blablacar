@@ -2,6 +2,7 @@
 import { SPECIES, dexNumber, getSpecies, preEvolution } from '../../data/ginedex';
 import { TALENTS } from '../../data/talents';
 import { HAUNTS } from '../../data/hantises';
+import { HUNT_HINTS, huntingGrounds, mobKindOf } from '../../data/nightMobs';
 import { ZONES, habitats } from '../../data/zones';
 import { PAL, bar, box, calabash, cursor, fillEllipse, stamp, text, typeBadge } from '../draw';
 import { wrapText } from '../font';
@@ -78,6 +79,15 @@ export class DexScene implements Scene {
       text(ctx, 'Jamais rencontré.', 192, 120, { align: 'center', color: PAL.grey });
     }
   }
+}
+
+/** Le texte, sur au plus `max` lignes ; s'il est coupé, la dernière finit par « … ». */
+function fit(words: string, max: number): string[] {
+  const rows = wrapText(words, 236);
+  if (rows.length <= max) return rows;
+  const kept = wrapText(rows.slice(0, max).join(' '), 228).slice(0, max);
+  kept[max - 1] = `${kept[max - 1].replace(/[\s·,;:]+$/, '')}…`;
+  return kept;
 }
 
 export class DexEntryScene implements Scene {
@@ -161,7 +171,12 @@ export class DexEntryScene implements Scene {
         : where.length
           ? `Habitat : ${where.join(' · ')}`
           : 'Habitat : par évolution uniquement.';
-    for (const row of wrapText(habitat, 236).slice(0, 2)) {
+    // Une Terreur : sa façon de chasser, puis les zones où elle rôde.
+    const rows =
+      s.terreur && !haunt
+        ? [`Terreur : ${HUNT_HINTS[mobKindOf(s.id)]}.`, ...fit(huntingGrounds(s.id).map((id) => ZONES[id].name).join(' · '), 1)]
+        : fit(habitat, 2);
+    for (const row of rows) {
       text(ctx, row, 10, y, { color: '#3a7a3a' });
       y += 10;
     }
@@ -171,15 +186,16 @@ export class DexEntryScene implements Scene {
       y += 12;
     }
     if (caught) {
-      for (const row of wrapText(s.description, 236).slice(0, 4)) {
+      for (const row of fit(s.description, 4)) {
         text(ctx, row, 10, y, { shadow: PAL.shadow });
-        y += 11;
+        y += 10;
       }
       y += 2;
     }
     text(ctx, 'Origine', 10, y, { color: PAL.rust });
     y += 11;
-    for (const row of wrapText(s.folklore, 236).slice(0, 3)) {
+    // L'origine prend la place qui reste au-dessus du pied de page.
+    for (const row of fit(s.folklore, Math.max(1, Math.min(3, Math.floor((178 - y) / 10))))) {
       text(ctx, row, 10, y);
       y += 10;
     }

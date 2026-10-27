@@ -2,7 +2,7 @@
 // rencontres dans les hautes herbes et techniques hors combat des insignes.
 import { SPECIES, getSpecies } from '../../data/ginedex';
 import { hauntCapturedFlag, hauntOf } from '../../data/hantises';
-import { chaserOf, nightMobsOf, townImpostor, type MobDef } from '../../data/nightMobs';
+import { chaserOf, nightMobsOf, townMobs, type MobDef } from '../../data/nightMobs';
 import { getItem } from '../../data/items';
 import { MOVES } from '../../data/moves';
 import { TRAINERS, getTrainer, type CharacterLook } from '../../data/trainers';
@@ -34,7 +34,7 @@ import type { Scene } from '../scene';
 import { H, W } from '../screen';
 import { battleBackdrop } from '../backdrops';
 import { HauntActor, type HauntHost } from '../haunts';
-import { Fugitive, NightMob, findPath, type MobHost } from '../nightMobs';
+import { Fugitive, NightMob, findPath, lairsOf, type MobHost } from '../nightMobs';
 import { NightLayer, type Light } from '../night';
 import { PLAYER_LOOK, characterSprite, drawCreature, prewarmCreatures } from '../sprites';
 import { renderInteriorLayers } from '../interiors';
@@ -142,6 +142,8 @@ export class OverworldScene implements Scene, World {
   private omen = '';
   private omenTimer = 0;
   private heartbeat = 0;
+  /** Secondes depuis le dernier pas du joueur (le ver des sables ne sent que les pas). */
+  private stillTime = 0;
   /** Embuscade en cours : l'écran tremble avant le combat. */
   private ambush = -1;
   /** Créatures de la nuit qui chassent dans la zone. */
@@ -260,13 +262,26 @@ export class OverworldScene implements Scene, World {
     if (this.mobsSpawned) return;
     this.mobsSpawned = true;
     const n = nightId(state.clock);
-    const defs = [...nightMobsOf(this.zone.id), townImpostor(this.zone.id, n)].filter((d): d is MobDef => !!d && state.nightMobs[d.id] !== n);
+    const defs = [...nightMobsOf(this.zone.id), ...townMobs(this.zone.id, n)].filter((d) => state.nightMobs[d.id] !== n);
     for (const def of defs) {
-      const spot = this.spawnSpot(def.kind === 'imposteur' ? 7 : 11);
+      const spot = this.lairSpot(def) ?? this.spawnSpot(def.kind === 'imposteur' || def.kind === 'leurre' ? 7 : 11);
       if (spot) this.mobs.push(new NightMob(def, this.mobHost(), spot[0], spot[1]));
     }
     this.chaseTimer = 6 + this.game.rng.next() * 8;
     this.ambientTimer = 2;
+  }
+
+  /** Un toit pour l'araignée, un arbre au-dessus d'un passage pour le pendu (null : les autres chassent au sol). */
+  private lairSpot(def: MobDef): [number, number] | null {
+    const lairs = lairsOf(def.kind, this.mobHost());
+    if (!lairs?.length) return null;
+    const away = (d: number, min: number, max: number) => d >= min && d <= max;
+    const dist = ([x, y]: [number, number]) => Math.abs(x - this.x) + Math.abs(y - this.y);
+    const pool = [[7, 20], [4, 40]].map(([min, max]) => lairs.filter((l) => away(dist(l), min, max))).find((list) => list.length) ?? lairs;
+    // Plusieurs Terreurs perchées ne se partagent pas un même arbre.
+    const free = pool.filter(([x, y]) => !this.mobs.some((m) => m.x === x && m.y === y));
+    const list = free.length ? free : pool;
+    return list[Math.floor(this.game.rng.next() * list.length)];
   }
 
   /** Une case libre, assez loin du joueur, d'où l'on peut le rejoindre. */
@@ -298,6 +313,11 @@ export class OverworldScene implements Scene, World {
         return scene.zone.map.length;
       },
       player: () => ({ x: this.x, y: this.y, dir: this.dir }),
+      still: () => this.stillTime,
+      tile: (x, y) => {
+        const map = this.zone.map;
+        return x < 0 || y < 0 || y >= map.length || x >= map[0].length ? '' : this.tile(x, y);
+      },
       walkable: (x, y) => {
         const map = this.zone.map;
         if (x < 0 || y < 0 || y >= map.length || x >= map[0].length) return false;
@@ -409,13 +429,17 @@ export class OverworldScene implements Scene, World {
       this.ambushBy = null;
       this.ambush = -1;
     };
-    const lines =
-      def.kind === 'volant'
-        ? ['Une ombre grandit sur le sol, de plus en plus vite…', `${name} tombe du ciel sur vous !`]
-        : def.kind === 'imposteur'
-          ? ['Le villageois se retourne d’un coup. Il n’a plus de visage…', `Ce n’était pas un villageois : c’était ${name} !`]
-          : [`${name} vous a rattrapé dans le noir !`];
-    game.say(lines, () => {
+    const lines: Record<MobDef['kind'], string[]> = {
+      rodeur: ['Un fauve gris surgit de l’ombre, sans un bruit…', `${name} vous a rattrapé dans le noir !`],
+      volant: ['Une ombre grandit sur le sol, de plus en plus vite…', `${name} tombe du ciel sur vous !`],
+      imposteur: ['Le villageois se retourne d’un coup. Son visage tombe comme un masque…', `Ce n’était pas un villageois : c’était ${name} !`],
+      guetteur: ['Huit yeux rouges… Quelque chose bondit du toit, toutes pattes dehors !', `${name} vous est tombée dessus !`],
+      pendu: ['Des doigts froids vous agrippent par le col…', `${name} se laisse tomber de l’arbre !`],
+      fouisseur: ['Le sol se soulève sous vos pieds !', `${name} jaillit de la terre !`],
+      leurre: ['La petite lueur grandit d’un coup… une bouche s’ouvre jusqu’aux oreilles !', `Ce n’était pas une luciole : c’était ${name} !`],
+    };
+    const fromAbove = def.kind === 'volant' || def.kind === 'guetteur' || def.kind === 'pendu';
+    game.say(lines[def.kind], () => {
       if (!hasUsableJinemon(game.s)) {
         // Sans Jinémon pour vous défendre, il n'y a rien à faire.
         done();
@@ -423,9 +447,9 @@ export class OverworldScene implements Scene, World {
         return;
       }
       startWildBattle(game, createJinemon(def.species, def.level, game.rng), {
-        intro: def.kind === 'volant' ? `${name} s’abat sur vous !` : `${name} se jette sur vous !`,
+        intro: fromAbove ? `${name} s’abat sur vous !` : def.kind === 'fouisseur' ? `${name} surgit sous vos pieds !` : `${name} se jette sur vous !`,
         music: 'hantise',
-        entrance: def.kind === 'volant' ? 'chute' : 'surgir',
+        entrance: fromAbove ? 'chute' : 'surgir',
         onOutcome: done,
       });
     });
@@ -670,6 +694,7 @@ export class OverworldScene implements Scene, World {
         this.heartbeat = 0.35 + d * 0.16;
       }
     }
+    this.stillTime = this.moving ? 0 : this.stillTime + dt;
     if (this.moving) {
       this.moving.t += dt / this.moving.duration;
       if (this.moving.t >= 1) {
@@ -1219,10 +1244,11 @@ export class OverworldScene implements Scene, World {
     const { px, py } = this.playerPixel();
     const camX = mapW <= W ? (mapW - W) / 2 : Math.max(0, Math.min(mapW - W, px + 8 - W / 2));
     const camY = mapH <= H ? (mapH - H) / 2 : Math.max(0, Math.min(mapH - H, py + 8 - H / 2));
-    // L'écran tremble pendant une embuscade.
-    const quake = this.ambush >= 0 ? Math.round(Math.sin(this.ambush * 70) * 3) : 0;
+    // L'écran tremble pendant une embuscade, et quand le ver des sables approche sous la terre.
+    const tremor = Math.max(0, ...this.mobs.map((m) => m.tremor()));
+    const quake = this.ambush >= 0 ? Math.round(Math.sin(this.ambush * 70) * 3) : Math.round(Math.sin(this.game.time * 53) * tremor * 1.4);
     const ox = Math.round(-camX) + quake;
-    const oy = Math.round(-camY);
+    const oy = Math.round(-camY) + (tremor > 0.3 ? Math.round(Math.sin(this.game.time * 41)) : 0);
 
     ctx.fillStyle = '#1a1208';
     ctx.fillRect(0, 0, W, H);

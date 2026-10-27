@@ -2,9 +2,9 @@
 
 > Document généré à partir de `src/data/ginedex.ts` et `src/data/moves.ts`, qui restent la source de vérité.
 
-## Bestiaire (137 espèces)
+## Bestiaire (144 espèces)
 
-☾ : ne se montre que la nuit (20 h – 5 h). ✦ : Hantise, visible sur la carte la nuit. ★ : Légende.
+☾ : ne se montre que la nuit (20 h – 5 h). ✦ : Hantise, visible sur la carte la nuit. ◆ : Terreur nocturne. ★ : Légende.
 
 | N° | Nom | Types | Évolution | Talent | Origine |
 |---|---|---|---|---|---|
@@ -145,6 +145,13 @@
 | 135 | **Kanagou** | Esprit / Vol |  | Lévitation | Pays dogon (Mali) — le masque kanaga, en forme d’oiseau aux ailes déployées ou de main du dieu créateur, danse aux funérailles. |
 | 136 | **Faro** ★ | Eau / Esprit |  | Bénédiction Pluvieuse | Bambara et Bozo (Mali) — Faro, génie du Niger, qui mit de l’ordre dans le monde, apporta la pluie et enseigna la parole aux hommes. |
 | 137 | **Aïdohwedo** ★ | Dragon / Esprit |  | Écailles Antiques | Fon (Bénin) — Aïdo-Hwédo, le serpent arc-en-ciel qui porta la créatrice Mawu et s’enroule sous la terre pour la soutenir. |
+| 138 | **Tissombre** ◆ | Insecte / Ténèbres |  | Œil Vigilant | Japon — le tsuchigumo, araignée géante tapie dans les hauteurs, qui fond sur les voyageurs attardés. |
+| 139 | **Yaramaya** ◆ | Plante / Ténèbres |  | Prestance du Chasseur | Australie (peuples aborigènes) — le yara-ma-yha-who, petit homme rouge à grosse tête qui vit dans les figuiers et tombe sur ceux qui se reposent à leur ombre. |
+| 140 | **Olgoïkhor** ◆ | Terre / Insecte |  | Toucher Toxique | Mongolie (désert de Gobi) — l’olgoï-khorkhoï, ver géant rouge sang qui vit sous le sable et jaillit sous les pas des voyageurs. |
+| 141 | **Kongamato** ◆ | Vol / Dragon |  | Lévitation | Kaonde (Zambie, Congo) — le Kongamato, « briseur de barques », reptile volant des marais qui renverse les pirogues. |
+| 142 | **Dodombre** ◆ | Spectre / Psy |  | Ruse du Conteur | Haoussa (Nigeria, Niger) — le Dodo des contes, monstre qui prend l’apparence des gens pour entrer dans les cases la nuit. |
+| 143 | **Elokloche** ◆ | Esprit / Ténèbres |  | Ruse du Conteur | Mongo (Congo) — les biloko, nains des forêts vêtus de feuilles, qui ensorcellent les voyageurs au tintement de leur clochette. |
+| 144 | **Mngwa** ◆ | Ténèbres / Normal |  | Prestance du Chasseur | Swahili (Tanzanie) — le Mngwa, « l’étrange », fauve gris grand comme un âne qui rôde la nuit autour des villages de la côte. |
 
 ## Hantises
 
@@ -159,6 +166,23 @@ attaque au contact. Vaincue ou fuie, elle disparaît jusqu’à la nuit suivante
 | 126 | **Nkondiclou** | Forêt Sacrée | 29 | ne bouge que lorsque vous ne la regardez pas |
 | 127 | **Nopperabô** | Piste des Chasseurs Donzos | 35 | se fait passer pour un villageois, puis se retourne… sans visage |
 | 128 | **Obayifeu** | Falaise des Ancêtres | 48 | disparaît et reparaît, toujours plus près, souvent dans votre dos |
+
+## Terreurs nocturnes
+
+Sept Jinémon qu'on ne croise jamais dans les herbes : ils chassent sur la carte, la nuit, chacun à sa façon, et leur
+corps va avec. Chaque zone sauvage en lâche trois (au niveau des plus forts Jinémon nocturnes du coin) ; dans les
+villes, l'araignée guette sur les toits et un faux villageois se mêle aux habitants une nuit sur deux. Vaincue ou
+fuie, une Terreur ne revient pas avant la nuit suivante ; on peut la capturer quand elle vous tombe dessus.
+
+| N° | Terreur | Façon de chasser | Où |
+|---|---|---|---|
+| 138 | **Tissombre** | guette sur les toits et les arbres | Village des Greniers, Savane des Termitières, Terres Rouges, Forêt Sacrée, Djenné et le Delta, Bois des Masques, Tombouctou |
+| 139 | **Yaramaya** | se laisse tomber des arbres | Marigot des Ancêtres, Forêt Sacrée, Bois des Masques |
+| 140 | **Olgoïkhor** | nage sous la terre vers vos pas | Savane des Termitières, Terres Rouges, Falaise des Ancêtres, Désert des Djinns |
+| 141 | **Kongamato** | tombe du ciel en piqué | Terres Rouges, Piste des Chasseurs Donzos, Falaise des Ancêtres, Désert des Djinns, Côte des Alizés |
+| 142 | **Dodombre** | se fait passer pour un villageois | Village des Greniers, Marigot des Ancêtres, Piste des Chasseurs Donzos, Désert des Djinns, Djenné et le Delta, Bois des Masques, Tombouctou |
+| 143 | **Elokloche** | attire les voyageurs avec sa lueur | Marigot des Ancêtres, Forêt Sacrée, Djenné et le Delta, Côte des Alizés |
+| 144 | **Mngwa** | rôde, vous flaire et charge | Savane des Termitières, Piste des Chasseurs Donzos, Falaise des Ancêtres, Côte des Alizés |
 
 ## Talents
 

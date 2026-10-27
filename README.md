@@ -100,7 +100,7 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 
 ## Contenu
 
-- **137 Jinémon** répartis en 91 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
+- **144 Jinémon** répartis en 98 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
   Termitox, Rochard) et quatre Légendes : Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou ; Faro, génie
   du Niger ; Aïdohwedo, le serpent arc-en-ciel des Fon. Environ un Jinémon sauvage sur 512 est **chatoyant**
   (couleurs rares).
@@ -149,19 +149,29 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   | Piste des Chasseurs | Nopperabô (niv. 35) | Un passant, dos tourné, qui se retourne sans visage. |
   | Falaise des Ancêtres | Obayifeu (niv. 48) | Une lueur qui s’éteint et se rallume plus près, souvent dans votre dos. |
 
-- **Les créatures de la nuit viennent vous chercher** : dans chaque zone sauvage, trois chasseurs sortent à la tombée
-  de la nuit (un peu plus forts que la faune nocturne) et disparaissent à l’aube :
-  - le **rôdeur** vous flaire de loin et se rapproche peu à peu en grognant ; quand il vous voit, il fonce (on le sème
-    en courant) ;
-  - le **volant** tournoie au-dessus de vous : on voit son ombre au sol et sa silhouette dans le ciel, on entend ses
-    ailes. Puis il crie, vise et **tombe du ciel** en piqué : écartez-vous à temps, sinon le combat commence par sa
-    chute ;
-  - l’**imposteur**, un villageois attardé avec sa lanterne, appelle à l’aide (« Tu peux m’aider ? »)… et se retourne
-    sans visage quand on s’approche ou qu’on lui parle.
-  Dans les villes, un imposteur se glisse parmi les habitants une nuit sur deux.
+- **Les Terreurs nocturnes viennent vous chercher** : sept Jinémon à part, qu'on ne croise jamais dans les herbes,
+  sortent à la tombée de la nuit (trois par zone sauvage) et disparaissent à l'aube. Chacune surprend à sa façon, et
+  son corps va avec :
+  - **Tissombre**, l'araignée des toits, guette sur le chaume des cases et dans les arbres : ses huit yeux rouges vous
+    suivent où que vous alliez, elle saute de toit en toit pour se rapprocher, et quand vous passez trop près, elle se
+    ramasse… et vous saute dessus (en filant dès qu'elle se tapit, on esquive son bond) ;
+  - **Yaramaya**, petit homme rouge à grosse tête, pend tête en bas dans les arbres au-dessus des passages : on ne
+    voit que ses yeux jaunes et ses longs bras ; il descend quand on approche et se laisse tomber sur qui passe dessous ;
+  - **Olgoïkhor**, le ver de la mort aveugle, nage sous la terre vers le bruit de vos pas (une bosse de sable qui
+    avance, la terre qui gronde, l'écran qui tremble). Restez immobile : il ne vous trouve plus. Marchez sur lui : il
+    jaillit ;
+  - **Kongamato**, le briseur de barques aux ailes de cuir, tournoie dans le ciel (on ne voit que son ombre) puis
+    tombe en piqué : écartez-vous à temps ;
+  - **Dodombre**, le faux villageois, attend avec sa lanterne et un visage volé, appelle à l'aide (« Tu peux
+    m'aider ? »)… et le masque tombe quand on s'approche ;
+  - **Elokloche** : une clochette qui tinte, une petite lueur qui danse et s'approche… tout près, sa bouche s'ouvre
+    jusqu'aux oreilles et elle se rue sur vous (en courant, on la sème) ;
+  - **Mngwa**, le fauve gris, rôde, vous flaire, se rapproche peu à peu, et charge quand il vous voit.
+  Dans les villes, Tissombre guette sur les toits, et Dodombre se glisse parmi les habitants une nuit sur deux. Le
+  Ginédex indique pour chacune sa façon de chasser et les zones où elle rôde.
 - **Couvre-feu** : la nuit, les habitants rentrent chez eux et les rues se vident (seuls restent ceux qui gardent un
   passage). Frappez à une porte : « On n’ouvre plus à personne après la tombée de la nuit ! »
-- **Des villageois poursuivis** traversent la carte en hurlant (« Au secours ! »), torche à la main, une bête sur les
+- **Des villageois poursuivis** traversent la carte en hurlant (« Au secours ! »), torche à la main, Mngwa sur les
   talons. Ils courent s’abriter dans une case ou fuient par une sortie ; la bête se tourne alors vers vous. Si vous
   vous trouvez sur son chemin, c’est vous qu’elle prend en chasse.
 - **Des bruits terrifiants**, synthétisés et placés dans l’espace (plus forts quand c’est près, à gauche ou à droite) :
@@ -228,7 +238,7 @@ src/
     zoneKit.ts          Fabriques de PNJ et de bâtiments (soigneurs, marchands, dresseurs, objets…)
     trainersActe2.ts    Maîtres de Piste, bandits du désert, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
-    nightMobs.ts        Les chasseurs de la nuit de chaque zone, et les bêtes qui poursuivent les villageois
+    nightMobs.ts        Les sept Terreurs nocturnes : qui chasse où, et le fauve qui poursuit les villageois
   engine/               Logique pure, testée sans navigateur
     combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience, avantage du joueur)
     hero.ts             Le héros : ses PV, et les duels contre les bandits et les monstres de la nuit
@@ -244,11 +254,12 @@ src/
     creatures.ts        Modelage des Jinémon 001 à 073 (un plan corporel par famille, réglé par espèce)
     creaturesNouveaux.ts Modelage des Jinémon 074 à 128, dont les six Hantises
     creaturesActe2.ts   Modelage des Jinémon 129 à 137
+    creaturesNuit.ts    Modelage des Terreurs nocturnes (138 à 144)
     musicScore.ts       Partitions (notation compacte, grilles d’accords) des musiques et jingles
     music.ts            Séquenceur WebAudio : instruments synthétisés, écho, boucles et jingles
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
-    nightMobs.ts        Créatures de la nuit sur la carte (rôdeur, volant, imposteur) et villageois poursuivis
+    nightMobs.ts        Terreurs nocturnes sur la carte (araignée, pendu, ver, clochette, oiseau, faux villageois, fauve) et villageois poursuivis
     props.ts            Objets du décor sculptés
     buildings.ts        Bâtiments (maison, auberge, Marché, sanctuaire), stands et meubles sculptés
     fighters.ts         Combattants humains sculptés pour les duels (bandit de face, héros de dos)

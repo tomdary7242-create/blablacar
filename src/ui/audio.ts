@@ -46,7 +46,19 @@ export type FxSound =
   | 'soin';
 
 /** Bruits des créatures de la nuit (et des villageois qu'elles poursuivent). */
-export type NightSound = 'grognement' | 'hurlement' | 'cri' | 'ailes' | 'rire' | 'appel' | 'chute' | 'pas';
+export type NightSound =
+  | 'grognement'
+  | 'hurlement'
+  | 'cri'
+  | 'ailes'
+  | 'rire'
+  | 'appel'
+  | 'chute'
+  | 'pas'
+  | 'cliquetis'
+  | 'clochette'
+  | 'grondement'
+  | 'bruissement';
 
 const SOUNDS: Record<Sfx, Note[]> = {
   curseur: [[880, 0.03, 'square']],
@@ -297,6 +309,27 @@ export class Audio {
         break;
       case 'pas':
         this.hiss(t, 0.07, 'lowpass', 220, 90, 1.2, 1, 0.004, out);
+        break;
+      case 'cliquetis':
+        // Huit pattes sur le chaume, et un claquement de chélicères.
+        for (let i = 0; i < 9; i++) this.hiss(t + i * 0.045 + (i % 3) * 0.012, 0.018, 'highpass', 3800, 3000, 0.5, 1, 0.001, out);
+        for (let i = 0; i < 3; i++) this.voice(t + 0.48 + i * 0.07, 'square', [[0, 1900], [0.03, 1500]], 0.12, out, { filter: ['bandpass', 1700, 6] });
+        break;
+      case 'clochette':
+        // Petite clochette de cuivre : deux tintements clairs qui s'éteignent lentement.
+        for (const [at, f] of [[0, 1568], [0.32, 1318]] as const) {
+          this.voice(t + at, 'sine', [[0, f], [1.2, f * 0.995]], 0.22, out);
+          this.voice(t + at, 'sine', [[0, f * 2.76], [0.5, f * 2.75]], 0.07, out);
+        }
+        break;
+      case 'grondement':
+        // La terre gronde sous vos pieds.
+        this.voice(t, 'sawtooth', [[0, 38], [0.6, 46], [1.3, 34]], 0.3, out, { vibrato: 0.08, rate: 7, filter: ['lowpass', 160, 1] });
+        this.hiss(t, 1.3, 'lowpass', 260, 110, 0.5, 0.8, 0.25, out);
+        break;
+      case 'bruissement':
+        // Les feuilles s'agitent, alors qu'il n'y a pas de vent.
+        for (let i = 0; i < 4; i++) this.hiss(t + i * 0.13, 0.2, 'bandpass', 2600 + i * 300, 1800, 0.2, 1.2, 0.05, out);
         break;
     }
   }
