@@ -527,8 +527,15 @@ export class OverworldScene implements Scene, World {
     if (npc.hideFlag && flags[npc.hideFlag]) return false;
     // Un bandit mis à terre ne revient pas : mort, livré à la garde, ou en fuite.
     if (npc.script.kind === 'dresseur' && TRAINERS[npc.script.trainer]?.bandit && flags[`dresseur:${npc.script.trainer}`]) return false;
+    // La nuit, les habitants rentrent chez eux (sauf ceux qui gardent un passage).
+    if (npc.script.kind === 'dialogue' && !npc.hideFlag && !npc.showFlag && this.curfew()) return false;
     if (npc.showFlag && !flags[npc.showFlag]) return false;
     return true;
+  }
+
+  /** Couvre-feu : la nuit, dehors, plus personne ne traîne dans les rues. */
+  private curfew(): boolean {
+    return !this.zone.interior && !this.zone.dark && isNight(this.game.s.clock);
   }
 
   private npcAt(x: number, y: number): Npc | undefined {
@@ -823,6 +830,9 @@ export class OverworldScene implements Scene, World {
       this.mirage();
     } else if (t === '~' && itemCount(this.game.s, 'nasse') > 0 && this.zone.fishing?.length) {
       this.fish();
+    } else if (t === 'D' && this.curfew()) {
+      this.game.sfx('pas');
+      this.game.say(['Vous frappez à la porte…', 'Une voix tremblante, de l’autre côté : « Pas à cette heure ! On n’ouvre plus à personne après la tombée de la nuit ! »']);
     } else if (this.zone.decor?.[t] ?? DECOR_TEXT[t]) {
       this.game.say([this.zone.decor?.[t] ?? DECOR_TEXT[t]]);
     }

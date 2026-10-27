@@ -116,7 +116,7 @@ export interface Species {
 
 const LS = {
   antilope: [
-    [1, 'coupDePatte'], [1, 'criDeGuerre'], [5, 'pousseMil'], [9, 'sporesToxiques'], [13, 'griffeArgile'],
+    [1, 'coupDePatte'], [1, 'criDeGuerre'], [5, 'pousseMil'], [6, 'chargeBrousse'], [9, 'sporesToxiques'], [13, 'griffeArgile'],
     [17, 'racineEpineuse'], [21, 'berceuseFeuilles'], [25, 'seveNourriciere'], [29, 'piegeBoue'], [34, 'lameRonier'],
     [39, 'armureBanco'], [44, 'etreinteBaobab'], [50, 'fissureLaterite'], [58, 'grondementFalaise'], [65, 'moissonSacree'],
   ],

@@ -485,7 +485,7 @@ export class NightMob {
     } else if (!this.disguised() && dark > 0.3 && this.phase !== 'revelation') {
       this.eyes(ctx, sx, sy, this.def.kind === 'imposteur' ? '#c8f0ff' : '#ff3a2a', time);
     }
-    if (this.alert > 0) {
+    if (this.alert > 0 && this.phase !== 'attaque') {
       const lift = Math.round((1.1 - this.alert) * 6);
       text(ctx, '!', sx + 6, sy - 22 - lift - (this.def.kind === 'volant' ? this.alt : 0), { color: '#ff4030', shadow: PAL.ink });
     }

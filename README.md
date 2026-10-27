@@ -86,7 +86,9 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Un peu plus facile** : les coups de votre camp portent 25 % de plus, l’expérience est multipliée par 1,5, et après
   chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %. Les calebasses sont plus
   généreuses (×1,5), surtout avec les jeunes Jinémon (jusqu’au niveau 20) : en début de partie, un Jinémon commun
-  presque K.O. ne leur échappe plus.
+  presque K.O. ne leur échappe plus. Les trois bandits de la Savane, l’apprenti de la Forge et Sirafa ont été allégés,
+  et le starter Plante apprend Charge de Brousse dès le niveau 6 (il n’avait rien contre les oiseaux et les insectes du
+  début).
 - **Lits et point de réveil** : dormir à l’auberge (lits ou aubergiste), dans sa chambre, chez Maman ou sous la tente
   d’un campement soigne tout le monde et fixe l’endroit où l’on se réveille après un malheur. Le **sac de couchage**
   (SAC) permet de bivouaquer n’importe où dehors : moins réparateur, et la nuit, une Hantise vient parfois renifler le
@@ -156,6 +158,8 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   - l’**imposteur**, un villageois attardé avec sa lanterne, appelle à l’aide (« Tu peux m’aider ? »)… et se retourne
     sans visage quand on s’approche ou qu’on lui parle.
   Dans les villes, un imposteur se glisse parmi les habitants une nuit sur deux.
+- **Couvre-feu** : la nuit, les habitants rentrent chez eux et les rues se vident (seuls restent ceux qui gardent un
+  passage). Frappez à une porte : « On n’ouvre plus à personne après la tombée de la nuit ! »
 - **Des villageois poursuivis** traversent la carte en hurlant (« Au secours ! »), torche à la main, une bête sur les
   talons. Ils courent s’abriter dans une case ou fuient par une sortie ; la bête se tourne alors vers vous. Si vous
   vous trouvez sur son chemin, c’est vous qu’elle prend en chasse.

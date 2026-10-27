@@ -139,7 +139,7 @@ const ACTE1: Trainer[] = [
   // ── Savane des Termitières ──
   {
     id: 'hamadou', name: 'Hamadou', title: 'Racketteur des Termitières', ai: 'simple', reward: 120,
-    team: [{ species: 33, level: 5 }, { species: 14, level: 6 }],
+    team: [{ species: 33, level: 3 }, { species: 14, level: 4 }],
     intro: [
       'Hamadou : Halte. Cette piste est à moi, et on paie pour passer.',
       'Hamadou : Ta bourse. Ou mes bêtes te piétinent.',
@@ -153,7 +153,7 @@ const ACTE1: Trainer[] = [
   },
   {
     id: 'mariam', name: 'Mariam', title: 'Arnaqueuse des Pistes', ai: 'simple', reward: 150,
-    team: [{ species: 18, level: 6 }, { species: 24, level: 7 }],
+    team: [{ species: 18, level: 3 }, { species: 24, level: 4 }],
     intro: [
       'Mariam : Tu connais l’histoire du voyageur qui gardait sa bourse ? Moi non plus. Ils finissent tous par me la donner.',
       'Mariam : Allez. Sois raisonnable.',
@@ -167,7 +167,7 @@ const ACTE1: Trainer[] = [
   },
   {
     id: 'moussa', name: 'Moussa', title: 'Voleur à la Tire', ai: 'simple', reward: 100,
-    team: [{ species: 16, level: 5 }, { species: 10, level: 5 }, { species: 16, level: 6 }],
+    team: [{ species: 16, level: 3 }, { species: 10, level: 4 }],
     intro: ['Moussa : Pas un geste. Tu vides ton sac par terre, et tu repars sans te retourner.'],
     defeat: ['Moussa : Non… Non ! Tu les as tués ! Je vais te planter !'],
     after: [
@@ -180,7 +180,7 @@ const ACTE1: Trainer[] = [
   // ── Terres Rouges ──
   {
     id: 'bakary', name: 'Bakary', title: 'Racketteur de la Forge', ai: 'simple', reward: 350,
-    team: [{ species: 55, level: 10 }, { species: 12, level: 11 }],
+    team: [{ species: 55, level: 8 }, { species: 12, level: 9 }],
     intro: [
       'Bakary : Le Maître ne reçoit que ceux qui paient le droit d’entrée.',
       'Bakary : Cinq cents cauris. Tu ne les as pas ? Alors je me servirai sur ton cadavre.',
@@ -196,7 +196,7 @@ const ACTE1: Trainer[] = [
   },
   {
     id: 'sirafa', name: 'Sirafa', title: 'Maître du Feu Sacré', ai: 'malin', reward: 1500, badge: 'enclume',
-    team: [{ species: 7, level: 12 }, { species: 55, level: 13 }, { species: 8, level: 16 }],
+    team: [{ species: 7, level: 11 }, { species: 55, level: 12 }, { species: 8, level: 14 }],
     intro: [
       'Sirafa : Bienvenue à la Forge des Terres Rouges, jeune Initié.',
       'Sirafa : Depuis des générations, ma famille garde le secret du feu et du fer.',
