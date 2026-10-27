@@ -1,6 +1,6 @@
 // Menu principal d'exploration, options et insignes.
-import { SPECIES } from '../../data/ginedex';
-import { BADGES, BADGE_ORDER, type BadgeId } from '../../data/trainers';
+import { REGION_BADGES, REGION_SPECIES } from '../../data/region';
+import { BADGES, type BadgeId } from '../../data/trainers';
 import { formatClock, phaseOf } from '../../engine/clock';
 import { formatPlayTime } from '../../engine/gameState';
 import { heroHp, heroMaxHp } from '../../engine/hero';
@@ -92,14 +92,14 @@ export class MenuScene implements Scene {
     const s = this.game.s;
     box(ctx, 2, 2, 144, 96);
     text(ctx, s.playerName, 10, 5, { shadow: PAL.shadow });
-    // Les PV du héros lui-même : les bandits et les monstres de la nuit s'en prennent à lui.
+    // Les PV de l'héroïne elle-même : les bandits s'en prennent à elle en duel (elle ne tombe jamais sous 1 PV).
     const hp = heroHp(s);
     const max = heroMaxHp(s);
     hpBar(ctx, 10, 19, 84, hp / max);
     text(ctx, `${hp}/${max}`, 138, 15, { align: 'right' });
     text(ctx, `Cauris : ${s.cauris}`, 10, 27);
-    text(ctx, `Insignes : ${s.badges.length}/8`, 10, 38);
-    text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length}`, 10, 49);
+    text(ctx, `Insignes : ${s.badges.length}/${REGION_BADGES.length}`, 10, 38);
+    text(ctx, `Ginédex : ${REGION_SPECIES.filter((id) => s.dex.caught.includes(id)).length}/${REGION_SPECIES.length}`, 10, 49);
     text(ctx, s.bounties > 0 ? `Primes touchées : ${s.bounties}` : 'Aucune prime touchée', 10, 60, { color: s.bounties > 0 ? PAL.rust : PAL.grey });
     // Heure du monde, avec un soleil ou une lune.
     const phase = phaseOf(s.clock.minute);
@@ -196,9 +196,9 @@ export class BadgesScene implements Scene {
   update(): void {
     const input = this.game.input;
     const before = this.index;
-    if (input.pressed('left')) this.index = (this.index + 7) % 8;
-    if (input.pressed('right')) this.index = (this.index + 1) % 8;
-    if (input.pressed('up') || input.pressed('down')) this.index = (this.index + 4) % 8;
+    const n = REGION_BADGES.length;
+    if (input.pressed('left') || input.pressed('up')) this.index = (this.index + n - 1) % n;
+    if (input.pressed('right') || input.pressed('down')) this.index = (this.index + 1) % n;
     if (before !== this.index) this.game.sfx('curseur');
     if (input.pressed('a') || input.pressed('b')) {
       this.game.sfx('retour');
@@ -209,22 +209,24 @@ export class BadgesScene implements Scene {
   render(ctx: CanvasRenderingContext2D): void {
     menuBackground(ctx, W, H);
     const owned = this.game.s.badges;
-    text(ctx, 'INSIGNES DES MAÎTRES DE PISTE', 6, 2, { color: PAL.cream, shadow: PAL.ink });
-    text(ctx, `${owned.length}/8`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
-    BADGE_ORDER.forEach((id, i) => {
-      const x = 4 + (i % 4) * 62;
-      const y = 15 + Math.floor(i / 4) * 52;
+    text(ctx, 'INSIGNES DES ARÈNES', 6, 2, { color: PAL.cream, shadow: PAL.ink });
+    text(ctx, `${owned.length}/${REGION_BADGES.length}`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
+    // Les insignes de la région, centrés sur une rangée.
+    const left = Math.round(W / 2 - (REGION_BADGES.length * 62) / 2);
+    REGION_BADGES.forEach((id, i) => {
+      const x = left + i * 62;
+      const y = 40;
       box(ctx, x, y, 60, 50, i === this.index ? 'actif' : 'papier');
       drawBadge(ctx, id, x + 30, y + 21, owned.includes(id));
       text(ctx, `${i + 1}`, x + 6, y + 37, { color: i === this.index ? PAL.rust : PAL.grey });
     });
-    const id = BADGE_ORDER[this.index];
+    const id = REGION_BADGES[this.index];
     const badge = BADGES[id];
     const has = owned.includes(id);
     box(ctx, 2, 120, 252, 70);
     text(ctx, has ? badge.name : '???', 10, 124, { shadow: PAL.shadow });
     text(ctx, badge.arena, 10, 136, { color: PAL.rust });
-    wrapText(has ? badge.description : 'Battez le Maître de Piste de cette Arène.', 236)
+    wrapText(has ? badge.description : 'Battez le chef de bande qui tient cette Arène.', 236)
       .slice(0, 3)
       .forEach((row, r) => text(ctx, row, 10, 149 + r * 12, { color: has ? PAL.ink : PAL.grey }));
   }

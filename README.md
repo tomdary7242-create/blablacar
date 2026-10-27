@@ -10,9 +10,27 @@ Construit à partir du GDD v1.0 puis étendu : TypeScript + Vite, rendu Canvas 2
 le LocalStorage, déploiement sur GitHub Pages. Aucune image ni aucun son externe : sprites, décors, musique et bruitages
 sont générés par le code.
 
-L’aventure se joue en deux actes : l’**Acte I** (trois Arènes et le Panthéon des Légendes, fidèle au GDD), puis
-l’**Acte II**, la route de Tombouctou : cinq nouvelles Arènes, la Confrérie des Masques Brisés, le Conseil des Griots
-et la Championne du Mandé.
+**Cette branche est la version courte et facile** : une aventure d’une heure environ, deux Arènes, quatre zones, et
+une héroïne qui ne tombe jamais. La version complète (deux actes, huit Arènes, Conseil des Griots, 13 zones) est
+gardée telle quelle sur la branche [`sauvegarde/ginemon-complet`](../../tree/sauvegarde/ginemon-complet).
+
+## L’aventure (version courte)
+
+- **L’héroïne s’appelle Lisa** par défaut : le prénom est déjà écrit à l’écran de départ, il suffit de valider, ou
+  de taper un autre prénom (la première lettre tapée remplace « Lisa »).
+- **Au réveil, Maman** parle des Jinémon, envoie au sanctuaire du Hogon chercher un premier compagnon… et finit par
+  l’essentiel : **Thomas a des ennuis, il faut aller le retrouver.**
+- **Les Sandales Noires**, une bande de brigands, ont pris **les deux Arènes de la région** : la Forge des Terres
+  Rouges (Sirafa, leur lieutenant, Feu / Métal) et le Sanctuaire du Marigot (Aminata, le bras droit du Chef, Eau /
+  Esprit). Leurs insignes s’obtiennent comme avant ; l’Insigne de l’Enclume suffit à briser les rochers fissurés.
+- **De l’aide avant chaque Arène** : le vieux forgeron chassé de sa Forge confie un Kappou (Eau), et une herboriste du
+  Marigot un Kaméléo (Plante). Avec eux, chaque starter gagne les deux Arènes.
+- **Thomas** attend derrière l’autel du Sanctuaire, une fois Aminata battue. La fin réserve une surprise ; puis le
+  générique, et l’on peut continuer à explorer et à remplir le Ginédex. On peut lui reparler pour réentendre son
+  message.
+- **La région** : Village des Greniers, Savane des Termitières, Terres Rouges et Marigot des Ancêtres (le gué vers la
+  Forêt Sacrée a été emporté). Le Ginédex, la carte, le menu et les insignes ne montrent que ce qu’elle contient :
+  **83 Jinémon** à rencontrer (faune, pêche, trois Hantises et les sept Terreurs nocturnes) et **2 insignes**.
 
 ## Graphismes
 
@@ -69,7 +87,7 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   l’objectif. Sur chaque lieu visité, A ouvre son **plan** (bâtiments, stands, sorties). Le Village des Greniers a aussi
   son plan affiché sur la place.
 
-## Bandits, lits et nuits mortelles
+## Bandits, lits et nuits (sans danger pour l’héroïne)
 
 - **Les dresseurs de route sont des bandits** : racketteurs, braconniers, pilleurs de tombes, pirates, sbires des
   Masques Brisés… Ils veulent votre bourse. La rivale, les Maîtres de Piste et le Conseil des Griots se battent
@@ -80,27 +98,27 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **À genoux, il implore** : l’**achever** (on récupère sa bourse), ou l’**épargner**. Les trois quarts ont la tête mise
   à prix : avec des **Menottes de Fer** (5 offertes par le Hogon, puis au marché), la garde l’emmène et la **prime** est
   pour vous ; menotté, il avoue ce qu’il sait. Sans menottes, ou sans prime, il détale. Mort, arrêté ou en fuite, il
-  ne revient plus sur la carte. Vaincu, en revanche, c’est lui qui vous dépouille.
+  ne revient plus sur la carte. **L’héroïne, elle, ne tombe jamais** : un coup qui l’aurait mise à terre la laisse
+  chancelante à 1 PV (« vous tenez bon ! »), et le duel continue jusqu’à ce que le bandit cède.
 - **Les Jinémon des bandits peuvent leur être arrachés** d’un coup de calebasse quand ils sont affaiblis : moins de 30 %
   de leurs PV, endormis, paralysés ou confus (une calebasse clignote alors à côté de leurs PV).
-- **Un peu plus facile** : les coups de votre camp portent 25 % de plus, l’expérience est multipliée par 1,5, et après
+- **Facile** : les coups de votre camp portent 35 % de plus, l’expérience est multipliée par 1,5, et après
   chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %. Les Jinémon restés en réserve
   gagnent aussi un petit tiers de l’expérience (la moitié avec l’Amulette du Partage). Les calebasses sont plus
   généreuses (×1,5), surtout avec les jeunes Jinémon (jusqu’au niveau 20) : en début de partie, un Jinémon commun
-  presque K.O. ne leur échappe plus. Les trois bandits de la Savane, l’apprenti de la Forge et Sirafa ont été allégés,
-  et le starter Plante apprend Charge de Brousse dès le niveau 6 (il n’avait rien contre les oiseaux et les insectes du
-  début).
+  presque K.O. ne leur échappe plus. Les chefs des deux Arènes jouent plus simplement et alignent des équipes légères,
+  les bandits du Marigot, les Hantises et les Terreurs nocturnes ont été rabaissés de quelques niveaux, et le starter
+  Plante apprend Charge de Brousse dès le niveau 6.
 - **Lits et point de réveil** : dormir à l’auberge (lits ou aubergiste), dans sa chambre, chez Maman ou sous la tente
-  d’un campement soigne tout le monde et fixe l’endroit où l’on se réveille après un malheur. Le **sac de couchage**
+  d’un campement soigne tout le monde et fixe l’endroit où l’on revient quand l’équipe est à terre. Le **sac de couchage**
   (SAC) permet de bivouaquer n’importe où dehors : moins réparateur, et la nuit, une Hantise vient parfois renifler le
   dormeur.
-- **La nuit, dehors, si toute l’équipe tombe, le monstre s’en prend au héros** : l’écran se teinte de sang, le cœur
-  bat, la bête grandit. On peut se débattre (les coups ne font qu’effleurer sa chair d’ombre) ou tenter de fuir.
-  Mort, on s’évanouit et l’on se réveille au petit matin dans le dernier lit.
+- **Si toute l’équipe tombe**, de jour comme de nuit, on prend ses Jinémon dans ses bras et on rentre au dernier lit,
+  sans rien perdre (ni cauris, ni rien d’autre). Les monstres de la nuit ne s’en prennent jamais à l’héroïne.
 
 ## Contenu
 
-- **144 Jinémon** répartis en 98 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
+- **144 Jinémon** dans les données (dont 83 dans la région jouable de la version courte), répartis en 98 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
   Termitox, Rochard) et quatre Légendes : Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou ; Faro, génie
   du Niger ; Aïdohwedo, le serpent arc-en-ciel des Fon. Environ un Jinémon sauvage sur 512 est **chatoyant**
   (couleurs rares).
@@ -111,10 +129,10 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Bassins d’attaques** d’environ 15 attaques par lignée, apprises du niveau 1 au niveau 70 ; au-delà de 4 attaques,
   le jeu propose d’en oublier une. Depuis l’équipe, on peut à tout moment remplacer une attaque par une autre déjà
   apprise.
-- **13 zones** et une trentaine d’intérieurs : Village des Greniers (maison, sanctuaire, auberge, Marché), Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
+- *(Version complète)* **13 zones** et une trentaine d’intérieurs : Village des Greniers (maison, sanctuaire, auberge, Marché), Savane des Termitières, Terres Rouges, Marigot des Ancêtres, Forêt Sacrée,
   Piste des Chasseurs Donzos, Falaise des Ancêtres (Panthéon des Légendes), puis Désert des Djinns, Monts de Hombori
   (grottes obscures), Djenné et le Delta, Côte des Alizés, Bois des Masques et Tombouctou.
-- **8 Arènes et leurs insignes** : Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos, Oasis
+- *(Version complète)* **8 Arènes et leurs insignes** : Forge des Terres Rouges, Marigot des Ancêtres, Piste des Chasseurs Donzos, Oasis
   de Tin-Hinan, Main de Fatma, Fleuve de Djenné, Phare des Alizés, Bois des Masques ; puis le **Conseil des Griots**
   (quatre griots à affronter d’affilée) et la Championne. Plus de 50 adversaires, dont une quarantaine de bandits, une
   rivale qui grandit avec vous, une organisation de pillards et son chef.
@@ -239,6 +257,7 @@ src/
     trainersActe2.ts    Maîtres de Piste, bandits du désert, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
     nightMobs.ts        Les sept Terreurs nocturnes : qui chasse où, et le fauve qui poursuit les villageois
+    region.ts           La région jouable (zones reliées au village), son Ginédex et ses insignes
   engine/               Logique pure, testée sans navigateur
     combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience, avantage du joueur)
     hero.ts             Le héros : ses PV, et les duels contre les bandits et les monstres de la nuit

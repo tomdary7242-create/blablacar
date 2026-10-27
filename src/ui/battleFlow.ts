@@ -1,5 +1,5 @@
-// Lancement des combats et conséquences : capture, récompenses, primes, évolutions,
-// évanouissement (on se réveille dans le dernier lit où l'on a dormi).
+// Lancement des combats et conséquences : capture, récompenses, primes, évolutions.
+// Perdre ne fait jamais de mal à l'héroïne : on ramène ses Jinémon au dernier lit où l'on a dormi.
 import { getSpecies } from '../data/ginedex';
 import { BADGES, getTrainer, trainerTeam, type Trainer } from '../data/trainers';
 import { isNight, MORNING, advanceTo } from '../engine/clock';
@@ -27,7 +27,7 @@ export interface WildOptions {
   onOutcome?: (outcome: Outcome) => void;
   /** Musique du combat (par défaut : combat sauvage, ou légende). */
   music?: TrackId;
-  /** Hantise : apparition terrifiante, et le monstre s'en prend au héros si l'équipe tombe. */
+  /** Hantise : apparition terrifiante (elle surgit des ténèbres). */
   haunt?: boolean;
   /** Entrée en scène (par défaut, surgie des ténèbres pour une Hantise). */
   entrance?: 'surgir' | 'chute';
@@ -38,12 +38,6 @@ function tooWeak(game: Game): boolean {
   if (hasUsableJinemon(game.s)) return false;
   game.say(['Vos Jinémon sont à bout de forces. Il faut trouver un lit, et vite.']);
   return true;
-}
-
-/** La nuit, dehors (ou face à une Hantise), un monstre s'en prend au héros quand l'équipe tombe. */
-function preysOnHero(game: Game, opts: WildOptions): boolean {
-  const zone = game.world?.zone;
-  return !!opts.haunt || (isNight(game.s.clock) && !!zone && !zone.interior);
 }
 
 export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}): void {
@@ -66,11 +60,10 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}
         new BattleScene(game, combat, {
           theme: game.world?.zone.theme ?? 'savane',
           music: opts.music ?? (species.legendary ? 'legende' : 'combat'),
-          prey: preysOnHero(game, opts),
           entrance: opts.entrance ?? (opts.haunt ? 'surgir' : undefined),
-          onEnd: (outcome, end) => {
+          onEnd: (outcome) => {
             opts.onOutcome?.(outcome);
-            afterWild(game, combat, outcome, end, before, opts.flag);
+            afterWild(game, combat, outcome, before, opts.flag);
           },
         }),
       );
@@ -78,17 +71,10 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}
   );
 }
 
-function afterWild(game: Game, combat: Combat, outcome: Outcome, end: BattleEnd, before: Map<Jinemon, number>, flag?: string): void {
+function afterWild(game: Game, combat: Combat, outcome: Outcome, before: Map<Jinemon, number>, flag?: string): void {
   const state = game.s;
   if (outcome === 'defaite') {
-    const name = getSpecies(combat.foeActive.speciesId).name;
-    if (end.duel === 'victoire') {
-      stumbleHome(game, [`${name} s’est dissipé dans la nuit. Épuisé, vous rentrez vous coucher en titubant…`]);
-    } else if (end.duel === 'fuite') {
-      stumbleHome(game, ['Vous courez jusqu’à votre lit sans jamais vous retourner…']);
-    } else {
-      blackout(game, end.duel ? [`${name} s’acharne sur vous… Vous perdez connaissance.`] : undefined);
-    }
+    blackout(game);
     return;
   }
   const lines: string[] = [];
@@ -219,17 +205,12 @@ function breather(game: Game, lines: string[]): void {
   if (catchBreath(game.s, maxHp)) lines.push('Le combat terminé, vous reprenez votre souffle, et vos Jinémon aussi.');
 }
 
-/** Vaincu par un bandit : il vous dépouille et vous laisse pour mort. */
+/** Battue par un bandit : il ricane et s'en va ; on ramène ses Jinémon se reposer. */
 function robbed(game: Game, trainer: Trainer): void {
-  const state = game.s;
-  const lost = Math.floor(state.cauris / 3);
-  state.cauris -= lost;
-  blackout(game, [
-    `${trainer.name} vous fait les poches pendant que vous gisez à terre${lost > 0 ? ` : ${lost} cauris envolés` : ''}…`,
-  ]);
+  blackout(game, [`${trainer.name} ricane et disparaît dans les hautes herbes.`, 'Vos Jinémon sont épuisés : vous les ramenez se reposer.']);
 }
 
-/** On reprend connaissance dans le dernier lit où l'on a dormi, au petit matin si c'était la nuit. */
+/** On rentre au dernier lit où l'on a dormi, au petit matin si c'était la nuit. */
 function wakeInBed(game: Game, lines: string[]): void {
   const state = game.s;
   const pos = state.lastHeal;
@@ -239,24 +220,14 @@ function wakeInBed(game: Game, lines: string[]): void {
   game.say(lines, () => game.save(true));
 }
 
-/** Rentrer se coucher sans avoir perdu connaissance (Hantise repoussée, ou fuite). */
-function stumbleHome(game: Game, lines: string[]): void {
-  game.say(lines, () => wakeInBed(game, [`Vous vous réveillez dans ${game.s.bed}. Vos Jinémon ont repris des forces.`]));
-}
-
-/** Évanouissement : on perd une partie des cauris et l'on se réveille dans le dernier lit. */
+/** Tous les Jinémon sont à terre : on les ramène au dernier lit, sans rien perdre. */
 export function blackout(game: Game, cause?: string[]): void {
   const state = game.s;
-  const lost = cause ? 0 : Math.floor(state.cauris / 4);
-  state.cauris -= lost;
   game.say(
-    [
-      ...(cause ?? ['Vos Jinémon s’effondrent… La tête vous tourne, et vous vous évanouissez.']),
-      ...(lost > 0 ? [`Dans la panique, vous avez égaré ${lost} cauris.`] : []),
-    ],
+    cause ?? ['Vos Jinémon sont épuisés… Vous les prenez dans vos bras et rentrez vous reposer.'],
     () =>
       wakeInBed(game, [
-        `Vous reprenez connaissance dans ${state.bed}.`,
+        `Vous voilà de retour dans ${state.bed}.`,
         `Vos Jinémon ont retrouvé leurs forces. Courage, ${state.playerName} !`,
       ]),
   );

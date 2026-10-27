@@ -3,11 +3,13 @@ import { SPECIES, getSpecies } from '../src/data/ginedex';
 import { ITEMS } from '../src/data/items';
 import { TRAINERS } from '../src/data/trainers';
 import { HAUNTS } from '../src/data/hantises';
-import { nightMobsOf, townMobs } from '../src/data/nightMobs';
+import { REGION_SPECIES, REGION_ZONES, inRegion } from '../src/data/region';
 import { DIR_DELTA, GRASS_TILE, SOLID_TILES, ZONES, tileAt, type Zone, type ZoneId } from '../src/data/zones';
 import { START_POSITION } from '../src/engine/gameState';
 
 const zones = Object.values(ZONES);
+/** Les zones de la région jouable (le reste du monde dort, hors d'atteinte). */
+const regional = zones.filter((z) => inRegion(z.id));
 
 /** Cases atteignables depuis un point (rochers fissurés, gués et mirages considérés franchissables). */
 function reachable(zone: Zone, sx: number, sy: number): Set<string> {
@@ -42,7 +44,7 @@ describe('Cartes des zones', () => {
   });
 
   it('ont des téléporteurs valides et réciproques', () => {
-    for (const z of zones) {
+    for (const z of regional) {
       for (const w of z.warps) {
         expect(SOLID_TILES.has(tileAt(z, w.x, w.y)), `${z.id} sortie ${w.x},${w.y}`).toBe(false);
         const target = ZONES[w.to];
@@ -99,7 +101,8 @@ describe('Cartes des zones', () => {
         if (area.has(`${w.x},${w.y}`)) queue.push([w.to, w.tx, w.ty]);
       }
     }
-    for (const z of zones) {
+    expect([...visited.keys()].sort()).toEqual([...REGION_ZONES].sort());
+    for (const z of regional) {
       const area = visited.get(z.id);
       expect(area, z.id).toBeDefined();
       for (const npc of z.npcs) {
@@ -114,28 +117,15 @@ describe('Cartes des zones', () => {
     }
   });
 
-  it('permet d’obtenir chaque espèce du Ginédex', () => {
-    const obtainable = new Set<number>([1, 4, 7]);
-    for (const z of zones) {
-      z.encounters.forEach((e) => obtainable.add(e.species));
-      z.nightEncounters?.forEach((e) => obtainable.add(e.species));
-      z.fishing?.forEach((e) => obtainable.add(e.species));
-      z.npcs.forEach((n) => n.script.kind === 'legendaire' && obtainable.add(n.script.species));
-    }
-    HAUNTS.forEach((h) => obtainable.add(h.species));
-    // Les Terreurs nocturnes se capturent quand elles vous tombent dessus.
-    for (const z of zones) [...nightMobsOf(z.id), ...townMobs(z.id, 1)].forEach((m) => obtainable.add(m.species));
-    let grew = true;
-    while (grew) {
-      grew = false;
-      for (const s of SPECIES) {
-        if (obtainable.has(s.id) && s.evolution && !obtainable.has(s.evolution.to)) {
-          obtainable.add(s.evolution.to);
-          grew = true;
-        }
-      }
-    }
-    expect(SPECIES.filter((s) => !obtainable.has(s.id)).map((s) => s.name)).toEqual([]);
+  it('a un Ginédex à la taille de la région : starters, faune, Hantises et Terreurs', () => {
+    expect(REGION_SPECIES.length).toBeGreaterThanOrEqual(60);
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 9]) expect(REGION_SPECIES, `starter ${id}`).toContain(id);
+    for (let id = 138; id <= 144; id++) expect(REGION_SPECIES, `Terreur ${id}`).toContain(id);
+    for (const h of HAUNTS.filter((h) => inRegion(h.zone))) expect(REGION_SPECIES).toContain(h.species);
+    // Ce qui ne vit que dans le reste du monde n'y figure pas (Légendes de l'Acte II, faune du désert…).
+    for (const id of [70, 71, 136, 137, 129, 131]) expect(REGION_SPECIES, getSpecies(id).name).not.toContain(id);
+    // Tout ce qu'on croise dans la région y figure.
+    for (const z of regional) for (const e of [...z.encounters, ...(z.nightEncounters ?? [])]) expect(REGION_SPECIES).toContain(e.species);
   });
 });
 
@@ -161,14 +151,15 @@ describe('Nuit et Hantises', () => {
     expect(SPECIES.filter((s) => s.nocturne).length).toBeGreaterThanOrEqual(12);
   });
 
-  it('comptent six Hantises plus puissantes que la faune de leur zone', () => {
+  it('comptent six Hantises, bien plus robustes que la faune de leur zone', () => {
     expect(HAUNTS).toHaveLength(6);
     expect(new Set(HAUNTS.map((h) => h.behavior)).size).toBe(6);
     expect(SPECIES.filter((s) => s.hantise).map((s) => s.id).sort()).toEqual(HAUNTS.map((h) => h.species).sort());
     for (const h of HAUNTS) {
       const zone = ZONES[h.zone];
       const wildMax = Math.max(...[...zone.encounters, ...(zone.nightEncounters ?? [])].map((e) => e.max));
-      expect(h.level, h.zone).toBeGreaterThan(wildMax);
+      // Version facile : à peu près au niveau des plus forts Jinémon du coin, mais bien plus robustes.
+      expect(h.level, h.zone).toBeGreaterThanOrEqual(wildMax - 2);
       const species = getSpecies(h.species);
       const total = species.baseStats.hp + species.baseStats.attack + species.baseStats.defense + species.baseStats.speed;
       expect(total, species.name).toBeGreaterThanOrEqual(380);

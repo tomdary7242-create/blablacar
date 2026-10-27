@@ -11,7 +11,9 @@ import { drawCreature } from '../sprites';
 import { OverworldScene } from './overworld';
 import { RevealScene } from './transition';
 
-const SUGGESTIONS = ['Sékou', 'Aïssata', 'Moussa', 'Awa', 'Kofi', 'Mariam', 'Oumar', 'Ama', 'Yacouba', 'Fatou', 'Salif', 'Nana'];
+/** Le prénom proposé d'office (on peut l'effacer), puis d'autres suggestions. */
+export const DEFAULT_NAME = 'Lisa';
+const SUGGESTIONS = [DEFAULT_NAME, 'Sékou', 'Aïssata', 'Moussa', 'Awa', 'Kofi', 'Mariam', 'Oumar', 'Ama', 'Fatou', 'Salif', 'Nana'];
 
 /** Paysage sahélien au coucher du soleil (titre et saisie du nom). */
 function sahelBackdrop(ctx: CanvasRenderingContext2D): void {
@@ -77,8 +79,10 @@ export class TitleScene implements Scene {
 
 export class NameScene implements Scene {
   readonly opaque = true;
-  private name = '';
-  private suggestion = -1;
+  private name = DEFAULT_NAME;
+  private suggestion = 0;
+  /** Le prénom proposé n'a pas encore été touché : la première lettre tapée le remplace. */
+  private pristine = true;
 
   constructor(private readonly game: Game) {}
 
@@ -87,8 +91,11 @@ export class NameScene implements Scene {
     const enter = input.codes.includes('Enter') || input.codes.includes('NumpadEnter');
     if (input.typed.length) {
       for (const ch of input.typed) {
+        const letter = /^[\p{L}\p{N} '-]$/u.test(ch);
+        if (this.pristine && letter) this.name = '';
+        if (letter || ch === '\b') this.pristine = false;
         if (ch === '\b') this.name = this.name.slice(0, -1);
-        else if (/^[\p{L}\p{N} '-]$/u.test(ch) && this.name.length < 10) this.name += ch;
+        else if (letter && this.name.length < 10) this.name += ch;
       }
       this.suggestion = -1;
       // Les lettres tapées déclenchent aussi des boutons (ZQSD, J, K…) : seule Entrée valide.
@@ -109,7 +116,7 @@ export class NameScene implements Scene {
   }
 
   private confirm(): void {
-    const name = this.name.trim() || 'Initié';
+    const name = this.name.trim() || DEFAULT_NAME;
     this.game.sfx('valider');
     startWorld(this.game, newGameState(name), true);
   }
@@ -117,11 +124,11 @@ export class NameScene implements Scene {
   render(ctx: CanvasRenderingContext2D): void {
     sahelBackdrop(ctx);
     box(ctx, 14, 36, 228, 92);
-    text(ctx, 'Comment t’appelles-tu, jeune Initié ?', W / 2, 42, { align: 'center', shadow: PAL.shadow });
+    text(ctx, 'Comment t’appelles-tu ?', W / 2, 42, { align: 'center', shadow: PAL.shadow });
     box(ctx, 58, 58, 140, 26, 'sombre');
     const caret = Math.floor(this.game.time * 2) % 2 === 0 ? '_' : ' ';
     text(ctx, this.name + caret, W / 2, 62, { align: 'center', color: PAL.cream, scale: 1 });
-    text(ctx, 'Tape ton nom au clavier,', W / 2, 92, { align: 'center' });
+    text(ctx, 'Efface et tape un autre nom,', W / 2, 92, { align: 'center' });
     text(ctx, 'ou ◄ ► pour une suggestion.', W / 2, 102, { align: 'center' });
     text(ctx, 'Entrée / A : valider', W / 2, 114, { align: 'center', color: PAL.grey });
   }

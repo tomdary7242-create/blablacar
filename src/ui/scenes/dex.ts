@@ -1,5 +1,6 @@
 // Le Ginédex : liste des espèces vues et capturées, avec fiche détaillée.
-import { SPECIES, dexNumber, getSpecies, preEvolution } from '../../data/ginedex';
+import { dexNumber, getSpecies, preEvolution } from '../../data/ginedex';
+import { REGION_SPECIES } from '../../data/region';
 import { TALENTS } from '../../data/talents';
 import { HAUNTS } from '../../data/hantises';
 import { HUNT_HINTS, huntingGrounds, mobKindOf } from '../../data/nightMobs';
@@ -14,7 +15,7 @@ import { ListCursor, menuBackground } from '../widgets';
 
 export class DexScene implements Scene {
   readonly opaque = true;
-  private cursor = new ListCursor(SPECIES.length, 14);
+  private cursor = new ListCursor(REGION_SPECIES.length, 14);
 
   constructor(private readonly game: Game) {}
 
@@ -27,7 +28,7 @@ export class DexScene implements Scene {
       return;
     }
     if (input.pressed('a')) {
-      const id = SPECIES[this.cursor.index].id;
+      const id = REGION_SPECIES[this.cursor.index];
       if (this.game.s.dex.seen.includes(id)) {
         this.game.sfx('valider');
         this.game.scenes.push(new DexEntryScene(this.game, id));
@@ -45,10 +46,12 @@ export class DexScene implements Scene {
     const dex = this.game.s.dex;
     menuBackground(ctx, W, H);
     text(ctx, 'GINÉDEX', 6, 2, { color: PAL.cream, shadow: PAL.ink });
-    text(ctx, `Vus ${dex.seen.length} · Capturés ${dex.caught.length}/${SPECIES.length}`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
+    const seenCount = REGION_SPECIES.filter((id) => dex.seen.includes(id)).length;
+    const caughtCount = REGION_SPECIES.filter((id) => dex.caught.includes(id)).length;
+    text(ctx, `Vus ${seenCount} · Capturés ${caughtCount}/${REGION_SPECIES.length}`, 250, 2, { align: 'right', color: PAL.cream, shadow: PAL.ink });
     box(ctx, 2, 14, 126, 176);
     for (const i of this.cursor.window()) {
-      const s = SPECIES[i];
+      const s = getSpecies(REGION_SPECIES[i]);
       const y = 19 + (i - this.cursor.scroll) * 12;
       const seen = dex.seen.includes(s.id);
       const caught = dex.caught.includes(s.id);
@@ -62,7 +65,7 @@ export class DexScene implements Scene {
       if (caught) calabash(ctx, 118, y + 6, 1);
       else if (seen) stamp(ctx, ['##', '##'], 116, y + 5, { '#': PAL.grey });
     }
-    const s = SPECIES[this.cursor.index];
+    const s = getSpecies(REGION_SPECIES[this.cursor.index]);
     const seen = dex.seen.includes(s.id);
     box(ctx, 130, 14, 124, 176);
     fillEllipse(ctx, 192, 92, 34, 7, '#e8d4a4');
@@ -99,7 +102,7 @@ export class DexEntryScene implements Scene {
   ) {}
 
   private seenIds(): number[] {
-    return SPECIES.map((s) => s.id).filter((id) => this.game.s.dex.seen.includes(id));
+    return REGION_SPECIES.filter((id) => this.game.s.dex.seen.includes(id));
   }
 
   update(): void {

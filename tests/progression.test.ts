@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { REGION_TOWNS } from '../src/data/region';
 import { TRAINERS, type BadgeId } from '../src/data/trainers';
 import { DIR_DELTA, SOLID_TILES, ZONES, tileAt, type Npc, type Zone, type ZoneId } from '../src/data/zones';
 import { START_POSITION } from '../src/engine/gameState';
@@ -6,7 +7,7 @@ import { START_POSITION } from '../src/engine/gameState';
 /**
  * Parcourt le monde comme un joueur : on bat tous les dresseurs accessibles,
  * on gagne leurs insignes, on franchit les passages qu'ils ouvrent, jusqu'à
- * ce que plus rien ne change. Vérifie que le jeu peut être terminé.
+ * ce que plus rien ne change. Vérifie que le jeu peut être terminé (Thomas retrouvé).
  */
 function playThrough(): { flags: Set<string>; badges: Set<BadgeId>; order: string[] } {
   const flags = new Set<string>(['starter']);
@@ -61,6 +62,9 @@ function playThrough(): { flags: Set<string>; badges: Set<BadgeId>; order: strin
           flags.add(s.flag);
           changed = true;
         }
+      } else if (s.kind === 'thomas' && !flags.has('fin')) {
+        flags.add('fin');
+        changed = true;
       } else if (s.kind === 'legendaire' && !flags.has(s.flag)) {
         flags.add(s.flag);
         changed = true;
@@ -73,25 +77,23 @@ function playThrough(): { flags: Set<string>; badges: Set<BadgeId>; order: strin
 describe('Progression', () => {
   const { flags, badges, order } = playThrough();
 
-  it('permet de gagner les huit insignes et de devenir Champion', () => {
-    expect([...badges].sort()).toEqual(['dragon', 'enclume', 'masque', 'mirage', 'pierre', 'pluie', 'traqueur', 'vent']);
-    expect(flags.has('dresseur:assa')).toBe(true);
-    expect(flags.has('dresseur:kadyChampion')).toBe(true);
+  it('permet de gagner les deux insignes et de retrouver Thomas', () => {
+    expect([...badges].sort()).toEqual(['enclume', 'pluie']);
+    expect(flags.has('fin')).toBe(true);
+    // Thomas n'apparaît qu'une fois la seconde Arène libérée.
+    expect(order.indexOf('aminata')).toBeGreaterThanOrEqual(0);
   });
 
-  it('permet d’affronter chaque dresseur et chaque Légende', () => {
-    for (const id of Object.keys(TRAINERS)) expect(flags.has(`dresseur:${id}`), id).toBe(true);
-    for (const z of Object.values(ZONES)) {
-      for (const n of z.npcs) if (n.script.kind === 'legendaire') expect(flags.has(n.script.flag), n.id).toBe(true);
-    }
+  it('permet d’affronter chaque dresseur de la région, et aucun autre', () => {
+    const regional = REGION_TOWNS.flatMap((id) => ZONES[id].npcs.flatMap((n) => (n.script.kind === 'dresseur' ? [n.script.trainer] : [])));
+    for (const id of regional) expect(flags.has(`dresseur:${id}`), id).toBe(true);
+    expect([...order].sort()).toEqual([...regional].sort());
   });
 
-  it('fait affronter les Maîtres de Piste dans l’ordre, de plus en plus forts', () => {
+  it('fait affronter les deux Arènes des Sandales Noires dans l’ordre, de plus en plus fortes', () => {
     const leaders = order.filter((id) => TRAINERS[id].badge);
-    expect(leaders).toEqual(['sirafa', 'aminata', 'simbon', 'takama', 'dogo', 'tenin', 'ndiaga', 'kouma']);
+    expect(leaders).toEqual(['sirafa', 'aminata']);
     const levels = leaders.map((id) => Math.max(...TRAINERS[id].team.map((m) => m.level)));
-    for (let i = 1; i < levels.length; i++) expect(levels[i]).toBeGreaterThan(levels[i - 1]);
-    const council = ['kandia', 'bazoumana', 'fanta', 'balla', 'kadyChampion'];
-    expect(order.filter((id) => council.includes(id))).toEqual(council);
+    expect(levels[1]).toBeGreaterThan(levels[0]);
   });
 });

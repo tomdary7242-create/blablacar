@@ -15,11 +15,11 @@ export interface Badge {
 export const BADGES: Record<BadgeId, Badge> = {
   enclume: {
     id: 'enclume', name: "Insigne de l'Enclume", arena: 'La Forge des Terres Rouges', color: '#c8401a',
-    description: 'Permet aux Jinémon connaissant une attaque Métal de briser les rochers fissurés hors combat.',
+    description: 'Repris aux Sandales Noires. Avec lui, on brise les rochers fissurés qui barrent la route du Marigot.',
   },
   pluie: {
     id: 'pluie', name: 'Insigne de la Pluie', arena: 'Le Marigot des Ancêtres', color: '#3a86c8',
-    description: 'Permet aux Jinémon connaissant une attaque Eau de faire traverser les gués.',
+    description: 'Repris au bras droit du Chef des Sandales Noires. Le Sanctuaire du Marigot est libre.',
   },
   traqueur: {
     id: 'traqueur', name: 'Insigne du Traqueur', arena: 'La Piste des Chasseurs Donzos', color: '#b5733a',
@@ -120,8 +120,11 @@ const ACTE1: Trainer[] = [
       'Kady : Te voilà enfin ! Grand-père m’a confié un Jinémon, à moi aussi.',
       'Kady : Voyons lequel de nous deux a été le mieux choisi !',
     ],
-    defeat: ['Kady : Pas mal… Mais la route est longue jusqu’au Panthéon !'],
-    after: ['Kady : On se reverra plus loin. Je deviendrai plus forte !'],
+    defeat: [
+      'Kady : Pas mal du tout !',
+      'Kady : Tu cherches Thomas ? Grand-père m’a parlé des Sandales Noires. Ils tiennent la Forge, à l’est d’ici.',
+    ],
+    after: ['Kady : Les Sandales Noires sont à l’est, à la Forge des Terres Rouges. Fais attention à toi !'],
     look: RIVAL_LOOK,
   },
   {
@@ -182,39 +185,39 @@ const ACTE1: Trainer[] = [
     id: 'bakary', name: 'Bakary', title: 'Racketteur de la Forge', ai: 'simple', reward: 350,
     team: [{ species: 55, level: 8 }, { species: 12, level: 9 }],
     intro: [
-      'Bakary : Le Maître ne reçoit que ceux qui paient le droit d’entrée.',
-      'Bakary : Cinq cents cauris. Tu ne les as pas ? Alors je me servirai sur ton cadavre.',
+      'Bakary : Halte ! Ici, c’est la Forge des Sandales Noires. Le droit d’entrée, c’est cinq cents cauris.',
+      'Bakary : Tu ne les as pas ? Alors je vais me servir moi-même.',
     ],
     defeat: ['Bakary : Tu crois que j’ai besoin de Jinémon pour te briser les os ?'],
     after: [
-      'Bakary : Le Maître dit que le feu craint l’eau et la roche. Prends ce conseil, et laisse-moi la vie sauve.',
+      'Bakary : Sirafa dit que le feu craint l’eau et la roche. Prends ce conseil, et laisse-moi tranquille.',
     ],
     bandit: { prime: 700, plea: [
-      'Bakary : Assez ! Le Maître Sirafa ne sait rien de mon petit commerce… Ne lui dis rien, je t’en supplie !',
+      'Bakary : Assez ! Je ne suis qu’un sous-fifre des Sandales Noires… Le Chef ne doit jamais savoir que j’ai perdu !',
     ] },
     look: { skin: '#5a3420', outfit: '#6a6f78', accent: '#e2582a', headwear: 'bonnet' },
   },
   {
-    id: 'sirafa', name: 'Sirafa', title: 'Maître du Feu Sacré', ai: 'malin', reward: 1500, badge: 'enclume',
-    team: [{ species: 7, level: 11 }, { species: 55, level: 12 }, { species: 8, level: 14 }],
+    id: 'sirafa', name: 'Sirafa', title: 'Lieutenant des Sandales Noires', ai: 'simple', reward: 1500, badge: 'enclume',
+    team: [{ species: 7, level: 8 }, { species: 55, level: 9 }, { species: 8, level: 11 }],
     intro: [
-      'Sirafa : Bienvenue à la Forge des Terres Rouges, jeune Initié.',
-      'Sirafa : Depuis des générations, ma famille garde le secret du feu et du fer.',
-      'Sirafa : Montre-moi si ton cœur est assez solide pour être forgé !',
+      'Sirafa : Tiens, tiens… Une petite curieuse qui entre dans MA Forge.',
+      'Sirafa : Le vieux forgeron s’est enfui. Désormais, cette Arène appartient aux Sandales Noires !',
+      'Sirafa : Tu cherches Thomas ? Il faudra d’abord passer sur mes Jinémon !',
     ],
     defeat: [
-      'Sirafa : Le fer a parlé : tu es digne.',
-      "Sirafa : Reçois l'Insigne de l'Enclume. Avec lui, tes Jinémon qui maîtrisent le Métal pourront briser les rochers fissurés.",
-      'Sirafa : Les rochers au nord mènent au Marigot des Ancêtres. La Gardienne des Eaux Dormantes t’y attend.',
+      'Sirafa : Impossible… Battu par une débutante !',
+      "Sirafa : Garde-le, cet Insigne de l'Enclume. Avec lui, tu pourras briser les rochers fissurés au nord.",
+      'Sirafa : Thomas ? Le Chef l’a fait emmener au Sanctuaire du Marigot. C’est Aminata qui le garde… Bonne chance, tu en auras besoin.',
     ],
-    after: ['Sirafa : Le feu purifie, l’enclume façonne. N’oublie jamais d’où vient ta force.'],
+    after: ['Sirafa : Le Chef ne va pas être content du tout…'],
     look: { skin: '#4a2a1a', outfit: '#8a3a1a', accent: '#ffcf3a', headwear: 'bonnet' },
   },
 
   // ── Marigot des Ancêtres ──
   {
     id: 'sory', name: 'Sory', title: 'Pirate du Fleuve', ai: 'simple', reward: 450,
-    team: [{ species: 43, level: 15 }, { species: 49, level: 16 }],
+    team: [{ species: 43, level: 12 }, { species: 49, level: 13 }],
     intro: ['Sory : Personne ne traverse le marigot sans payer le péage. Mon péage à moi.'],
     defeat: ['Sory : Le fleuve a emporté mes Jinémon. Il va t’emporter aussi !'],
     after: [
@@ -225,7 +228,7 @@ const ACTE1: Trainer[] = [
   },
   {
     id: 'aissata', name: 'Aïssata', title: 'Braconnière', ai: 'simple', reward: 450,
-    team: [{ species: 47, level: 16 }, { species: 43, level: 17 }],
+    team: [{ species: 47, level: 13 }, { species: 43, level: 14 }],
     intro: [
       'Aïssata : Les feux follets du marigot se vendent une fortune. Et toi, tu m’as vue les chasser.',
       'Aïssata : Mauvaise idée.',
@@ -239,12 +242,12 @@ const ACTE1: Trainer[] = [
   },
   {
     id: 'binta', name: 'Binta', title: 'Pilleuse d’Offrandes', ai: 'simple', reward: 600,
-    team: [{ species: 49, level: 19 }, { species: 43, level: 20 }],
+    team: [{ species: 49, level: 14 }, { species: 43, level: 15 }],
     intro: [
       'Binta : Les pèlerins laissent des offrandes à la Gardienne. Moi, je les ramasse.',
       'Binta : Et les tiennes, je vais les ramasser aussi.',
     ],
-    defeat: ['Binta : Ma dernière bête… Je vais te noyer dans la mare sacrée !'],
+    defeat: ['Binta : Ma dernière bête… Le Chef des Sandales Noires va me le faire payer !'],
     after: [
       'Binta : L’eau éteint le feu, mais la plante boit l’eau : c’est ce que dit la Gardienne. Je ne volerai plus ses offrandes, je le jure.',
     ],
@@ -252,19 +255,19 @@ const ACTE1: Trainer[] = [
     look: { skin: '#5a3420', outfit: '#2a7ab8', accent: '#c8f0ff', headwear: 'foulard' },
   },
   {
-    id: 'aminata', name: 'Aminata', title: 'Gardienne des Eaux Dormantes', ai: 'malin', reward: 2200, badge: 'pluie',
-    team: [{ species: 4, level: 19 }, { species: 43, level: 20 }, { species: 37, level: 21 }, { species: 5, level: 23 }],
+    id: 'aminata', name: 'Aminata', title: 'Bras droit du Chef', ai: 'simple', reward: 2200, badge: 'pluie',
+    team: [{ species: 43, level: 11 }, { species: 4, level: 12 }, { species: 5, level: 14 }],
     intro: [
-      'Aminata : … Les fromagers m’ont annoncé ta venue.',
-      'Aminata : Cette mare est sacrée. Les esprits des eaux y dorment depuis l’origine du monde.',
-      'Aminata : Voyons si le courant de ton âme est assez fort pour les réveiller.',
+      'Aminata : Alors c’est toi qui as chassé Sirafa de la Forge…',
+      'Aminata : Ce sanctuaire est aux Sandales Noires, maintenant. Et ton Thomas aussi.',
+      'Aminata : Le Chef m’a ordonné de ne laisser passer personne. Personne !',
     ],
     defeat: [
-      'Aminata : Le courant t’a porté jusqu’à la victoire.',
-      "Aminata : Voici l'Insigne de la Pluie. Grâce à lui, tes Jinémon Eau pourront te faire franchir les gués.",
-      'Aminata : À l’est, au-delà du gué, s’étend la Forêt Sacrée. Respecte ses génies.',
+      'Aminata : Les Sandales Noires… vaincues par une seule Initiée…',
+      "Aminata : Prends l'Insigne de la Pluie. Tu l’as bien gagné.",
+      'Aminata : Ton Thomas est juste derrière l’autel. Va le libérer… Tu vas avoir une drôle de surprise.',
     ],
-    after: ['Aminata : L’eau a de la mémoire. Elle se souviendra de ton passage.'],
+    after: ['Aminata : Le Chef, hein… Tu le connais mieux que tu ne crois.'],
     look: { skin: '#5a3420', outfit: '#2a6a98', accent: '#e4b6e8', headwear: 'turban' },
   },
 

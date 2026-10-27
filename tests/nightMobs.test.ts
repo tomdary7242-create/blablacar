@@ -79,7 +79,7 @@ describe('Les Terreurs nocturnes (données)', () => {
       const mobs = nightMobsOf(id);
       expect(mobs, id).toHaveLength(3);
       expect(new Set(mobs.map((m) => m.kind)).size, id).toBe(3);
-      const strongest = Math.max(...ZONES[id].nightEncounters!.map((e) => e.max));
+      const strongest = Math.max(3, Math.max(...ZONES[id].nightEncounters!.map((e) => e.max)) - 2);
       for (const m of mobs) {
         seen.add(m.kind);
         expect(getSpecies(m.species).terreur, `${id} ${m.id}`).toBe(true);
@@ -103,7 +103,7 @@ describe('Les Terreurs nocturnes (données)', () => {
   });
 
   it('en ville : l’araignée sur les toits, un faux villageois une nuit sur deux, le fauve aux trousses des attardés', () => {
-    expect(chaserOf('village')).toEqual({ species: TERRORS.rodeur, level: 7 });
+    expect(chaserOf('village')).toEqual({ species: TERRORS.rodeur, level: 5 });
     const nights = Array.from({ length: 20 }, (_, n) => townMobs('village', n));
     for (const mobs of nights) expect(mobs[0].kind).toBe('guetteur');
     expect(nights.some((m) => m.some((d) => d.kind === 'imposteur'))).toBe(true);

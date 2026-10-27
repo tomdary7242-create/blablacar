@@ -122,6 +122,12 @@ export const ACTION_HINTS: Record<DuelAction, string> = {
 /** Vos poings ne font qu'effleurer la chair d'ombre des monstres de la nuit. */
 const SHADOW_FLESH = 0.5;
 
+/**
+ * L'héroïne ne tombe jamais : un coup qui l'aurait mise à terre la laisse debout, à 1 PV,
+ * et le duel continue jusqu'à ce que l'adversaire cède.
+ */
+export const HERO_STANDS = true;
+
 export class Duel {
   phase: 'choix' | 'fini' = 'choix';
   outcome: DuelOutcome | null = null;
@@ -222,8 +228,10 @@ export class Duel {
     const critical = chance(this.rng, 1 / 16);
     let damage = this.foe.attack * (strong ? 1.6 : 1) * (critical ? 1.5 : 1) * this.spread();
     if (this.guard) damage *= 0.25;
+    const before = this.hero.hp;
     this.hit('heros', damage, critical, this.guard);
     if (this.guard) this.say('Vous encaissez le coup sans broncher.');
+    else if (this.hero.hp === 1 && before - 1 < damage) this.say('Vous chancelez… mais vous tenez bon !');
     if (this.hero.hp <= 0) {
       this.say(bandit ? 'Vous vous effondrez dans la poussière…' : 'Vos forces vous abandonnent. Tout devient noir…');
       this.end('defaite');
@@ -237,7 +245,8 @@ export class Duel {
 
   private hit(side: DuelSide, amount: number, critical: boolean, blocked: boolean): void {
     const target = side === 'heros' ? this.hero : this.foe;
-    const damage = Math.min(target.hp, Math.max(1, Math.round(amount)));
+    const floor = side === 'heros' && HERO_STANDS ? 1 : 0;
+    const damage = Math.max(0, Math.min(target.hp - floor, Math.max(1, Math.round(amount))));
     target.hp -= damage;
     this.emit({ type: 'pv', side, hp: target.hp, maxHp: target.maxHp, damage, critical, blocked });
   }

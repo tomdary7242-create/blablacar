@@ -94,7 +94,7 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
   },
   sacCouchage: {
     name: 'Sac de Couchage', price: 0, effect: { kind: 'cle' },
-    description: 'Votre vieux sac de couchage. Déroulez-le pour dormir à la belle étoile : si un malheur arrive, c’est là que vous vous réveillerez.',
+    description: 'Votre vieux sac de couchage. Déroulez-le pour dormir à la belle étoile : c’est là que vous reviendrez si vos Jinémon sont à bout de forces.',
   },
 };
 

@@ -94,10 +94,10 @@ export interface CombatOptions {
 }
 
 /**
- * Avantage de l'Initié : les coups portés par le camp du joueur font 25 % de
- * dégâts en plus que la normale.
+ * Avantage de l'Initiée : les coups portés par le camp du joueur font 35 % de
+ * dégâts en plus que la normale (une aventure courte et facile).
  */
-export const PLAYER_EDGE = 1.25;
+export const PLAYER_EDGE = 1.35;
 
 /** Part de l'expérience que gagnent les Jinémon restés en réserve (sans, puis avec l'Amulette du Partage). */
 export const BENCH_XP = { base: 0.3, amulette: 0.5 };

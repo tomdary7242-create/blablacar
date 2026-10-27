@@ -76,9 +76,9 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-/** Les Terreurs, plus robustes que la faune, chassent au niveau des plus forts Jinémon nocturnes du coin. */
+/** Les Terreurs, plus robustes que la faune, chassent un peu sous le niveau des plus forts Jinémon nocturnes du coin. */
 function huntingLevel(wild: ZoneId): number {
-  return Math.max(...ZONES[wild].nightEncounters!.map((e) => e.max));
+  return Math.max(3, Math.max(...ZONES[wild].nightEncounters!.map((e) => e.max)) - 2);
 }
 
 function mob(id: string, zone: ZoneId, kind: MobKind, level: number): MobDef {

@@ -35,7 +35,7 @@ export const HAUNTS: Haunt[] = [
   {
     zone: 'savane',
     species: 123,
-    level: 11,
+    level: 8,
     behavior: 'herbes',
     spawns: [[12, 11], [25, 11], [16, 18], [27, 18], [4, 19], [4, 10]],
     step: 0.55,
@@ -45,17 +45,17 @@ export const HAUNTS: Haunt[] = [
   {
     zone: 'terresRouges',
     species: 124,
-    level: 17,
+    level: 13,
     behavior: 'traqueur',
     spawns: [[1, 8], [15, 1], [28, 22]],
     step: 0.85,
     omen: 'Derrière vous, des pas lourds font crisser la latérite. Ils s’arrêtent quand vous vous retournez.',
-    cry: ['Une haleine chaude vous frôle la nuque…', 'Le forgeron-hyène vous a rattrapé !'],
+    cry: ['Une haleine chaude vous frôle la nuque…', 'Le forgeron-hyène vous a rattrapée !'],
   },
   {
     zone: 'marigot',
     species: 125,
-    level: 23,
+    level: 18,
     behavior: 'miroir',
     spawns: [[16, 5]],
     axis: 13,
@@ -70,7 +70,7 @@ export const HAUNTS: Haunt[] = [
     behavior: 'statue',
     spawns: [[20, 16], [30, 12], [15, 5], [5, 17], [25, 18]],
     step: 0.32,
-    omen: 'Une statue hérissée de clous se dresse sur le sentier. Vous êtes sûr qu’elle n’était pas là avant.',
+    omen: 'Une statue hérissée de clous se dresse sur le sentier. Vous êtes sûre qu’elle n’était pas là avant.',
     cry: ['Vous vous retournez : la statue est juste devant vous.', 'Ses clous tintent tous ensemble. Le fétiche attaque !'],
   },
   {

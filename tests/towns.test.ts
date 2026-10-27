@@ -104,8 +104,8 @@ describe('Villes et bâtiments', () => {
 });
 
 describe('Objectif du moment', () => {
-  it('guide pas à pas : Maman, le Hogon, Kady, puis les Maîtres de Piste', () => {
-    const s = newGameState('Awa');
+  it('guide pas à pas : Maman, le Hogon, Kady, les deux Arènes, puis Thomas', () => {
+    const s = newGameState('Lisa');
     expect(currentObjective(s).building).toBe('maison');
     s.flags.maman = true;
     expect(currentObjective(s)).toMatchObject({ zone: 'village', building: 'sanctuaire' });
@@ -113,16 +113,21 @@ describe('Objectif du moment', () => {
     expect(currentObjective(s).zone).toBe('savane');
     s.flags['dresseur:rival1'] = true;
     expect(currentObjective(s).zone).toBe('terresRouges');
-    const order = ['sirafa', 'aminata', 'simbon', 'assa', 'takama', 'dogo', 'tenin', 'ndiaga', 'kouma', 'kadyChampion'];
     let last = objectiveIndex(s);
-    for (const id of order) {
+    for (const id of ['sirafa', 'aminata']) {
       const zone = currentObjective(s).zone;
-      // Le Maître de Piste désigné se trouve bien dans la zone indiquée.
-      expect(ZONES[zone].npcs.some((n) => n.script.kind === 'dresseur' && (n.script.trainer === id || id === 'kadyChampion')), `${id} → ${zone}`).toBe(true);
+      // Le chef de l'Arène désigné se trouve bien dans la zone indiquée.
+      expect(ZONES[zone].npcs.some((n) => n.script.kind === 'dresseur' && n.script.trainer === id), `${id} → ${zone}`).toBe(true);
       s.flags[`dresseur:${id}`] = true;
       expect(objectiveIndex(s)).toBeGreaterThan(last);
       last = objectiveIndex(s);
     }
+    // Reste à libérer Thomas, au Marigot.
+    expect(currentObjective(s)).toMatchObject({ zone: 'marigot' });
+    expect(currentObjective(s).text).toContain('Thomas');
+    expect(ZONES.marigot.npcs.some((n) => n.script.kind === 'thomas' && n.showFlag === 'dresseur:aminata')).toBe(true);
+    s.flags.fin = true;
+    expect(objectiveIndex(s)).toBeGreaterThan(last);
     expect(currentObjective(s).text).toContain('Ginédex');
   });
 

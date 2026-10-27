@@ -1,6 +1,7 @@
 // Plans et carte : le plan d'une ville (bâtiments, sorties, « vous êtes ici ») et
 // la carte du monde, avec l'objectif du moment marqué d'une étoile.
 import { BUILDING_LABEL, BUILDING_SIZE, doorOf } from '../../data/interiors';
+import { REGION_TOWNS } from '../../data/region';
 import { getTrainer } from '../../data/trainers';
 import { ZONES, type BuildingKind, type TownId, type Zone } from '../../data/zones';
 import { currentObjective } from '../../engine/objective';
@@ -211,12 +212,12 @@ export class PlanScene implements Scene {
   }
 }
 
-/** Position des zones sur la carte du monde. */
+/** Position des zones sur la carte du monde (seules celles de la région y figurent). */
 const WORLD: Record<TownId, [number, number]> = {
-  village: [30, 146],
-  savane: [30, 120],
-  terresRouges: [72, 120],
-  marigot: [72, 94],
+  village: [84, 132],
+  savane: [84, 90],
+  terresRouges: [160, 90],
+  marigot: [160, 46],
   foret: [112, 94],
   piste: [152, 94],
   falaise: [152, 68],
@@ -227,7 +228,7 @@ const WORLD: Record<TownId, [number, number]> = {
   masques: [228, 48],
   tombouctou: [228, 22],
 };
-const ORDER = Object.keys(WORLD) as TownId[];
+const ORDER: readonly TownId[] = REGION_TOWNS;
 
 /** Carte du monde : zones visitées, routes, position du joueur et objectif. */
 export class WorldMapScene implements Scene {
@@ -286,7 +287,7 @@ export class WorldMapScene implements Scene {
     for (const id of ORDER) {
       for (const w of ZONES[id].warps) {
         const to = w.to as TownId;
-        if (!(to in WORLD) || ORDER.indexOf(to) < ORDER.indexOf(id)) continue;
+        if (!ORDER.includes(to) || ORDER.indexOf(to) < ORDER.indexOf(id)) continue;
         const [x0, y0] = WORLD[id];
         const [x1, y1] = WORLD[to];
         const known = visited(id) && visited(to);
@@ -339,7 +340,7 @@ export class WorldMapScene implements Scene {
       else if (zone.npcs.some((n) => n.script.kind === 'boutique')) info.push('Marchand');
       if (leader && leader.script.kind === 'dresseur') {
         const t = getTrainer(leader.script.trainer);
-        info.push(`Maître : ${t.name}${state.flags[`dresseur:${t.id}`] ? ' ✓' : ''}`);
+        info.push(`Arène : ${t.name}${state.flags[`dresseur:${t.id}`] ? ' ✓' : ''}`);
       }
       text(ctx, info.join(' · ') || 'Lieu sauvage', 10, 174, { color: PAL.grey });
     }

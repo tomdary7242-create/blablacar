@@ -85,8 +85,12 @@ export type NpcScript =
   | { kind: 'starter' }
   /** Maman : elle envoie le joueur au sanctuaire, puis soigne son équipe. */
   | { kind: 'maman' }
+  /** Thomas, retrouvé au Sanctuaire du Marigot : la fin de l'aventure. */
+  | { kind: 'thomas' }
   | { kind: 'gardien'; condition: Condition; flag: string; blocked: string[]; open: string[] }
   | { kind: 'objet'; item: ItemId; quantity: number; flag: string }
+  /** Un PNJ confie un Jinémon une seule fois (pour la prochaine Arène), puis répète `after`. */
+  | { kind: 'compagnon'; species: number; level: number; flag: string; lines: string[]; after: string[] }
   /** Un PNJ offre un objet une seule fois, puis répète `after`. */
   | { kind: 'don'; item: ItemId; quantity: number; flag: string; lines: string[]; after: string[] }
   | { kind: 'legendaire'; species: number; level: number; moves: MoveId[]; flag: string; lines: string[] };
@@ -233,7 +237,7 @@ const village: Zone = {
       'Conteur : Tous ont trouvé leur place dans notre monde. Le Ginédex les recense tous.',
     ]),
     parole('enfant', 'Enfant', 20, 12, 'droite', ENFANT, [
-      'Enfant : Papa dit qu’il y a des bandits dans la savane. La semaine dernière, ils ont dépouillé un marchand et l’ont laissé pour mort.',
+      'Enfant : Papa dit qu’il y a des bandits dans la savane. La semaine dernière, ils ont dépouillé un marchand de tous ses cauris.',
       'Enfant : Moi, quand je serai grand, je les mettrai tous aux fers !',
     ]),
     parole('voisine', 'Voisine', 12, 22, 'gauche', { skin: '#6a4028', outfit: '#e85a8f', accent: '#f0c040', headwear: 'foulard' }, [
@@ -396,13 +400,13 @@ const terresRouges: Zone = {
     { x: 15, y: 0, to: 'marigot', tx: 16, ty: 26, dir: 'haut' },
   ],
   signs: [
-    { x: 22, y: 10, text: ['La Forge des Terres Rouges', 'Maître de Piste : Sirafa, Maître du Feu Sacré (Feu / Métal)'] },
+    { x: 22, y: 10, text: ['La Forge des Terres Rouges', 'Occupée par les Sandales Noires. Arène de Sirafa, lieutenant de la bande (Feu / Métal).'] },
     { x: 14, y: 9, text: ['↑ Marigot des Ancêtres', 'Le passage est obstrué par des rochers fissurés.'] },
   ],
   npcs: [
     parole('mineur', 'Mineur', 16, 4, 'bas', VILLAGEOIS, [
       'Mineur : Ces rochers fissurés bloquent la route du Marigot.',
-      'Mineur : Seul un Jinémon maîtrisant le Métal pourrait les briser… avec la permission du Maître Sirafa et son Insigne de l’Enclume.',
+      'Mineur : Il faudrait l’Insigne de l’Enclume pour les briser… et c’est Sirafa, le lieutenant des Sandales Noires, qui le garde dans sa Forge.',
     ]),
     {
       id: 'griotteVoyageuse', name: 'Griotte voyageuse', x: 20, y: 7, dir: 'bas',
@@ -410,12 +414,24 @@ const terresRouges: Zone = {
       script: {
         kind: 'don', item: 'amulettePartage', quantity: 1, flag: 'don:amulette',
         lines: [
-          'Griotte : Tu as battu Sirafa ? Les griots chantent déjà ta victoire !',
+          'Griotte : Tu as chassé Sirafa de la Forge ? Les griots chantent déjà ta victoire !',
           'Griotte : Prends cette amulette. Ceux qui restent en réserve apprendront aussi de tes combats.',
         ],
         after: ['Griotte : Une équipe forte, c’est une équipe où chacun grandit. Pas seulement le plus fort.'],
       },
       showFlag: 'dresseur:sirafa',
+    },
+    {
+      id: 'vieuxForgeron', name: 'Vieux forgeron', x: 24, y: 10, dir: 'gauche',
+      look: { kind: 'personne', look: { skin: '#4a2a1a', outfit: '#6a5a4a', accent: '#c8c8c8', headwear: 'bonnet' } },
+      script: {
+        kind: 'compagnon', species: 43, level: 10, flag: 'don:kappou',
+        lines: [
+          'Vieux forgeron : Ces brigands m’ont chassé de ma propre Forge… Sirafa et ses Jinémon de feu.',
+          'Vieux forgeron : Tu vas l’affronter ? Alors prends mon Kappou. L’eau éteint le feu : il te sera bien utile.',
+        ],
+        after: ['Vieux forgeron : Mets mon Kappou en tête face à Sirafa. L’eau éteint le feu !'],
+      },
     },
     dresseur('bakary', 23, 15, 'haut', T('bakary')),
     dresseur('sirafa', 23, 19, 'haut', T('sirafa')),
@@ -451,12 +467,12 @@ const marigot: Zone = {
     { species: 91, min: 13, max: 17, weight: 10 },
     { species: 93, min: 15, max: 18, weight: 5 },
     { species: 109, min: 13, max: 16, weight: 8 },
-    { species: 115, min: 19, max: 21, weight: 2 },
-    { species: 119, min: 20, max: 22, weight: 1 },
+    { species: 115, min: 16, max: 18, weight: 2 },
+    { species: 119, min: 17, max: 19, weight: 1 },
   ],
   nightEncounters: [
     { species: 116, min: 15, max: 18, weight: 14 },
-    { species: 114, min: 17, max: 20, weight: 8 },
+    { species: 114, min: 15, max: 18, weight: 8 },
     { species: 47, min: 14, max: 17, weight: 14 },
     { species: 38, min: 15, max: 18, weight: 10 },
     { species: 49, min: 14, max: 17, weight: 12 },
@@ -475,7 +491,7 @@ const marigot: Zone = {
     'T",,,,,,""""""""""""""""",,,,~~~~T',
     'T",,,,,,"~~~~~~~~~~~~~~~~,,,,~~~~T',
     'T",,,,,,"~~~~~~~~~~~~~~~~"""S~~~~T',
-    'T",,,,,,"~~~~~~~~~~~~~~~~====wwww=',
+    'T",,,,,,"~~~~~~~~~~~~~~~~====~~~~T',
     'T",,,,,,"~~~~~B"AA"B~~~~~""="~~~~T',
     'T",,,,,,"~~~~~""""""~~~~~""="~~~~T',
     'T",,,,,,"~~~~~""""""~~~~~""="~~~~T',
@@ -495,28 +511,45 @@ const marigot: Zone = {
     'TTTTTTTTTTTTTTTT=TTTTTTTTTTTTTTTTT',
   ],
   buildings: [
-    caseDeSoins(3, 18, soin('pecheurSoin', 0, 0, 'bas', ['Vieux Pêcheur : Assieds-toi, petit. Mon auberge est modeste, mais l’eau du marigot guérit bien des maux.'], {
+    caseDeSoins(3, 18, soin('pecheurSoin', 0, 0, 'bas', ['Vieux Pêcheur : Assieds-toi, petite. Mon auberge est modeste, mais l’eau du marigot guérit bien des maux.'], {
         skin: '#4a2a1a', outfit: '#3a9ab0', accent: '#f0e0a0', headwear: 'chapeau',
       })),
     marche(20, 22, ['calebasse', 'calebasseOrnee', 'bissap', 'moringa', 'kola', 'menottes'], ['Poisson séché ? Non ? Alors des calebasses, peut-être !']),
   ],
   warps: [
     { x: 16, y: 27, to: 'terresRouges', tx: 15, ty: 1, dir: 'bas' },
-    { x: 33, y: 10, to: 'foret', tx: 1, ty: 12, dir: 'droite' },
   ],
   signs: [
-    { x: 15, y: 20, text: ['Sanctuaire du Marigot des Ancêtres', 'Maîtresse de Piste : Aminata, Gardienne des Eaux Dormantes (Eau / Esprit)'] },
-    { x: 28, y: 9, text: ['Gué du Marigot', 'Seul un Jinémon Eau, guidé par l’Insigne de la Pluie, peut vous faire traverser.'] },
+    { x: 15, y: 20, text: ['Sanctuaire du Marigot des Ancêtres', 'Occupé par les Sandales Noires. Arène d’Aminata, le bras droit du Chef (Eau / Esprit).'] },
+    { x: 28, y: 9, text: ['Gué du Marigot', 'Fermé : le courant a emporté le passage à la dernière saison des pluies.'] },
   ],
   npcs: [
     parole('passeuse', 'Passeuse', 28, 11, 'haut', VILLAGEOIS, [
-      'Passeuse : Le gué mène à la Forêt Sacrée. Le courant y est trop fort pour traverser à pied.',
-      'Passeuse : Avec l’Insigne de la Pluie, un Jinémon Eau pourra te porter de l’autre côté.',
+      'Passeuse : Le gué ? Le courant a emporté ma pirogue, et personne ne traverse plus.',
+      'Passeuse : De toute façon, depuis que les Sandales Noires ont pris le sanctuaire, plus personne n’ose venir jusqu’ici.',
     ]),
+    {
+      id: 'herboriste', name: 'Herboriste', x: 17, y: 20, dir: 'gauche',
+      look: { kind: 'personne', look: { skin: '#6a4028', outfit: '#5fa83a', accent: '#f0e0b0', headwear: 'foulard' } },
+      script: {
+        kind: 'compagnon', species: 76, level: 14, flag: 'don:kameleo',
+        lines: [
+          'Herboriste : Tu vas au sanctuaire ? Aminata et ses Jinémon d’eau t’y attendent…',
+          'Herboriste : Une plante boit l’eau, tu sais. Prends mon Kaméléo : avec lui, tu as tes chances.',
+        ],
+        after: ['Herboriste : Mets mon Kaméléo en tête face à Aminata. La plante boit l’eau !'],
+      },
+    },
     dresseur('sory', 8, 12, 'droite', T('sory')),
     dresseur('aissata', 26, 15, 'droite', T('aissata')),
     dresseur('binta', 17, 15, 'gauche', T('binta')),
     dresseur('aminata', 16, 12, 'bas', T('aminata')),
+    {
+      id: 'thomas', name: 'Thomas', x: 18, y: 11, dir: 'bas',
+      look: { kind: 'personne', look: { skin: '#c8906a', outfit: '#2a2a30', accent: '#e8e8e8' } },
+      script: { kind: 'thomas' },
+      showFlag: 'dresseur:aminata',
+    },
     objet('marigot-calebasse', 3, 3, 'calebasseOrnee'),
     objet('marigot-bissap', 23, 3, 'bissap', 2),
   ],

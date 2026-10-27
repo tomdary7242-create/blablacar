@@ -5,6 +5,7 @@ import { XP_BOOST, createJinemon, maxHp, xpYield, type Jinemon } from '../src/en
 import { HOME_BED, newGameState, sleepHere } from '../src/engine/gameState';
 import {
   Duel,
+  HERO_STANDS,
   banditFighter,
   catchBreath,
   heroFighter,
@@ -39,15 +40,15 @@ function fight(duel: Duel, action: DuelAction): number {
 }
 
 describe('Un jeu un peu plus facile', () => {
-  it('les coups du camp du joueur portent 25 % de plus', () => {
-    expect(PLAYER_EDGE).toBe(1.25);
+  it('les coups du camp du joueur portent 35 % de plus', () => {
+    expect(PLAYER_EDGE).toBe(1.35);
     const a = mon(7, 30);
     const b = mon(33, 30);
     const opts = { allowCrit: false, randomize: false };
     const base = computeDamage(a, neutral, b, neutral, { power: 60, type: 'Feu' }, seededRng(1), opts).damage;
     const edged = computeDamage(a, neutral, b, neutral, { power: 60, type: 'Feu' }, seededRng(1), { ...opts, edge: PLAYER_EDGE }).damage;
-    expect(edged / base).toBeGreaterThan(1.2);
-    expect(edged / base).toBeLessThan(1.3);
+    expect(edged / base).toBeGreaterThan(1.3);
+    expect(edged / base).toBeLessThan(1.4);
   });
 
   it('les niveaux montent plus vite', () => {
@@ -171,7 +172,7 @@ describe('Les bandits', () => {
     expect(captured).toBe(true);
   });
 
-  it('le duel : on met le bandit à terre, ou il nous y met', () => {
+  it('le duel : on met toujours le bandit à terre, et l’héroïne ne tombe jamais', () => {
     const s = newGameState('Awa');
     s.party.push(mon(7, 20));
     const hero = heroFighter(s, 'Awa');
@@ -181,12 +182,14 @@ describe('Les bandits', () => {
     expect(duel.outcome).toBe('victoire');
     expect(turns).toBeGreaterThanOrEqual(2);
     expect(turns).toBeLessThan(8);
-    // Un héros à bout de forces face à un bandit bien plus fort finit à terre.
+    // À bout de forces face à un bandit bien plus fort, elle chancelle mais tient bon, et finit par gagner.
+    expect(HERO_STANDS).toBe(true);
     const weak = { ...heroFighter(s, 'Awa'), hp: 5 };
-    const lost = new Duel('bandit', weak, banditFighter('Sogo', 60), seededRng(3));
-    fight(lost, 'parer');
-    expect(lost.outcome).toBe('defaite');
-    expect(lost.hero.hp).toBe(0);
+    const tough = new Duel('bandit', weak, banditFighter('Sogo', 60), seededRng(3));
+    tough.start();
+    for (let turns = 0; tough.phase === 'choix' && turns < 400; turns++) tough.submit('frapper');
+    expect(tough.outcome).toBe('victoire');
+    expect(tough.hero.hp).toBeGreaterThanOrEqual(1);
   });
 
   it('parer encaisse bien moins qu’un coup reçu de plein fouet', () => {
@@ -205,20 +208,17 @@ describe('Les bandits', () => {
 });
 
 describe('La nuit', () => {
-  it('le monstre s’en prend au héros : on peut fuir, mais il frappe fort et nos coups l’effleurent', () => {
+  it('même face à un monstre de la nuit, l’héroïne ne tombe jamais', () => {
     const s = newGameState('Awa');
     s.party.push(mon(7, 20));
-    let fled = 0;
-    let died = 0;
     for (let seed = 1; seed <= 20; seed++) {
       const duel = new Duel('monstre', heroFighter(s, 'Awa'), monsterFighter('Boudarou', 20, 60, 60), seededRng(seed));
       expect(duel.actions).toEqual(['frapper', 'fuir']);
-      fight(duel, seed % 2 ? 'fuir' : 'frapper');
-      if (duel.outcome === 'fuite') fled++;
-      if (duel.outcome === 'defaite') died++;
+      duel.start();
+      for (let turns = 0; duel.phase === 'choix' && turns < 400; turns++) duel.submit(seed % 2 ? 'fuir' : 'frapper');
+      expect(duel.outcome, `graine ${seed}`).not.toBe('defaite');
+      expect(duel.hero.hp).toBeGreaterThanOrEqual(1);
     }
-    expect(fled).toBeGreaterThan(0);
-    expect(died).toBeGreaterThan(0);
   });
 
   it('les PV du héros grandissent avec son équipe et se sauvegardent', () => {

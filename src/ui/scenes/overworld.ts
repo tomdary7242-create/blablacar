@@ -1,6 +1,7 @@
 // Exploration des zones : déplacements case par case, PNJ, panneaux,
 // rencontres dans les hautes herbes et techniques hors combat des insignes.
-import { SPECIES, getSpecies } from '../../data/ginedex';
+import { getSpecies } from '../../data/ginedex';
+import { REGION_SPECIES } from '../../data/region';
 import { hauntCapturedFlag, hauntOf } from '../../data/hantises';
 import { chaserOf, nightMobsOf, townMobs, type MobDef } from '../../data/nightMobs';
 import { getItem } from '../../data/items';
@@ -21,7 +22,7 @@ import {
 import { MINUTES_PER_SECOND, advance, advanceTo, darknessOf, isNight, nightId, phaseOf, warmthOf } from '../../engine/clock';
 import { createJinemon, displayName, isFainted, maxHp } from '../../engine/creature';
 import { currentObjective } from '../../engine/objective';
-import { HOME_BED, addItem, giveStarter, hasBadge, hasUsableJinemon, itemCount, sleepHere, type Position } from '../../engine/gameState';
+import { HOME_BED, addItem, addJinemon, giveStarter, hasBadge, hasUsableJinemon, itemCount, sleepHere, type Position } from '../../engine/gameState';
 import { randInt, weightedPick } from '../../engine/rng';
 import { blackout, startTrainerBattle, startWildBattle } from '../battleFlow';
 import { box, PAL, text } from '../draw';
@@ -42,6 +43,7 @@ import { TILE, animateTile, grassOverlay, itemBall, jarVortex, renderZoneLayers,
 import { MenuScene } from './menu';
 import { ShopScene } from './shop';
 import { PlanScene } from './plan';
+import { CreditsScene } from './credits';
 import { StarterScene } from './starter';
 import { StorageScene } from './storage';
 import { CoverScene, RevealScene } from './transition';
@@ -430,7 +432,7 @@ export class OverworldScene implements Scene, World {
       this.ambush = -1;
     };
     const lines: Record<MobDef['kind'], string[]> = {
-      rodeur: ['Un fauve gris surgit de l’ombre, sans un bruit…', `${name} vous a rattrapé dans le noir !`],
+      rodeur: ['Un fauve gris surgit de l’ombre, sans un bruit…', `${name} vous a rattrapée dans le noir !`],
       volant: ['Une ombre grandit sur le sol, de plus en plus vite…', `${name} tombe du ciel sur vous !`],
       imposteur: ['Le villageois se retourne d’un coup. Son visage tombe comme un masque…', `Ce n’était pas un villageois : c’était ${name} !`],
       guetteur: ['Huit yeux rouges… Quelque chose bondit du toit, toutes pattes dehors !', `${name} vous est tombée dessus !`],
@@ -443,7 +445,7 @@ export class OverworldScene implements Scene, World {
       if (!hasUsableJinemon(game.s)) {
         // Sans Jinémon pour vous défendre, il n'y a rien à faire.
         done();
-        blackout(game, [`${name} se jette sur vous…`, 'Sans Jinémon pour vous défendre, vous perdez connaissance.']);
+        blackout(game, [`${name} se jette sur vous…`, 'Sans Jinémon pour vous défendre, vous filez vous mettre à l’abri !']);
         return;
       }
       startWildBattle(game, createJinemon(def.species, def.level, game.rng), {
@@ -518,6 +520,14 @@ export class OverworldScene implements Scene, World {
     const zone = this.zone.id;
     const name = getSpecies(def.species).name;
     game.say(def.cry, () => {
+      if (!hasUsableJinemon(game.s)) {
+        // Sans Jinémon pour vous défendre, on file se mettre à l'abri (et la Hantise s'évanouit).
+        game.s.repelled[zone] = nightId(game.s.clock);
+        this.haunt = null;
+        this.ambush = -1;
+        blackout(game, [`${name} se jette sur vous…`, 'Sans Jinémon pour vous défendre, vous filez vous mettre à l’abri !']);
+        return;
+      }
       const foe = createJinemon(def.species, def.level, game.rng);
       startWildBattle(game, foe, {
         flag: hauntCapturedFlag(zone),
@@ -818,7 +828,7 @@ export class OverworldScene implements Scene, World {
     const impostor = this.mobs.find((m) => m.x === tx && m.y === ty && m.disguised());
     if (impostor) {
       // On lui parle… et il se retourne.
-      this.game.say(['Bonsoir… Vous êtes perdu, vous aussi ?', '…', '… … …'], () => impostor.talkedTo());
+      this.game.say(['Bonsoir… Vous êtes perdue, vous aussi ?', '…', '… … …'], () => impostor.talkedTo());
       return;
     }
     if (this.haunt && this.haunt.x === tx && this.haunt.y === ty && this.haunt.disguised()) {
@@ -869,22 +879,21 @@ export class OverworldScene implements Scene, World {
   }
 
   private crackedRock(x: number, y: number): void {
-    const user = this.fieldUser('Métal');
-    if (!hasBadge(this.game.s, 'enclume') || !user) {
-      this.game.say([
-        'Un rocher de latérite parcouru de fissures.',
-        hasBadge(this.game.s, 'enclume')
-          ? 'Il faudrait un Jinémon connaissant une attaque Métal pour le briser.'
-          : "Il faudrait l'Insigne de l'Enclume et un Jinémon maîtrisant le Métal pour le briser.",
-      ]);
+    if (!hasBadge(this.game.s, 'enclume')) {
+      this.game.say(['Un rocher de latérite parcouru de fissures.', "Il faudrait l'Insigne de l'Enclume pour le briser. Sirafa le garde dans sa Forge."]);
       return;
     }
-    this.game.ask(['Un rocher fissuré bloque le passage.', `Demander à ${user.name} de le briser ?`], ['Oui', 'Non'], (i) => {
+    // Un Jinémon Métal s'en charge ; à défaut, l'Insigne de l'Enclume suffit.
+    const user = this.fieldUser('Métal');
+    this.game.ask(['Un rocher fissuré bloque le passage.', user ? `Demander à ${user.name} de le briser ?` : "Le briser avec l'Insigne de l'Enclume ?"], ['Oui', 'Non'], (i) => {
       if (i !== 0) return;
       this.game.s.flags[`rocher:${this.zone.id}:${x}:${y}`] = true;
       this.redrawMap();
       this.game.sfx('superCoup');
-      this.game.say([`${user.name} utilise ${user.move} ! Le rocher vole en éclats !`], () => this.game.save(true));
+      this.game.say(
+        [user ? `${user.name} utilise ${user.move} ! Le rocher vole en éclats !` : "L'Insigne de l'Enclume rougeoie… Le rocher vole en éclats !"],
+        () => this.game.save(true),
+      );
     });
   }
 
@@ -953,12 +962,30 @@ export class OverworldScene implements Scene, World {
       case 'maman':
         this.maman();
         break;
+      case 'thomas':
+        this.thomas();
+        break;
+      case 'compagnon': {
+        if (state.flags[s.flag]) {
+          game.say(s.after);
+          break;
+        }
+        game.say(s.lines, () => {
+          const j = createJinemon(s.species, s.level, game.rng);
+          const where = addJinemon(state, j);
+          state.flags[s.flag] = true;
+          game.jingle('capture');
+          const name = getSpecies(s.species).name;
+          game.say([`Vous recevez ${name} !`, ...(where === 'grenier' ? [`Votre équipe est complète : ${name} rejoint la Grande Jarre.`] : [])], () => game.save(true));
+        });
+        break;
+      }
       case 'soin': {
-        // Auberge en ville, campement en brousse : on y soigne, on y dort, et l'on s'y réveille après un malheur.
+        // Auberge en ville, campement en brousse : on y soigne, on y dort, et l'on y revient quand l'équipe est à terre.
         const bed = this.bedHere();
         const offer = this.zone.interior
-          ? 'Je soigne tes Jinémon, et une chambre t’attend : si un malheur t’arrive, c’est ici que tu te réveilleras.'
-          : 'Je soigne tes Jinémon, et tu peux dormir sous ma tente : si un malheur t’arrive, c’est ici que tu te réveilleras.';
+          ? 'Je soigne tes Jinémon, et une chambre t’attend : si tes Jinémon sont à bout de forces, c’est ici que tu reviendras.'
+          : 'Je soigne tes Jinémon, et tu peux dormir sous ma tente : si tes Jinémon sont à bout de forces, c’est ici que tu reviendras.';
         game.ask([...s.lines, offer], ['Soigner', 'Dormir', 'Non'], (i) => {
           if (i === 1) {
             this.rest(bed);
@@ -1061,7 +1088,7 @@ export class OverworldScene implements Scene, World {
           this.banner = 2.5;
           game.scenes.push(
             new RevealScene(game, 0.6, () =>
-              game.say([i === 0 ? 'Vous vous réveillez reposé. Le soleil se lève sur la brousse.' : 'Vous vous réveillez à la nuit tombée. Au loin, quelque chose a hurlé.'], () =>
+              game.say([i === 0 ? 'Vous vous réveillez reposée. Le soleil se lève sur la brousse.' : 'Vous vous réveillez à la nuit tombée. Au loin, quelque chose a hurlé.'], () =>
                 game.save(true),
               ),
             ),
@@ -1121,7 +1148,7 @@ export class OverworldScene implements Scene, World {
             new RevealScene(game, 0.6, () =>
               game.say(
                 [
-                  i === 0 ? 'Vous vous réveillez courbatu, mais reposé.' : 'Vous vous réveillez à la nuit tombée. Le froid vous mord les os.',
+                  i === 0 ? 'Vous vous réveillez courbatue, mais reposée.' : 'Vous vous réveillez à la nuit tombée. Le froid vous mord les os.',
                   'Vos Jinémon ont un peu récupéré. Pour les soigner tout à fait, il faudra une auberge.',
                 ],
                 () => game.save(true),
@@ -1133,7 +1160,10 @@ export class OverworldScene implements Scene, World {
     });
   }
 
-  /** Maman : au réveil, elle envoie le joueur au sanctuaire ; ensuite, elle soigne son équipe. */
+  /**
+   * Maman : au réveil, elle parle des Jinémon, envoie le joueur au sanctuaire… et lui apprend
+   * que Thomas a des ennuis. Ensuite, elle soigne son équipe.
+   */
   private maman(): void {
     const game = this.game;
     const state = game.s;
@@ -1142,12 +1172,13 @@ export class OverworldScene implements Scene, World {
       game.say(
         [
           `Maman : Ah, ${name} ! Enfin debout ! Le soleil est levé depuis longtemps, tu sais.`,
-          'Maman : Tu as oublié quel jour on est ? C’est aujourd’hui ton initiation !',
-          'Maman : Le Hogon t’attend au sanctuaire depuis l’aube. Il va te confier ton premier Jinémon.',
-          'Maman : Le sanctuaire est tout au nord de la place du village. Sors, remonte la rue, et suis le chemin.',
+          'Maman : Assieds-toi une minute. Tu sais que notre peuple vit aux côtés des Jinémon, ces créatures nées des forces de la nature et des légendes.',
+          'Maman : Il y en a partout : dans les hautes herbes, dans l’eau du marigot… Et la nuit, d’autres sortent chasser. Celles-là, méfie-toi d’elles.',
+          'Maman : Pour voyager, il te faut un compagnon. Le Hogon t’attend au sanctuaire, tout au nord de la place : il va te confier ton premier Jinémon.',
           'Maman : Si tu te perds, regarde le plan sur la place, ou ouvre ton menu : la CARTE te rappelle toujours où aller.',
-          'Maman : Et prends ton vieux sac de couchage. Si la nuit te surprend sur la piste, déroule-le : c’est là que tu te réveilleras s’il t’arrive malheur.',
-          'Maman : Mais méfie-toi de la nuit. Ce qui rôde dans le noir ne s’attaque pas qu’aux Jinémon.',
+          'Maman : Et prends ton vieux sac de couchage, au cas où la nuit te surprendrait sur la piste.',
+          'Maman : … Et puis il y a autre chose. C’est important.',
+          'Maman : Thomas a des ennuis. Il faut que tu ailles le retrouver.',
         ],
         () => {
           state.flags.maman = true;
@@ -1157,17 +1188,24 @@ export class OverworldScene implements Scene, World {
       return;
     }
     if (!state.party.length) {
-      game.say(['Maman : Qu’est-ce que tu fais encore là ? Le Hogon t’attend au sanctuaire, au nord de la place !']);
+      game.say(['Maman : Qu’est-ce que tu fais encore là ? Le Hogon t’attend au sanctuaire, au nord de la place ! Et Thomas compte sur toi.']);
       return;
     }
     if (itemCount(state, 'sacCouchage') === 0) {
       game.say(['Maman : Tiens, tu avais oublié ton sac de couchage !'], () => this.giveBag());
       return;
     }
-    game.say([`Maman : ${name} ! Tu as une mine affreuse. Assieds-toi, mange, et laisse tes Jinémon se reposer.`], () => {
+    game.say([`Maman : ${name} ! Tu as l’air épuisée. Assieds-toi, mange, et laisse tes Jinémon se reposer.`], () => {
       sleepHere(state, HOME_BED, 'votre lit, à la maison');
       game.jingle('soin');
-      game.say(['… … …', 'Maman : Voilà. Ton lit est fait, en haut : s’il t’arrive malheur, c’est là que tu te réveilleras.', 'Maman : Et fais attention aux bandits, sur les pistes. Ils tuent pour quelques cauris.'], () => game.save());
+      game.say(
+        [
+          '… … …',
+          'Maman : Voilà. Ton lit est fait, en haut : tu pourras toujours revenir t’y reposer.',
+          state.flags.fin ? 'Maman : Tu as retrouvé Thomas ! Je suis fière de toi.' : 'Maman : Et n’oublie pas : Thomas compte sur toi.',
+        ],
+        () => game.save(),
+      );
     });
   }
 
@@ -1201,17 +1239,19 @@ export class OverworldScene implements Scene, World {
               game.say(
                 [
                   `Vous recevez ${displayName(j)} !`,
-                  `Hogon : ${displayName(j)} t’a choisi autant que tu l’as choisi.`,
+                  `Hogon : ${displayName(j)} t’a choisie autant que tu l’as choisi.`,
                   'Hogon : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
                   "Hogon : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
-                  'Hogon : Écoute-moi bien. Les pistes sont infestées de bandits. Ils asservissent des Jinémon et tuent pour quelques cauris.',
+                  'Hogon : Écoute-moi bien. Les pistes sont infestées de bandits. Ils asservissent des Jinémon et détroussent les voyageurs.',
                   'Hogon : Quand tu auras abattu leurs Jinémon, ils se jetteront sur toi, machette au poing. Mets-les à terre.',
                   'Hogon : Ensuite, à toi de choisir : les achever… ou les épargner. Beaucoup ont la tête mise à prix : passe-leur ces menottes, et la garde te paiera la prime.',
                   'Vous recevez : 5 Menottes de Fer !',
                   'Hogon : Et un Jinémon de bandit affaibli peut lui être arraché d’un coup de calebasse. Libère-les.',
+                  'Hogon : Tu cherches Thomas ? … Les nouvelles ne sont pas bonnes.',
+                  'Hogon : Une bande de brigands, les Sandales Noires, a pris les deux Arènes de la région : la Forge des Terres Rouges et le Sanctuaire du Marigot.',
+                  'Hogon : On dit qu’ils retiennent quelqu’un… Bats les chefs de ces deux Arènes, et tu retrouveras Thomas.',
                   'Hogon : Ma petite-fille Kady est partie devant. Elle t’attend dans la Savane des Termitières, au nord du village.',
                   'Hogon : Pour soigner tes Jinémon et dormir, va à l’auberge : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
-                  'Hogon : Plus loin, les Maîtres de Piste gardent les Arènes. Gagne leurs insignes, et peut-être atteindras-tu un jour le Panthéon des Légendes.',
                 ],
                 () => game.save(),
               );
@@ -1220,11 +1260,35 @@ export class OverworldScene implements Scene, World {
       );
       return;
     }
-    const caught = state.dex.caught.length;
-    const hint = state.flags['dresseur:kadyChampion']
-      ? 'Champion du Mandé… Mon enfant, les griots chanteront ton nom pendant des siècles.'
-      : currentObjective(state).text;
-    game.say([`Hogon : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${SPECIES.length}.`, `Hogon : ${hint}`]);
+    const caught = REGION_SPECIES.filter((id) => state.dex.caught.includes(id)).length;
+    const hint = state.flags.fin ? 'Les Sandales Noires ont quitté la région, et Thomas est libre. Les griots chanteront ton nom.' : currentObjective(state).text;
+    game.say([`Hogon : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${REGION_SPECIES.length}.`, `Hogon : ${hint}`]);
+  }
+
+  /** Thomas, retrouvé derrière l'autel du Sanctuaire du Marigot : la fin de l'aventure. */
+  private thomas(): void {
+    const game = this.game;
+    const state = game.s;
+    const name = state.playerName;
+    const words = [
+      `Thomas : Joyeux anniversaire, ${name} !`,
+      'Thomas : J’espère que tu t’es bien amusée.',
+      'Thomas : Et merci de m’avoir libéré des méchants.',
+      'Thomas : … Même si, en fait, le chef des méchants… c’était moi.',
+      'Thomas : Je faisais un petit business.',
+      'Thomas : De photos de tes pieds.',
+    ];
+    if (state.flags.fin) {
+      game.ask(['Thomas : Tu veux que je te le redise ?'], ['Oui', 'Non'], (i) => {
+        game.say(i === 0 ? words : ['Thomas : Prends ton temps. Je t’attends ici.']);
+      });
+      return;
+    }
+    game.say([`Thomas : ${name} ! Tu es venue jusqu’ici !`, 'Thomas : Attends… Avant tout, j’ai quelque chose à te dire.', ...words], () => {
+      state.flags.fin = true;
+      game.save(true);
+      game.scenes.push(new CreditsScene(game, 'final'));
+    });
   }
 
   // ── Rendu ──────────────────────────────────────────────────────────────

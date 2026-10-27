@@ -1,5 +1,6 @@
-// Panthéon des Légendes : l'équipe victorieuse est inscrite, puis le générique défile.
-import { SPECIES } from '../../data/ginedex';
+// Fin de l'aventure : l'équipe qui a libéré Thomas est inscrite, puis le générique défile.
+// (Le mode « acte1 » ne sert plus que dans la version complète, gardée de côté.)
+import { REGION_BADGES, REGION_SPECIES } from '../../data/region';
 import { displayName, isShiny } from '../../engine/creature';
 import { formatPlayTime } from '../../engine/gameState';
 import { PAL, box, text } from '../draw';
@@ -80,8 +81,8 @@ export class CreditsScene implements Scene {
       this.game.say(
         this.mode === 'final'
           ? [
-              'Les griots chanteront longtemps l’histoire de votre équipe.',
-              'On raconte que la terre a tremblé dans les monts de Hombori : Aïdohwedo, le serpent qui porte le monde, se serait éveillé…',
+              'Les Sandales Noires ont quitté la région, et les deux Arènes sont libres.',
+              'Vous pouvez continuer à explorer et à compléter votre Ginédex.',
             ]
           : [
               'Le Panthéon garde désormais la mémoire de votre équipe.',
@@ -104,8 +105,8 @@ export class CreditsScene implements Scene {
     const s = this.game.s;
     if (this.phase === 'pantheon') {
       const final = this.mode === 'final';
-      drawOutlinedText(ctx, final ? 'CONSEIL DES GRIOTS' : 'PANTHÉON DES LÉGENDES', W / 2, 6, '#f0c040', PAL.ink, { align: 'center' });
-      text(ctx, final ? `${s.playerName}, Champion du Mandé` : `${s.playerName}, Maître des Légendes`, W / 2, 20, { align: 'center', color: PAL.cream });
+      drawOutlinedText(ctx, final ? 'FIN' : 'PANTHÉON DES LÉGENDES', W / 2, 6, '#f0c040', PAL.ink, { align: 'center' });
+      text(ctx, final ? `${s.playerName}, qui a libéré les deux Arènes` : `${s.playerName}, Maître des Légendes`, W / 2, 20, { align: 'center', color: PAL.cream });
       s.party.forEach((j, i) => {
         const x = Math.round(W / 2 + (i - (s.party.length - 1) / 2) * 42);
         const bob = Math.floor(this.t * 2 + i) % 2;
@@ -115,8 +116,9 @@ export class CreditsScene implements Scene {
       });
       box(ctx, 28, 118, 200, 50, 'sombre');
       text(ctx, `Temps de jeu : ${formatPlayTime(s.playTimeMs)}`, W / 2, 122, { align: 'center', color: PAL.cream });
-      text(ctx, `Ginédex : ${s.dex.caught.length}/${SPECIES.length} capturés`, W / 2, 134, { align: 'center', color: PAL.cream });
-      text(ctx, `Insignes : ${s.badges.length}/8`, W / 2, 146, { align: 'center', color: PAL.cream });
+      const caught = REGION_SPECIES.filter((id) => s.dex.caught.includes(id)).length;
+      text(ctx, `Ginédex : ${caught}/${REGION_SPECIES.length} capturés`, W / 2, 134, { align: 'center', color: PAL.cream });
+      text(ctx, `Insignes : ${s.badges.length}/${REGION_BADGES.length}`, W / 2, 146, { align: 'center', color: PAL.cream });
       if (Math.floor(this.t * 2) % 2 === 0) text(ctx, 'Appuyez sur A', W / 2, 176, { align: 'center', color: '#c8b8a0' });
       return;
     }
