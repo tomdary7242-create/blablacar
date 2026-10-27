@@ -45,6 +45,9 @@ export type FxSound =
   | 'debuff'
   | 'soin';
 
+/** Bruits des créatures de la nuit (et des villageois qu'elles poursuivent). */
+export type NightSound = 'grognement' | 'hurlement' | 'cri' | 'ailes' | 'rire' | 'appel' | 'chute' | 'pas';
+
 const SOUNDS: Record<Sfx, Note[]> = {
   curseur: [[880, 0.03, 'square']],
   valider: [[660, 0.05, 'square'], [990, 0.07, 'square']],
@@ -157,7 +160,7 @@ export class Audio {
   }
 
   /** Souffle de bruit filtré dont la fréquence glisse de f0 à f1. */
-  private hiss(t: number, dur: number, type: BiquadFilterType, f0: number, f1: number, level: number, q = 1, attack = 0.005): void {
+  private hiss(t: number, dur: number, type: BiquadFilterType, f0: number, f1: number, level: number, q = 1, attack = 0.005, out: AudioNode = this.master): void {
     const ctx = this.ctx!;
     const src = ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
@@ -170,7 +173,7 @@ export class Audio {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(level, t + attack);
     g.gain.setTargetAtTime(0, t + Math.max(attack, dur * 0.55), dur * 0.18);
-    src.connect(filter).connect(g).connect(this.master);
+    src.connect(filter).connect(g).connect(out);
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + dur * 0.18 * 7);
   }
@@ -189,6 +192,113 @@ export class Audio {
     osc.connect(g).connect(this.master);
     osc.start(t);
     osc.stop(t + dur + dur * 0.2 * 7);
+  }
+
+  /**
+   * Voix qui suit une courbe de hauteur ([instant, fréquence]…), avec vibrato et filtre :
+   * hurlements, cris, ricanements et appels au secours.
+   */
+  private voice(
+    t: number,
+    type: OscillatorType,
+    curve: Array<[number, number]>,
+    level: number,
+    out: AudioNode,
+    opts: { vibrato?: number; rate?: number; filter?: [BiquadFilterType, number, number] } = {},
+  ): void {
+    const ctx = this.ctx!;
+    const dur = curve[curve.length - 1][0];
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(curve[0][1], t);
+    for (const [at, f] of curve.slice(1)) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f), t + at);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(level, t + Math.min(0.04, dur * 0.2));
+    g.gain.setValueAtTime(level, t + dur * 0.7);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    let head: AudioNode = osc;
+    if (opts.filter) {
+      const filter = ctx.createBiquadFilter();
+      [filter.type, filter.frequency.value, filter.Q.value] = opts.filter;
+      head = head.connect(filter);
+    }
+    head.connect(g).connect(out);
+    if (opts.vibrato) {
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      lfo.frequency.value = opts.rate ?? 6;
+      depth.gain.value = curve[0][1] * opts.vibrato;
+      lfo.connect(depth).connect(osc.frequency);
+      lfo.start(t);
+      lfo.stop(t + dur + 0.05);
+    }
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+
+  /**
+   * Bruit de la nuit, placé dans l'espace : `volume` (0 à 1) baisse avec la distance,
+   * `pan` (−1 à 1) le place à gauche ou à droite.
+   */
+  night(kind: NightSound, volume: number, pan: number): void {
+    if (!this.enabled || !this.ctx || !this.noiseBuffer || volume <= 0.01) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime + 0.01;
+    const gain = ctx.createGain();
+    gain.gain.value = Math.min(1, volume);
+    if (ctx.createStereoPanner) {
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+      gain.connect(panner).connect(this.master);
+    } else {
+      gain.connect(this.master);
+    }
+    const out = gain;
+    switch (kind) {
+      case 'grognement':
+        // Grondement de gorge : deux dents de scie très graves qui battent entre elles, et un souffle rauque.
+        this.voice(t, 'sawtooth', [[0, 58], [0.5, 64], [1.2, 50]], 0.2, out, { vibrato: 0.06, rate: 11, filter: ['lowpass', 380, 2] });
+        this.voice(t, 'sawtooth', [[0, 61], [0.6, 55], [1.2, 47]], 0.16, out, { filter: ['lowpass', 300, 1] });
+        this.hiss(t, 1.1, 'lowpass', 520, 220, 0.14, 1.5, 0.15, out);
+        break;
+      case 'hurlement':
+        // Hurlement qui monte, tient, puis retombe ; une seconde voix plus grave en dessous.
+        this.voice(t, 'triangle', [[0, 260], [0.45, 600], [1.3, 560], [2, 330]], 0.16, out, { vibrato: 0.025, rate: 5.5 });
+        this.voice(t + 0.08, 'sawtooth', [[0, 130], [0.45, 300], [1.3, 280], [1.9, 165]], 0.05, out, { filter: ['lowpass', 900, 1] });
+        break;
+      case 'cri':
+        // Cri strident, qui tremble et se brise.
+        this.voice(t, 'square', [[0, 1700], [0.12, 2500], [0.5, 1300], [0.8, 700]], 0.14, out, { vibrato: 0.04, rate: 31, filter: ['bandpass', 2200, 2] });
+        this.voice(t, 'sawtooth', [[0, 1180], [0.15, 1650], [0.7, 540]], 0.1, out, { vibrato: 0.05, rate: 23 });
+        this.hiss(t, 0.7, 'bandpass', 4200, 1800, 0.24, 2, 0.02, out);
+        break;
+      case 'ailes':
+        // Trois coups d'ailes lourds.
+        for (let i = 0; i < 3; i++) this.hiss(t + i * 0.2, 0.15, 'lowpass', 700, 160, 0.9, 1.2, 0.03, out);
+        break;
+      case 'rire':
+        // Ricanement saccadé qui descend, de plus en plus lent.
+        for (let i = 0; i < 7; i++) {
+          const at = t + i * 0.11 + i * i * 0.006;
+          const f = 560 - i * 38;
+          this.voice(at, 'square', [[0, f * 1.15], [0.07, f]], 0.35, out, { filter: ['bandpass', 950, 3] });
+        }
+        break;
+      case 'appel':
+        // « Au secours ! » : deux cris humains, voyelle ouverte (filtre formant).
+        this.voice(t, 'sawtooth', [[0, 420], [0.12, 560], [0.32, 470]], 0.5, out, { vibrato: 0.03, rate: 7, filter: ['bandpass', 1000, 4] });
+        this.voice(t + 0.38, 'sawtooth', [[0, 470], [0.15, 650], [0.6, 380]], 0.55, out, { vibrato: 0.04, rate: 7, filter: ['bandpass', 1100, 4] });
+        break;
+      case 'chute':
+        // Piqué : un sifflement qui plonge vers le grave.
+        this.voice(t, 'sine', [[0, 1500], [0.65, 220]], 0.14, out);
+        this.hiss(t, 0.65, 'bandpass', 3000, 500, 0.12, 3, 0.1, out);
+        break;
+      case 'pas':
+        this.hiss(t, 0.07, 'lowpass', 220, 90, 1.2, 1, 0.004, out);
+        break;
+    }
   }
 
   /** Bruitage d'attaque. */

@@ -136,6 +136,9 @@ export function sanitize(data: unknown): GameState | null {
   if (clock && Number.isInteger(clock.day) && clock.day! >= 1 && typeof clock.minute === 'number' && clock.minute >= 0 && clock.minute < 1440) {
     state.clock = { day: clock.day!, minute: clock.minute };
   }
+  for (const [id, night] of Object.entries(d.nightMobs ?? {})) {
+    if (typeof id === 'string' && id.length < 40 && Number.isInteger(night)) state.nightMobs[id] = night as number;
+  }
   for (const [zone, night] of Object.entries(d.repelled ?? {})) {
     if (zone in ZONES && Number.isInteger(night)) state.repelled[zone as keyof typeof ZONES] = night as number;
   }

@@ -146,6 +146,23 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   | Piste des Chasseurs | Nopperabô (niv. 35) | Un passant, dos tourné, qui se retourne sans visage. |
   | Falaise des Ancêtres | Obayifeu (niv. 48) | Une lueur qui s’éteint et se rallume plus près, souvent dans votre dos. |
 
+- **Les créatures de la nuit viennent vous chercher** : dans chaque zone sauvage, trois chasseurs sortent à la tombée
+  de la nuit (un peu plus forts que la faune nocturne) et disparaissent à l’aube :
+  - le **rôdeur** vous flaire de loin et se rapproche peu à peu en grognant ; quand il vous voit, il fonce (on le sème
+    en courant) ;
+  - le **volant** tournoie au-dessus de vous : on voit son ombre au sol et sa silhouette dans le ciel, on entend ses
+    ailes. Puis il crie, vise et **tombe du ciel** en piqué : écartez-vous à temps, sinon le combat commence par sa
+    chute ;
+  - l’**imposteur**, un villageois attardé avec sa lanterne, appelle à l’aide (« Tu peux m’aider ? »)… et se retourne
+    sans visage quand on s’approche ou qu’on lui parle.
+  Dans les villes, un imposteur se glisse parmi les habitants une nuit sur deux.
+- **Des villageois poursuivis** traversent la carte en hurlant (« Au secours ! »), torche à la main, une bête sur les
+  talons. Ils courent s’abriter dans une case ou fuient par une sortie ; la bête se tourne alors vers vous. Si vous
+  vous trouvez sur son chemin, c’est vous qu’elle prend en chasse.
+- **Des bruits terrifiants**, synthétisés et placés dans l’espace (plus forts quand c’est près, à gauche ou à droite) :
+  grognements, hurlements, cris stridents, battements d’ailes, ricanements, appels au secours, sifflement du piqué.
+  La musique se tait et le cœur bat quand une créature fond sur vous.
+
   Un murmure annonce la Hantise à l’entrée de la zone, un battement de cœur s’accélère quand elle approche. Quand elle
   attaque, elle surgit immense, en silhouette rouge sang, avant de reculer à sa place. Vaincue ou fuie, elle disparaît
   jusqu’à la nuit suivante ; capturée, elle ne revient plus. Si elle terrasse toute l’équipe, elle s’en prend au héros.
@@ -202,6 +219,7 @@ src/
     zoneKit.ts          Fabriques de PNJ et de bâtiments (soigneurs, marchands, dresseurs, objets…)
     trainersActe2.ts    Maîtres de Piste, bandits du désert, Masques Brisés et Conseil des Griots de l’Acte II
     hantises.ts         Les six Hantises nocturnes et leurs comportements
+    nightMobs.ts        Les chasseurs de la nuit de chaque zone, et les bêtes qui poursuivent les villageois
   engine/               Logique pure, testée sans navigateur
     combat.ts           Machine à états du combat (statuts, priorités, IA, capture, expérience, avantage du joueur)
     hero.ts             Le héros : ses PV, et les duels contre les bandits et les monstres de la nuit
@@ -221,6 +239,7 @@ src/
     music.ts            Séquenceur WebAudio : instruments synthétisés, écho, boucles et jingles
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
+    nightMobs.ts        Créatures de la nuit sur la carte (rôdeur, volant, imposteur) et villageois poursuivis
     props.ts            Objets du décor sculptés
     buildings.ts        Bâtiments (maison, auberge, Marché, sanctuaire), stands et meubles sculptés
     fighters.ts         Combattants humains sculptés pour les duels (bandit de face, héros de dos)

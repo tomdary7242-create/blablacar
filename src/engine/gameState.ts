@@ -55,6 +55,8 @@ export interface GameState {
   clock: Clock;
   /** Hantises repoussées : zone → identifiant de la nuit où elles l'ont été. */
   repelled: Partial<Record<ZoneId, number>>;
+  /** Créatures de la nuit vaincues ou semées : identifiant (« savane:1 ») → nuit où elles l'ont été. */
+  nightMobs: Record<string, number>;
 }
 
 /** On se réveille dans sa chambre, à côté de son lit. */
@@ -86,6 +88,7 @@ export function newGameState(playerName: string): GameState {
     options: { textSpeed: 'normal', sound: true, music: true },
     clock: newClock(),
     repelled: {},
+    nightMobs: {},
   };
 }
 

@@ -111,7 +111,9 @@ type AnimKind =
   /** Le héros s'enfuit, ou le bandit détale. */
   | 'depart'
   /** Une Hantise surgit, immense, puis recule à sa place. */
-  | 'surgir';
+  | 'surgir'
+  /** Un volant tombe du ciel et s'écrase devant vous. */
+  | 'chute';
 interface Anim {
   kind: AnimKind;
   side: Side;
@@ -170,8 +172,8 @@ export interface BattleOptions {
   bandit?: { foe: Fighter };
   /** La nuit : si toute l'équipe tombe, le monstre s'en prend au héros. */
   prey?: boolean;
-  /** Apparition terrifiante (Hantises). */
-  scare?: boolean;
+  /** Apparition terrifiante : surgie des ténèbres (Hantises), ou tombée du ciel (créatures volantes). */
+  entrance?: 'surgir' | 'chute';
   onEnd: (outcome: Outcome, end: BattleEnd) => void;
 }
 
@@ -383,9 +385,11 @@ export class BattleScene implements Scene {
         // Un Jinémon sauvage surgit des herbes ; les autres sortent de leur calebasse.
         const wild = event.side === 'adversaire' && this.combat.kind === 'sauvage';
         if (event.side === 'adversaire') this.capture = null;
-        if (wild && this.opts.scare) {
-          this.anims.push({ kind: 'surgir', side: event.side, t: 0, duration: 1.3 });
-          this.wait = 1.3;
+        if (wild && this.opts.entrance) {
+          const duration = this.opts.entrance === 'chute' ? 1.1 : 1.3;
+          this.anims.push({ kind: this.opts.entrance, side: event.side, t: 0, duration });
+          if (this.opts.entrance === 'chute') this.game.audio.night('chute', 0.8, 0.3);
+          this.wait = duration;
           break;
         }
         this.anims.push({ kind: wild ? 'emergence' : 'entree', side: event.side, t: 0, duration: wild ? 0.9 : 0.85 });
@@ -723,6 +727,13 @@ export class BattleScene implements Scene {
       if (a.kind === 'surgir' && a.t > 0.05 && !a.fired) {
         a.fired = true;
         this.scareBurst();
+      }
+      if (a.kind === 'chute' && a.t > 0.5 && !a.fired) {
+        // Il s'écrase devant vous : le sol tremble, la poussière vole.
+        a.fired = true;
+        this.scareBurst();
+        this.dust(a.side);
+        this.game.audio.fx('impactFort');
       }
       if (a.kind === 'emergence' && a.t > 0.55 && !a.fired) {
         a.fired = true;
@@ -1513,6 +1524,20 @@ export class BattleScene implements Scene {
           fx.silhouette = t < 0.1 ? 1 : 1 - clamp01((t - 0.1) / 0.5);
           fx.tint = '#a00010';
           fx.tintAmount = 0.6 * (1 - clamp01((t - 0.3) / 0.6));
+          break;
+        }
+        case 'chute': {
+          // Il tombe du ciel en accélérant, puis s'écrase et rebondit.
+          if (t < 0.5) {
+            const u = t / 0.5;
+            y -= (1 - u * u) * 150;
+            fx.silhouette = 1 - u;
+          } else {
+            const v = (t - 0.5) / 0.5;
+            const squash = Math.sin(Math.min(1, v * 2) * Math.PI) * 0.22;
+            fx.sx = (fx.sx ?? 1) * (1 + squash);
+            fx.sy = (fx.sy ?? 1) * (1 - squash);
+          }
           break;
         }
         case 'arrivee': {

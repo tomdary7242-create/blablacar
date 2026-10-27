@@ -27,8 +27,10 @@ export interface WildOptions {
   onOutcome?: (outcome: Outcome) => void;
   /** Musique du combat (par défaut : combat sauvage, ou légende). */
   music?: TrackId;
-  /** Hantise : apparition terrifiante. */
+  /** Hantise : apparition terrifiante, et le monstre s'en prend au héros si l'équipe tombe. */
   haunt?: boolean;
+  /** Entrée en scène (par défaut, surgie des ténèbres pour une Hantise). */
+  entrance?: 'surgir' | 'chute';
 }
 
 /** Sans Jinémon en état de se battre, on ne cherche pas la bagarre. */
@@ -65,7 +67,7 @@ export function startWildBattle(game: Game, foe: Jinemon, opts: WildOptions = {}
           theme: game.world?.zone.theme ?? 'savane',
           music: opts.music ?? (species.legendary ? 'legende' : 'combat'),
           prey: preysOnHero(game, opts),
-          scare: opts.haunt,
+          entrance: opts.entrance ?? (opts.haunt ? 'surgir' : undefined),
           onEnd: (outcome, end) => {
             opts.onOutcome?.(outcome);
             afterWild(game, combat, outcome, end, before, opts.flag);
