@@ -10,7 +10,7 @@ export const ACTE2_QUAD_TUNING: Record<number, Partial<QuadShape>> = {
   129: { len: 8, girth: 5.5, width: 4.5, legLen: 8, legR: 1.5, neck: 3, neckAngle: 45, headR: 6, snout: 3.5, snoutR: 1.6, snoutDrop: 0.3, ears: 'renard', earSize: 1.9, tail: 'renard', fur: 0.7, muzzle: '#fff8e8', eyeScale: 1.25 },
   130: { len: 11, girth: 6.5, width: 5.5, legLen: 11, legR: 1.9, neck: 5, neckAngle: 50, headR: 6.5, snout: 4.5, snoutR: 1.9, snoutDrop: 0.3, ears: 'renard', earSize: 1.8, tail: 'renard', fur: 0.6, muzzle: '#fff8e8', eye: 'feroce' },
   // Addax : antilope pâle, longues pattes, toupet brun.
-  131: { len: 12, girth: 7.5, width: 6, legLen: 13, legR: 2.1, neck: 6, neckAngle: 45, headR: 6, snout: 5, snoutR: 2.5, snoutDrop: 0.5, ears: 'pointues', earSize: 0.8, tail: 'touffe', hooves: true, fur: 0.4, muzzle: '#f8f4e8' },
+  131: { len: 12, girth: 7.5, width: 6, legLen: 13, legR: 2.1, neck: 6, neckAngle: 45, headR: 6, snout: 5, snoutR: 2.5, snoutDrop: 0.5, ears: 'pointues', earSize: 0.8, tail: 'touffe', hooves: true, fur: 0.4, muzzle: '#f8f4e8', pose: 'couche' },
 };
 
 export const ACTE2_QUAD_EXTRAS: Record<number, (b: Build, f: QuadFrame) => void> = {

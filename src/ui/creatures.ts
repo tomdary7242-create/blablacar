@@ -1,6 +1,6 @@
 // Modelage des Jinémon : un plan corporel par famille, réglé espèce par espèce,
 // sculpté en volumes (voir sculpt.ts) puis rendu en pixel art.
-import { getSpecies, type SpeciesLook } from '../data/ginedex';
+import { getSpecies, type BodyPlan, type SpeciesLook } from '../data/ginedex';
 import { NEW_DESIGNS, NEW_QUAD_TUNING, QUAD_EXTRAS } from './creaturesNouveaux';
 import { shade } from './draw';
 import { Sculpt, type MaterialDef, type SculptImage, type V3 } from './sculpt';
@@ -62,6 +62,11 @@ export interface QuadShape {
   skin?: Omit<MaterialDef, 'color'>;
   /** Pas de museau ni de truffe (tête d'oiseau du griffon). */
   snoutless?: boolean;
+  /**
+   * Posture : debout (par défaut), assis sur son arrière-train (renard, gardien de trésor)
+   * ou couché, pattes avant allongées (sphinx, antilope au repos).
+   */
+  pose?: 'debout' | 'assis' | 'couche';
 }
 
 /** Repères du quadrupède, transmis aux finitions propres à chaque espèce. */
@@ -114,7 +119,7 @@ const QUAD_TUNING: Record<number, Partial<QuadShape>> = {
   30: { len: 9, girth: 7, width: 6, legLen: 9, legR: 2.8, neck: 4, neckAngle: 45, headR: 7.8, snout: 3.2, snoutR: 3.4, ears: 'rondes', earSize: 1.1, tail: 'touffe', fur: 0.5, muzzle: '#fff0d0', eyeScale: 1.15 },
   31: { len: 14, girth: 9, width: 7.5, legLen: 14, legR: 3.4, neck: 6, neckAngle: 40, headR: 7.5, snout: 4.5, snoutR: 3.8, ears: 'rondes', tail: 'touffe', fur: 0.5, mane: 'lion', muzzle: '#fff0d0', eye: 'feroce' },
   // Buffadô : buffle massif, tête basse, cornes en casque.
-  32: { len: 15, girth: 10, width: 8.5, legLen: 11, legR: 3.6, neck: 5, neckAngle: 15, headR: 7, snout: 5, snoutR: 4, snoutDrop: 0.9, ears: 'tombantes', tail: 'touffe', hooves: true, fur: 0.4, horns: 'buffle', slope: 2, muzzle: '#3a3030', eye: 'feroce' },
+  32: { len: 15, girth: 10.5, width: 8.5, legLen: 10, legR: 3.8, neck: 4, neckAngle: -18, headR: 7.2, snout: 5, snoutR: 4, snoutDrop: 0.9, ears: 'tombantes', tail: 'touffe', hooves: true, fur: 0.4, horns: 'buffle', slope: 3.5, muzzle: '#2a2222', eye: 'feroce' },
   // Zébulle et Zébourou : zébus à bosse.
   33: { len: 11, girth: 7.5, width: 6, legLen: 11, legR: 2.4, neck: 5, neckAngle: 35, headR: 6.5, snout: 4.5, snoutR: 3.2, snoutDrop: 0.6, ears: 'tombantes', tail: 'touffe', hooves: true, fur: 0.25, horns: 'zebu', muzzle: '#d8c8c0' },
   34: { len: 15, girth: 9.5, width: 7.5, legLen: 14, legR: 3, neck: 6, neckAngle: 35, headR: 7, snout: 5.5, snoutR: 3.6, snoutDrop: 0.6, ears: 'tombantes', tail: 'touffe', hooves: true, fur: 0.25, horns: 'zebu', muzzle: '#d8c8c0', eye: 'doux' },
@@ -130,11 +135,12 @@ const QUAD_TUNING: Record<number, Partial<QuadShape>> = {
   // Dahuon : le dahu, pattes plus courtes d'un côté.
   58: { len: 11, girth: 7.5, width: 6, legLen: 11, legR: 2.4, neck: 6, neckAngle: 50, headR: 6.5, snout: 4.5, snoutR: 2.8, snoutDrop: 0.5, earSize: 0.9, tail: 'courte', hooves: true, fur: 0.8, horns: 'chevre', muzzle: '#f0e8e0', eyeScale: 1.1 },
   // Sphynge : corps de lion, coiffe némès et ailes.
-  66: { len: 14, girth: 8.5, width: 7, legLen: 12, legR: 3, neck: 5, neckAngle: 60, headR: 6.5, snout: 2.5, snoutR: 3.6, snoutDrop: 0.2, ears: 'aucune', tail: 'touffe', fur: 0.2, eye: 'feroce' },
+  66: { len: 14, girth: 8.5, width: 7, legLen: 12, legR: 3, neck: 5, neckAngle: 60, headR: 6.5, snout: 2.5, snoutR: 3.6, snoutDrop: 0.2, ears: 'aucune', tail: 'touffe', fur: 0.2, eye: 'feroce', pose: 'couche' },
   // Xolombre : chien nu, oreilles immenses.
   67: { len: 11, girth: 6.5, width: 5.5, legLen: 13, legR: 2, neck: 7, neckAngle: 55, headR: 6, snout: 5, snoutR: 2.4, ears: 'renard', earSize: 1.35, tail: 'fine', fur: 0, eye: 'lueur' },
   // Yurugal : le Renard Pâle.
-  70: { len: 14, girth: 8, width: 6.5, legLen: 14, legR: 2.5, neck: 8, neckAngle: 55, headR: 6.5, snout: 6, snoutR: 2.4, ears: 'renard', earSize: 1.35, tail: 'renard', fur: 0.6, muzzle: '#ffffff', eye: 'feroce' },
+  // Assis, immense queue enroulée devant lui, comme le renard des devins dogon.
+  70: { len: 13, girth: 7, width: 6, legLen: 11, legR: 2.1, neck: 7, neckAngle: 62, headR: 6.4, snout: 6.5, snoutR: 2.1, ears: 'renard', earSize: 1.55, tail: 'renard', fur: 0.7, muzzle: '#ffffff', socks: '#5a4038', eye: 'feroce', pose: 'assis' },
 };
 
 function quadrupede(b: Build): void {
@@ -148,26 +154,66 @@ function quadrupede(b: Build): void {
     pattern: spots ? { kind: 'taches', color: shade(c2, -0.05), scale: 4.6, amount: 0.36 } : undefined,
     ...(q.skin ?? {}),
   });
-  const by = q.legLen + q.girth * 0.72;
-  const front = by + q.slope;
-  const back = by - q.slope * 0.5;
+  const pose = q.pose ?? 'debout';
+  // Assis, le tronc se redresse et se tasse ; couché, il repose sur le sol.
+  const L = pose === 'assis' ? q.len * 0.55 : q.len;
+  let by = q.legLen + q.girth * 0.72;
+  let front = by + q.slope;
+  let back = by - q.slope * 0.5;
+  if (pose === 'assis') {
+    front = q.legLen * 0.95 + q.girth * 0.85;
+    back = q.girth * 0.95;
+    by = (front + back) / 2;
+  } else if (pose === 'couche') {
+    by = q.girth * 0.92;
+    front = by + 0.8;
+    back = by;
+  }
 
   // Tronc : poitrail, ventre et croupe fondus.
-  s.ellipsoid([-q.len * 0.48, front + 0.5, 0], [q.girth * 1.02, q.girth * 1.05, q.width], body);
-  s.ellipsoid([0, (front + back) / 2 - q.girth * 0.05, 0], [q.len * 0.85, q.girth * 0.84, q.width * 0.93], body, { k: 5 });
-  s.ellipsoid([q.len * 0.55, back + 0.3, 0], [q.girth * 0.92, q.girth * 0.95, q.width * 0.95], body, { k: 5 });
-  if (has('bosse')) s.ellipsoid([-q.len * 0.38, front + q.girth * 0.92, 0], [q.girth * 0.68, q.girth * 0.72, q.width * 0.6], body, { k: 2.5 });
+  s.ellipsoid([-L * 0.48, front + 0.5, 0], [q.girth * 1.02, q.girth * 1.05, q.width], body);
+  s.ellipsoid([0, (front + back) / 2 - q.girth * 0.05, 0], [L * 0.85, q.girth * 0.84, q.width * 0.93], body, { k: 5 });
+  s.ellipsoid([L * 0.55, back + 0.3, 0], [q.girth * 0.92, q.girth * 0.95, q.width * 0.95], body, { k: 5 });
+  if (has('bosse')) s.ellipsoid([-L * 0.38, front + q.girth * 0.92, 0], [q.girth * 0.68, q.girth * 0.72, q.width * 0.6], body, { k: 2.5 });
 
   // Pattes
   const hoof = m(shade(c2, -0.35), { gloss: true });
   const sock = q.socks ? m(q.socks, { fur: q.fur }) : -1;
   const legs = [
-    { x: -q.len * 0.52, z: 1, back: false, stride: -2.2 },
-    { x: -q.len * 0.46, z: -1, back: false, stride: 1.6 },
-    { x: q.len * 0.6, z: 1, back: true, stride: 1.4 },
-    { x: q.len * 0.64, z: -1, back: true, stride: -1.4 },
+    { x: -L * 0.52, z: 1, back: false, stride: -2.2 },
+    { x: -L * 0.46, z: -1, back: false, stride: 1.6 },
+    { x: L * 0.6, z: 1, back: true, stride: 1.4 },
+    { x: L * 0.64, z: -1, back: true, stride: -1.4 },
   ];
-  for (const l of legs) {
+  const foot = (x: number, y: number, z: number) => {
+    if (q.hooves) s.cone([x, y + 0.8, z], [x - 0.3, y - 1.2, z], q.legR * 0.66, q.legR * 0.82, hoof);
+    else s.ellipsoid([x - 0.7, y - 0.2, z], [q.legR * 1.05, 1.3, q.legR * 0.85], body, { k: 1.2 });
+  };
+  for (const l of pose === 'debout' ? [] : legs) {
+    const z = l.z * q.width * 0.55;
+    if (l.back) {
+      // Cuisse repliée sur le flanc, le pied posé devant elle.
+      s.ellipsoid([l.x, back + 0.2, z * 1.12], [q.girth * 0.78, q.girth * 0.72, q.legR * 1.8], body, { k: 3 });
+      const toe: V3 = [l.x - q.girth * 1.05, 1.3, z * 1.2];
+      s.cone([l.x - q.girth * 0.35, q.girth * 0.45, z * 1.2], toe, q.legR * 0.95, q.legR * 0.62, body, { k: 1 });
+      foot(toe[0], toe[1], toe[2]);
+    } else if (pose === 'assis') {
+      // Pattes avant bien droites, comme un chien qui attend.
+      const top: V3 = [l.x, front - q.girth * 0.2, z];
+      const toe: V3 = [l.x - 0.8 + l.z * 0.3, q.hooves ? 1.5 : 1.2, z];
+      s.cone(top, lerp3(top, toe, 0.5), q.legR * 1.35, q.legR * 0.8, body, { k: 3 });
+      s.cone(lerp3(top, toe, 0.5), toe, q.legR * 0.8, q.legR * 0.62, body, { k: 0.8 });
+      foot(toe[0], toe[1], toe[2]);
+    } else {
+      // Couché : avant-bras allongés sur le sol, devant le poitrail.
+      const elbow: V3 = [l.x + 0.5, q.girth * 0.55, z];
+      const toe: V3 = [l.x - q.legLen * 0.75 + l.z * 0.8, 1.1, z];
+      s.cone([l.x, front - q.girth * 0.3, z], elbow, q.legR * 1.35, q.legR * 0.95, body, { k: 3 });
+      s.cone(elbow, toe, q.legR * 0.95, q.legR * 0.7, body, { k: 1 });
+      foot(toe[0], toe[1], toe[2]);
+    }
+  }
+  for (const l of pose === 'debout' ? legs : []) {
     const z = l.z * q.width * 0.55;
     // Le dahu a les pattes du côté proche plus courtes : il se tient sur un talus.
     const lift = b.id === 58 && l.z > 0 ? q.legLen * 0.32 : 0;
@@ -197,8 +243,16 @@ function quadrupede(b: Build): void {
   }
 
   // Queue
-  const tb: V3 = [q.len * 0.95 + q.girth * 0.25, back + q.girth * 0.35, 0];
-  if (q.tail === 'renard') {
+  const tb: V3 = [L * 0.95 + q.girth * 0.25, back + q.girth * 0.35, 0];
+  if (pose !== 'debout' && q.tail !== 'aucune') {
+    // Assis ou couché, la queue retombe et s'enroule au sol, devant les pattes.
+    const bushy = q.tail === 'renard';
+    const tail = bushy ? m(c1, { fur: 0.9 }) : body;
+    const pts: V3[] = [tb, [tb[0] + 3.5, 2.6, 1.5], [tb[0] - 1, 1.6, q.width + 2.5], [tb[0] - 9, 1.6, q.width + 3]];
+    s.tube(pts, bushy ? [1.5, 3.4, 3.6, 1.8] : [1, 0.8, 0.7, 0.6], tail, { k: 1.5, amp: bushy ? 0.7 : 0, freq: 0.55 });
+    if (bushy) s.paint(pts[3], [3.4, 3.2, 3.4], m(b.id === 70 ? '#ffffff' : shade(c1, 0.5), { fur: 0.9 }));
+    else if (q.tail === 'touffe') s.ellipsoid([pts[3][0] - 1.2, 1.8, pts[3][2]], [2.4, 1.6, 1.6], m(shade(c2, -0.1), { fur: 1 }), { k: 0.6, amp: 0.5, freq: 0.9 });
+  } else if (q.tail === 'renard') {
     const tail = m(c1, { fur: 0.9 });
     s.tube([tb, [tb[0] + 5, tb[1] + 1, -1], [tb[0] + 9, tb[1] + 6, -2], [tb[0] + 10, tb[1] + 12, -2.5]], [1.5, 3.6, 3.8, 1.6], tail, { k: 2, amp: 0.7, freq: 0.55 });
     s.paint([tb[0] + 10, tb[1] + 11.5, -2.5], [3.4, 3.4, 3.4], m(b.id === 54 || b.id === 53 ? shade(c1, 0.5) : '#ffffff', { fur: 0.9 }));
@@ -231,7 +285,7 @@ function quadrupede(b: Build): void {
 
   // Cou et tête
   const ang = rad(q.neckAngle);
-  const neckBase: V3 = [-q.len * 0.62, front + q.girth * 0.35, 0];
+  const neckBase: V3 = [-L * 0.62, front + q.girth * 0.35, 0];
   const hc: V3 = [neckBase[0] - Math.cos(ang) * q.neck, neckBase[1] + Math.sin(ang) * q.neck, 0];
   s.cone(neckBase, hc, q.girth * 0.62, q.headR * 0.62, body, { k: 4 });
   s.sphere(hc, q.headR, body, { k: 2.5 });
@@ -299,7 +353,7 @@ function quadrupede(b: Build): void {
     const algae = q.mane === 'algues';
     const crest = m(algae ? (b.id === 50 ? '#2a8a6a' : '#5ac8a0') : c2, { fur: 1 });
     const from: V3 = [hc[0] + q.headR * 0.5, hc[1] + q.headR * 0.75, 0];
-    const to: V3 = algae ? [neckBase[0] + 3, neckBase[1] + q.girth * 0.4, 0] : [q.len * 0.4, back + q.girth * 0.8, 0];
+    const to: V3 = algae ? [neckBase[0] + 3, neckBase[1] + q.girth * 0.4, 0] : [L * 0.4, back + q.girth * 0.8, 0];
     s.cone(from, to, algae ? 2.6 : 1.8, algae ? 2.2 : 1.4, crest, { k: 1, amp: algae ? 1.4 : 1, freq: 0.7, stretch: algae ? 2.5 : 1 });
     if (algae) {
       for (const side of SIDES) s.cone(lerp3(from, to, 0.3), [to[0] - 2, to[1] - 6, side * q.width * 0.7], 1.8, 0.8, crest, { k: 1, amp: 0.9, freq: 0.7, stretch: 3 });
@@ -349,8 +403,8 @@ function quadrupede(b: Build): void {
 
   // Attributs
   if (has('feuilles')) leafTuft(b, [hc[0] + 1.5, hc[1] + q.headR * 0.9, 0], b.id === 1 ? 5.5 : 6, 3);
-  if (has('epines')) spikeRow(b, [-q.len * 0.4, front + q.girth * 0.95, 0], [q.len * 0.6, back + q.girth * 0.85, 0], 5, 4, 1.2, m(shade(c3, -0.3)), 0.4);
-  if (has('ailes')) for (const side of SIDES) featherWing(b, [-q.len * 0.2, front + q.girth * 0.7, side * q.width * 0.6], side, 22, shade(c1, 0.15), { tip: c2, up: 70 });
+  if (has('epines')) spikeRow(b, [-L * 0.4, front + q.girth * 0.95, 0], [L * 0.6, back + q.girth * 0.85, 0], 5, 4, 1.2, m(shade(c3, -0.3)), 0.4);
+  if (has('ailes')) for (const side of SIDES) featherWing(b, [-L * 0.2, front + q.girth * 0.7, side * q.width * 0.6], side, 22, shade(c1, 0.15), { tip: c2, up: 70 });
   if (has('coiffe')) {
     // Némès rayé : capuche, pans sur la poitrine et uraeus.
     const cloth = m(c1, { pattern: { kind: 'rayures', color: c2, scale: 2.4, amount: 0.45, axis: 1 }, edge: true });
@@ -678,13 +732,24 @@ function lezard(b: Build): void {
   const skin =
     id === 55 || id === 56
       ? m(c1, { gloss: true, belly: shade(c3, 0.1), pattern: { kind: 'taches', color: c2, scale: 3, amount: 0.33 } })
-      : m(c1, { belly: shade(c1, 0.35), pattern: { kind: 'ecailles', color: shade(c1, -0.2), scale: 1.8 } });
-  const headMat = id === 12 ? m(c3, { pattern: { kind: 'ecailles', color: shade(c3, -0.2), scale: 1.6 } }) : skin;
+      : id === 12
+        ? // Rochard : de la pierre de latérite, fendue de veines de braise.
+          m(c1, { belly: shade(c1, 0.2), pattern: { kind: 'craquelures', color: c3, scale: 3, amount: 0.06 } })
+        : m(c1, { belly: shade(c1, 0.35), pattern: { kind: 'ecailles', color: shade(c1, -0.2), scale: 1.8 } });
+  const headMat = skin;
   const g = saurian(b, p, { body: skin, head: headMat, claws: m('#f0e8d8') });
   a.eyeKind = big ? 'feroce' : 'rond';
   a.eyeColor = c3;
-  if (has('crete')) {
-    const crest = m(id === 12 ? c3 : shade(c3, -0.1), { edge: true });
+  if (has('crete') && id === 12) {
+    // Dalles de pierre plantées le long du dos.
+    const slab = m(c2, { edge: true, pattern: { kind: 'craquelures', color: shade(c2, -0.3), scale: 2, amount: 0.2 } });
+    for (let i = 0; i < 5; i++) {
+      const t = i / 4;
+      const p = lerp3([g.head[0] + 3, g.head[1] + g.headR * 0.5, 0], [g.len * 0.55, g.body[1] + g.girth * 0.7, 0], t);
+      s.box([p[0], p[1] + 1.6, 0], [1.6 - t * 0.4, 2.6 - Math.abs(t - 0.4) * 1.6, 0.7], 0.3, slab, { rot: [0, 0, -12] });
+    }
+  } else if (has('crete')) {
+    const crest = m(shade(c3, -0.1), { edge: true });
     spikeRow(b, [g.head[0] + 1, g.head[1] + g.headR * 0.7, 0], [g.len * 0.6, g.body[1] + g.girth * 0.75, 0], big ? 8 : 6, big ? 5 : 3.5, big ? 1.8 : 1.2, crest, 0.5);
   }
   if (has('carapace')) {
@@ -1321,8 +1386,11 @@ function build(speciesId: number): { s: Sculpt; a: Anchors; look: SpeciesLook } 
   return { s, a, look };
 }
 
-/** Rend un Jinémon en pixel art (`size` × `size`), de trois quarts face ou de dos. */
-export function renderCreature(speciesId: number, size: number, pose: Pose = 'face'): SculptImage {
+/**
+ * Rend un Jinémon en pixel art (`size` × `size`), de trois quarts face ou de dos. Si
+ * `blink` est fourni, on y dépose aussi la même image aux yeux fermés (clignement, sommeil).
+ */
+export function renderCreature(speciesId: number, size: number, pose: Pose = 'face', blink?: { rgba?: Uint8ClampedArray }): SculptImage {
   const { s, a, look } = build(speciesId);
   const view = VIEWS[pose];
   const key = `${speciesId}:${pose}`;
@@ -1340,7 +1408,73 @@ export function renderCreature(speciesId: number, size: number, pose: Pose = 'fa
   const bottom = size - 2 - lift;
   const ground = Math.round(bottom + box.y0 * scale);
   const img = s.render({ size, scale, ground, center: (box.x0 + box.x1) / 2, view });
-  if (pose === 'face') stampFeatures(img, a, scale);
-  if (look.features.includes('aura')) sparkles(img, look.colors[2], speciesId * 31 + (pose === 'face' ? 1 : 2));
+  const bare = blink && pose === 'face' ? img.rgba.slice() : null;
+  const finish = (anchors: Anchors) => {
+    if (pose === 'face') stampFeatures(img, anchors, scale);
+    if (look.features.includes('aura')) sparkles(img, look.colors[2], speciesId * 31 + (pose === 'face' ? 1 : 2));
+  };
+  if (bare && blink) {
+    // Même rendu, paupières closes : on ne sculpte qu'une fois.
+    finish({ ...a, eyeKind: 'clos' });
+    blink.rgba = img.rgba.slice();
+    img.rgba.set(bare);
+  }
+  finish(a);
   return img;
+}
+
+/** Façon de bouger en combat, selon le corps : souffle, balancement, ondulation, ailes, lévitation. */
+export interface Motion {
+  /** Balancement du haut du corps (px) et sa fréquence (Hz). */
+  sway: number;
+  swayHz: number;
+  /** Ondulation de serpent ou de spectre (px). */
+  wave: number;
+  waveHz: number;
+  /** Battement d'ailes : élargissement du haut du sprite. */
+  flap: number;
+  flapHz: number;
+  /** Lévitation (px). */
+  bob: number;
+  bobHz: number;
+  /** Amplitude du souffle (écrasement-étirement). */
+  breath: number;
+}
+
+const MOTIONS: Record<BodyPlan, Partial<Motion>> = {
+  quadrupede: { sway: 1.7, swayHz: 0.5, breath: 0.03 },
+  lezard: { sway: 1.1, swayHz: 0.6, breath: 0.025 },
+  amphibien: { sway: 0.8, swayHz: 0.7, breath: 0.045 },
+  serpent: { sway: 1.2, swayHz: 0.5, wave: 2.3, waveHz: 1.1, breath: 0.015 },
+  dragon: { sway: 1.8, swayHz: 0.4, breath: 0.028 },
+  oiseau: { sway: 0.9, swayHz: 0.6, flap: 0.09, flapHz: 2.2, bob: 1.6, bobHz: 2.2, breath: 0.02 },
+  insecte: { sway: 0.8, swayHz: 6.5, breath: 0.015 },
+  araignee: { sway: 0.5, swayHz: 2.5, bob: 0.6, bobHz: 2.5, breath: 0.012 },
+  esprit: { sway: 1.4, swayHz: 0.35, wave: 1, waveHz: 1, bob: 3.6, bobHz: 0.7, breath: 0.02 },
+  bipede: { sway: 1.9, swayHz: 0.45, breath: 0.028 },
+  golem: { sway: 0.8, swayHz: 0.28, breath: 0.015 },
+  arbre: { sway: 1.8, swayHz: 0.3, wave: 0.4, waveHz: 0.8, breath: 0.01 },
+  // Lanterne : elle oscille au bout de sa chaîne, en flottant.
+  lanterne: { sway: 1.6, swayHz: 0.6, bob: 1.5, bobHz: 0.6, breath: 0.01 },
+};
+
+const motionCache = new Map<number, Motion>();
+
+export function creatureMotion(speciesId: number): Motion {
+  const hit = motionCache.get(speciesId);
+  if (hit) return hit;
+  const sp = getSpecies(speciesId);
+  const base: Motion = { sway: 1, swayHz: 0.5, wave: 0, waveHz: 1, flap: 0, flapHz: 2, bob: 0, bobHz: 1, breath: 0.02, ...MOTIONS[sp.look.plan] };
+  const winged = sp.look.features.includes('ailes') || sp.types.includes('Vol');
+  if (winged && sp.look.plan !== 'oiseau') {
+    // Ailes de chauve-souris, de griffon ou d'insecte : elles battent, et le corps s'élève un peu.
+    const buzz = sp.look.plan === 'insecte';
+    Object.assign(base, { flap: buzz ? 0.05 : 0.06, flapHz: buzz ? 12 : 1.6, bob: buzz ? 0.8 : 1.4, bobHz: buzz ? 3 : 1.6 });
+  }
+  // Les gros Jinémon bougent plus lentement, les petits plus vivement.
+  const k = 1.15 - sp.look.size * 0.3;
+  base.swayHz *= k;
+  base.bobHz *= k;
+  motionCache.set(speciesId, base);
+  return base;
 }

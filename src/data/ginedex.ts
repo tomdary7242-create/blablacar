@@ -683,7 +683,7 @@ export const SPECIES: readonly Species[] = [
     evolution: { to: 13, level: 32 }, learnset: LS.laterite,
     folklore: 'Sahel — les lézards qui se chauffent sur les dalles de latérite.',
     description: 'Lézard des dalles latéritiques. Il absorbe la chaleur du jour et la relâche la nuit en lueurs rougeoyantes.',
-    look: { plan: 'lezard', colors: ['#b06a3a', '#7a5a3a', '#ff7a2a'], features: ['crete'], size: 0.55 },
+    look: { plan: 'lezard', colors: ['#8a7462', '#5a4a40', '#ff7a2a'], features: ['crete'], size: 0.55 },
   },
   {
     id: 13, name: 'Latérosaure', category: 'Jinémon Dalle', types: ['Roche', 'Dragon'],
@@ -805,7 +805,7 @@ export const SPECIES: readonly Species[] = [
     evolution: { to: 28, level: 25 }, learnset: LS.genie,
     folklore: 'Burkina Faso, Ghana — les Kontomblé, petits génies de la brousse.',
     description: 'Un petit génie farceur qui vit au pied des grands arbres. Il enseigne les plantes médicinales à ceux qu’il apprécie.',
-    look: { plan: 'esprit', colors: ['#9ad87a', '#6a4a3a', '#ffffff'], features: ['feuilles'], size: 0.4 },
+    look: { plan: 'esprit', colors: ['#a8784a', '#5a3a22', '#ffffff'], features: ['feuilles'], size: 0.4 },
   },
   {
     id: 28, name: 'Kontombaobab', category: 'Jinémon Arbre-Génie', types: ['Esprit', 'Plante'],
@@ -845,7 +845,7 @@ export const SPECIES: readonly Species[] = [
     learnset: LS.buffle, talent: 'carapace',
     folklore: 'Mandingue — le Buffle de Dô, dans l’épopée de Soundiata Keïta.',
     description: 'Le légendaire buffle qui ravageait le pays de Dô. Seuls les chasseurs les plus sages ont pu le vaincre.',
-    look: { plan: 'quadrupede', colors: ['#5a4a3a', '#2a2420', '#e8e0d0'], features: ['grandesCornes'], size: 1 },
+    look: { plan: 'quadrupede', colors: ['#3e322c', '#1e1816', '#e8402a'], features: ['grandesCornes', 'bosse'], size: 1 },
   },
   {
     id: 33, name: 'Zébulle', category: 'Jinémon Zébu', types: ['Normal'],
@@ -1162,7 +1162,7 @@ export const SPECIES: readonly Species[] = [
     learnset: LS.renardPale, talent: 'ruse', legendary: true,
     folklore: 'Dogon (Mali) — Yurugu, le Renard Pâle, maître du désordre et de la divination.',
     description: 'Légende du Panthéon. Chaque nuit, il laisse ses traces sur les tables de divination tracées dans le sable.',
-    look: { plan: 'quadrupede', colors: ['#f0e8d8', '#c8b8a0', '#e85a8f'], features: ['oreilles', 'aura', 'queue'], size: 1 },
+    look: { plan: 'quadrupede', colors: ['#ecd2a2', '#c89050', '#e85a8f'], features: ['oreilles', 'aura', 'queue', 'lueur'], size: 1 },
   },
   {
     id: 71, name: 'Bidawa', category: 'Jinémon Serpent d’Or', types: ['Dragon', 'Terre'],
@@ -1604,7 +1604,7 @@ export const SPECIES: readonly Species[] = [
     learnset: LS.shango, talent: 'prestance',
     folklore: 'Yoruba (Nigeria, Bénin) — le bélier, animal de Shango, l’orisha du tonnerre et du feu.',
     description: 'Ses cornes enroulées attirent la foudre. Quand il charge, le ciel gronde avec lui.',
-    look: { plan: 'quadrupede', colors: ['#f0e8d8', '#c83a2a', '#ffe040'], features: ['cornes', 'eclairs'], size: 0.9 },
+    look: { plan: 'quadrupede', colors: ['#8e94a6', '#c83a2a', '#ffe040'], features: ['cornes', 'eclairs'], size: 0.9 },
   },
   {
     id: 122, name: 'Vautouré', category: 'Jinémon Charognard Ailé', types: ['Vol', 'Ténèbres'],
@@ -1630,7 +1630,7 @@ export const SPECIES: readonly Species[] = [
     learnset: LS.bouda, talent: 'prestance', nocturne: true, hantise: true,
     folklore: 'Éthiopie et Maghreb — le bouda, forgeron qui se change en hyène à la nuit tombée.',
     description: 'Hantise. Il suit tes traces pas à pas, sans jamais se presser. Si tu t’arrêtes, lui ne s’arrête pas.',
-    look: { plan: 'quadrupede', colors: ['#5a5048', '#8a8f98', '#ff5a2a'], features: ['criniere', 'chaines', 'yeux'], size: 1 },
+    look: { plan: 'quadrupede', colors: ['#7a6446', '#8a8f98', '#ff5a2a'], features: ['criniere', 'chaines', 'yeux'], size: 1 },
   },
   {
     id: 125, name: 'Kishimiroir', category: 'Jinémon Deux-Visages', types: ['Ténèbres', 'Psy'],

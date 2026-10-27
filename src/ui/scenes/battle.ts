@@ -33,6 +33,7 @@ import type { Game } from '../game';
 import type { TrackId } from '../musicScore';
 import type { Scene } from '../scene';
 import { H, W } from '../screen';
+import { creatureMotion } from '../creatures';
 import { PLAYER_LOOK, characterSprite, drawCreatureFx, drawSpriteFx, type CreatureFx } from '../sprites';
 import { BagScene } from './bag';
 import { promptLearnMove } from './learnMove';
@@ -1472,10 +1473,26 @@ export class BattleScene implements Scene {
     const anchor = this.anchor(side);
     let x = anchor.foot.x;
     let y = anchor.foot.y;
-    // Respiration : le Jinémon est vivant, même immobile.
+    // Le Jinémon est vivant, même immobile : il respire, se balance, ondule, bat des ailes
+    // ou flotte selon son corps, et cligne des yeux. Endormi, il garde les yeux fermés.
     const sleeping = view.status === 'sommeil';
-    const breath = Math.sin(this.time * (sleeping ? 1.3 : 2.6) + (player ? 0 : 1.7));
-    const fx: CreatureFx = { back: player, shiny: view.shiny, sx: 1 - breath * 0.012, sy: 1 + breath * (sleeping ? 0.03 : 0.02) };
+    const tm = this.time + (player ? 0 : 1.7) + view.speciesId * 0.37;
+    const motion = view.fighter ? null : creatureMotion(view.speciesId);
+    const amp = motion?.breath ?? 0.02;
+    const breath = Math.sin(tm * (sleeping ? 1.3 : 2.6));
+    const fx: CreatureFx = { back: player, shiny: view.shiny, sx: 1 - breath * amp * 0.6, sy: 1 + breath * (sleeping ? amp * 1.5 : amp) };
+    if (motion) {
+      const calm = sleeping ? 0.3 : 1;
+      const turn = Math.PI * 2;
+      fx.bend = {
+        sway: motion.sway * calm * Math.sin(tm * motion.swayHz * turn),
+        wave: motion.wave * calm,
+        flap: motion.flap * calm * (0.5 + 0.5 * Math.sin(tm * motion.flapHz * turn)),
+        phase: tm * motion.waveHz * turn,
+      };
+      y -= motion.bob * calm * (0.5 + 0.5 * Math.sin(tm * motion.bobHz * turn));
+      fx.blink = sleeping || tm % (2.6 + (view.speciesId % 5) * 0.45) < 0.14;
+    }
     x += (player ? -1 : 1) * view.knock;
     if (view.hit < 0.07) fx.white = 1;
     else if (view.hit < 0.45 && Math.floor(view.hit * 18) % 2 === 0) fx.alpha = 0.3;

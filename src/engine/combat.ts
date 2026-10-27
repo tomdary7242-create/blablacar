@@ -81,7 +81,10 @@ export interface CombatOptions {
   ai?: 'simple' | 'malin';
   /** Message d'apparition d'un Jinémon sauvage (Légendes, rencontres scénarisées). */
   intro?: string;
-  /** Amulette du Partage : les Jinémon restés en réserve gagnent la moitié de l'expérience. */
+  /**
+   * Amulette du Partage : les Jinémon restés en réserve gagnent la moitié de l'expérience
+   * (sans elle, ils en gagnent déjà un peu : voir BENCH_XP).
+   */
   xpShare?: boolean;
   /**
    * Combat contre un bandit : ses Jinémon, asservis, peuvent lui être arrachés
@@ -95,6 +98,9 @@ export interface CombatOptions {
  * dégâts en plus que la normale.
  */
 export const PLAYER_EDGE = 1.25;
+
+/** Part de l'expérience que gagnent les Jinémon restés en réserve (sans, puis avec l'Amulette du Partage). */
+export const BENCH_XP = { base: 0.3, amulette: 0.5 };
 
 /** Part des PV en dessous de laquelle un Jinémon de bandit peut être capturé. */
 export const STEAL_HP = 0.3;
@@ -843,10 +849,10 @@ export class Combat {
     const total = xpYield(foe, this.kind === 'dresseur');
     const gains = new Map<Jinemon, number>();
     if (fighters.length) for (const j of fighters) gains.set(j, Math.max(1, Math.floor(total / fighters.length)));
-    if (this.xpShare) {
-      for (const j of this.player) {
-        if (!gains.has(j) && !isFainted(j) && j.level < MAX_LEVEL) gains.set(j, Math.max(1, Math.floor(total / 2)));
-      }
+    // Le reste de l'équipe, resté en réserve, en profite aussi un peu (davantage avec l'Amulette).
+    const bench = Math.max(1, Math.floor(total * (this.xpShare ? BENCH_XP.amulette : BENCH_XP.base)));
+    for (const j of this.player) {
+      if (!gains.has(j) && !isFainted(j) && j.level < MAX_LEVEL) gains.set(j, bench);
     }
     let shared = false;
     for (const [j, share] of gains) {
@@ -855,7 +861,11 @@ export class Combat {
       if (fighters.includes(j)) this.say(`${displayName(j)} gagne ${share} points d'expérience !`);
       else if (!shared) {
         shared = true;
-        this.say('L’Amulette du Partage fait profiter le reste de l’équipe de l’expérience !');
+        this.say(
+          this.xpShare
+            ? `L’Amulette du Partage fait profiter le reste de l’équipe : ${share} points d'expérience chacun !`
+            : `Le reste de l’équipe en profite aussi : ${share} points d'expérience chacun.`,
+        );
       }
       this.emit({ type: 'xp', index, xp: j.xp });
       for (const level of report.levels) {

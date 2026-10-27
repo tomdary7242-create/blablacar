@@ -55,7 +55,7 @@ export const NEW_QUAD_TUNING: Record<number, Partial<QuadShape>> = {
   // Qilin : cerf-dragon écailleux à crinière d'or.
   103: { len: 12, girth: 7.5, width: 6, legLen: 14, legR: 2.2, neck: 8, neckAngle: 55, headR: 6, snout: 5, snoutR: 2.6, snoutDrop: 0.45, ears: 'pointues', earSize: 0.8, tail: 'touffe', hooves: true, fur: 0.2, mane: 'crete', eye: 'feroce', skin: { pattern: scales('#2a8a74', 2.2, 0.18), belly: '#f0e0a0' } },
   // Pixiu : lion ailé doré.
-  105: { len: 12, girth: 8, width: 6.5, legLen: 10, legR: 3, neck: 4, neckAngle: 45, headR: 7, snout: 3.5, snoutR: 3.4, snoutDrop: 0.3, ears: 'rondes', earSize: 0.7, tail: 'touffe', fur: 0.4, mane: 'lion', horns: 'bourgeons', eye: 'feroce', skin: { gloss: true } },
+  105: { len: 12, girth: 8, width: 6.5, legLen: 10, legR: 3, neck: 4, neckAngle: 45, headR: 7, snout: 3.5, snoutR: 3.4, snoutDrop: 0.3, ears: 'rondes', earSize: 0.7, tail: 'touffe', fur: 0.4, mane: 'lion', horns: 'bourgeons', eye: 'feroce', skin: { gloss: true }, pose: 'assis' },
   // Griffons : corps de lion, tête et ailes d'aigle.
   112: { len: 10, girth: 6.5, width: 5.5, legLen: 9, legR: 2.2, neck: 5, neckAngle: 55, headR: 5.5, snout: 1, snoutR: 1, ears: 'aucune', tail: 'touffe', fur: 0.4, snoutless: true, eye: 'feroce', eyeScale: 1.15 },
   113: { len: 14, girth: 8.5, width: 7, legLen: 12, legR: 2.8, neck: 6, neckAngle: 55, headR: 6.2, snout: 1, snoutR: 1, ears: 'aucune', tail: 'touffe', fur: 0.4, snoutless: true, eye: 'feroce' },
@@ -222,9 +222,18 @@ export const QUAD_EXTRAS: Record<number, (b: Build, f: QuadFrame) => void> = {
   117: (b, f) => {
     for (const side of SIDES) b.s.cone([f.snoutEnd[0] + 1.5, f.snoutEnd[1] - 0.5, side * 1.2], [f.snoutEnd[0] + 1.3, f.snoutEnd[1] - 3.2, side * 1.3], 0.6, 0.15, b.m('#f0ead8'));
   },
+  // Pixor : assis sur son trésor, pièces d'or et gemmes entre les pattes.
+  105: (b, f) => {
+    const { s, m } = b;
+    const gold = m('#f0c848', { gloss: true, edge: true });
+    const coins: Array<[number, number, number]> = [[-9, 0.6, 3], [-12, 0.6, -2], [-6, 0.6, -5], [-14, 1.8, 2], [-10, 1.8, -1], [-8, 3, 1], [-4, 0.6, 6], [-15, 0.6, 6]];
+    for (const [x, y, z] of coins) s.capped([x + f.q.len * 0.1, y - 0.5, z], [x + f.q.len * 0.1, y + 0.5, z], 2, 2, gold, { round: 0.3 });
+    for (const [x, z, c] of [[-11, 4, '#e83a5a'], [-7, -3, '#3ac8a0'], [-13, -4, '#5a7ae8']] as const) s.sphere([x, 2.2, z], 1.2, m(c, { gloss: true }));
+  },
   121: (b, f) => {
     const { s, m } = b;
-    const wool = m('#f4ece0', { fur: 1 });
+    // Laine d'orage : un nuage gris où dorment les éclairs de Shango.
+    const wool = m(shade(b.look.colors[0], 0.12), { fur: 1, belly: shade(b.look.colors[0], -0.25) });
     s.ellipsoid([0, f.by + 0.8, 0], [f.q.len * 1.05, f.q.girth * 1.0, f.q.width * 1.15], wool, { amp: 1.4, freq: 0.75 });
     const bolt = m('#ffe040', { glow: true });
     for (const side of SIDES) {
@@ -238,15 +247,12 @@ export const QUAD_EXTRAS: Record<number, (b: Build, f: QuadFrame) => void> = {
       s.sphere([f.neckBase[0] - 1 + Math.cos(a) * 0.5, f.neckBase[1] + Math.sin(a) * f.q.girth * 0.55, Math.cos(a) * f.q.girth * 0.6], 0.9, beads);
     }
   },
-  124: (b, f) => {
-    const { s, m } = b;
-    // Collier de fer du forgeron, rivé autour du cou.
-    const dir: V3 = [f.hc[0] - f.neckBase[0], f.hc[1] - f.neckBase[1], 0];
-    const len = Math.hypot(dir[0], dir[1]);
-    const a = add3(f.neckBase, [(dir[0] / len) * 1.5, (dir[1] / len) * 1.5, 0]);
-    const c = add3(f.neckBase, [(dir[0] / len) * 3.6, (dir[1] / len) * 3.6, 0]);
-    s.capped(a, c, f.q.girth * 0.68, f.q.girth * 0.64, m('#6a6e78', { gloss: true, edge: true }), { round: 0.5 });
-    for (let i = 0; i < 4; i++) s.sphere([c[0] + 1 + i * 1.4, c[1] - 2 - i * 1.6, f.q.width * 0.2], 0.9, m('#8a8f98', { gloss: true }));
+  // Buffadô : tête baissée pour charger, il souffle de la vapeur par les naseaux.
+  32: (b, f) => {
+    const steam = b.m('#e8e8f0', { bare: true, maxTone: 1 });
+    for (const [dx, dy, r] of [[-1.5, -0.5, 1.2], [-3.5, -1.2, 1.6], [-6, -1.6, 2]]) {
+      for (const side of SIDES) b.s.sphere([f.snoutEnd[0] + dx, f.snoutEnd[1] + dy, side * 1.6], r, steam, { amp: 0.4, freq: 1 });
+    }
   },
 };
 
@@ -898,8 +904,51 @@ function obayifo(b: Build): void {
   a.eyeColor = c3;
 }
 
+/**
+ * Boudarou : le kishi des contes d'Angola, devenu forgeron-garou. Dressé sur ses pattes
+ * arrière, voûté, museau de hyène, tablier de cuir, collier et chaînes de fer, et le
+ * marteau encore rougeoyant de la forge.
+ */
+function garou(b: Build): void {
+  const { s, m, a } = b;
+  const [c1, c2, c3] = b.look.colors;
+  const fur = m(c1, { fur: 0.9, pattern: { kind: 'taches', color: shade(c1, -0.35), scale: 4, amount: 0.3 } });
+  const iron = m(c2, { gloss: true, edge: true });
+  const h = humanoid(
+    b,
+    { ...BIPED_DEFAULT, torsoR: 7.5, torsoH: 10, hipY: 11, legR: 2.6, armR: 2.3, armLen: 14, headR: 5.8, neck: -0.5, digitigrade: true, footLen: 5 },
+    { body: fur, hands: m('#2a2420'), feet: m('#2a2420') },
+  );
+  // Tablier de cuir du forgeron, brûlé par les étincelles.
+  s.box([h.chest[0] - 4.8, h.hips[1] + 1, 0], [1, 6.5, 5.2], 0.8, m('#6a4428', { edge: true, pattern: { kind: 'taches', color: '#3a2414', scale: 2, amount: 0.15 } }), { rot: [0, 0, -8] });
+  // Museau de hyène, oreilles rondes, crinière hérissée tout le long du dos.
+  const head = h.head;
+  const r = h.headR;
+  // Long museau sombre de hyène, truffe noire.
+  const muzzle = m(shade(c1, -0.45), { fur: 0.4 });
+  s.cone([head[0] - r * 0.4, head[1] - r * 0.25, 0], [head[0] - r * 2.1, head[1] - r * 0.6, 0], r * 0.62, r * 0.42, muzzle, { k: 1.2 });
+  s.sphere([head[0] - r * 2.2, head[1] - r * 0.45, 0], r * 0.26, m('#1a1412', { gloss: true }));
+  for (const side of SIDES) s.ellipsoid([head[0] + 1.2, head[1] + r * 0.85, side * r * 0.62], [2, 2.2, 1], fur, { rot: [0, side * 20, side * -25], k: 0.8 });
+  spikeRow(b, [head[0] + r * 0.6, head[1] + r * 0.6, 0], [h.hips[0] + 4, h.hips[1] + 6, 0], 7, 3, 1, m(shade(c1, -0.4), { fur: 1 }), 0.6);
+  for (const side of SIDES) s.cone([head[0] - r * 1.85, head[1] - r * 0.85, side * 1.1], [head[0] - r * 1.9, head[1] - r * 1.25, side * 1.1], 0.5, 0.1, m('#f0e8d8'));
+  // Collier de fer rivé au cou, et chaînes brisées aux poignets.
+  s.capped([h.chest[0], h.chest[1] + 6, 0], [h.chest[0] + 0.5, h.chest[1] + 8, 0], 4.2, 4, iron, { round: 0.5 });
+  for (const hand of h.hands) {
+    s.capped([hand[0] + 1, hand[1] + 1.5, hand[2]], [hand[0] + 1.6, hand[1] + 3.2, hand[2]], 1.9, 1.9, iron, { round: 0.4 });
+    for (let i = 0; i < 3; i++) s.ellipsoid([hand[0] + 1.5 + i * 0.6, hand[1] - 0.5 - i * 1.5, hand[2] + Math.sign(hand[2]) * 1.2], [0.9, 0.6, 0.4], iron, { rot: [i % 2 ? 40 : -20, 0, i % 2 ? 90 : 0] });
+  }
+  // Le marteau, encore rouge de la forge.
+  const hand = h.hands[1];
+  s.cone([hand[0], hand[1] - 2, hand[2]], [hand[0] + 0.5, hand[1] + 9, hand[2]], 0.7, 0.7, m('#4a3020'));
+  s.box([hand[0] + 0.5, hand[1] + 10, hand[2]], [3.2, 1.9, 1.9], 0.4, iron);
+  s.paint([hand[0] - 2.4, hand[1] + 10, hand[2]], [1, 1.9, 2], m(c3, { glow: true }));
+  frontEyes(b, h, 0.42, 0.18, 'lueur', 0.24);
+  a.eyeColor = c3;
+}
+
 export const NEW_DESIGNS: Partial<Record<number, (b: Build) => void>> = {
   ...ACTE2_DESIGNS,
+  124: garou,
   76: (b) => chameleon(b, false),
   77: (b) => chameleon(b, true),
   82: (b) => scorpion(b, false),

@@ -76,6 +76,27 @@ describe('Un jeu un peu plus facile', () => {
     expect(captureChance(asleep, 1)).toBeGreaterThan(awake * 1.9);
   });
 
+  it('le reste de l’équipe gagne aussi de l’expérience, davantage avec l’Amulette du Partage', () => {
+    const gained = (xpShare: boolean) => {
+      const fighter = mon(7, 20, ['coupDePatte']);
+      const bench = mon(1, 10);
+      const ko = mon(4, 10);
+      ko.hp = 0;
+      const before = [bench.xp, ko.xp];
+      const foe = mon(14, 10);
+      foe.hp = 1;
+      const c = new Combat({ kind: 'sauvage', player: [fighter, bench, ko], foe: [foe], rng: seededRng(2), xpShare });
+      c.start();
+      c.submit({ kind: 'attaque', moveIndex: 0 });
+      expect(c.outcome).toBe('victoire');
+      expect(ko.xp).toBe(before[1]);
+      return bench.xp - before[0];
+    };
+    const base = gained(false);
+    expect(base).toBeGreaterThan(0);
+    expect(gained(true)).toBeGreaterThan(base);
+  });
+
   it('après un combat, le héros et ses Jinémon debout reprennent leur souffle', () => {
     const s = newGameState('Awa');
     const j = mon(1, 20);

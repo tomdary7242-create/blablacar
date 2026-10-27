@@ -82,7 +82,7 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
   },
   amulettePartage: {
     name: 'Amulette du Partage', price: 0, effect: { kind: 'cle' },
-    description: 'Un gri-gri de cauris tressés. Les Jinémon restés en réserve gagnent la moitié de l’expérience des combats.',
+    description: 'Un gri-gri de cauris tressés. Les Jinémon restés en réserve gagnent la moitié de l’expérience des combats, au lieu d’un petit tiers.',
   },
   nasse: {
     name: 'Nasse du Pêcheur', price: 0, effect: { kind: 'cle' },

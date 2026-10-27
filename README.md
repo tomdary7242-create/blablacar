@@ -84,7 +84,8 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 - **Les Jinémon des bandits peuvent leur être arrachés** d’un coup de calebasse quand ils sont affaiblis : moins de 30 %
   de leurs PV, endormis, paralysés ou confus (une calebasse clignote alors à côté de leurs PV).
 - **Un peu plus facile** : les coups de votre camp portent 25 % de plus, l’expérience est multipliée par 1,5, et après
-  chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %. Les calebasses sont plus
+  chaque victoire le héros récupère 25 % de ses PV et chaque Jinémon debout 10 %. Les Jinémon restés en réserve
+  gagnent aussi un petit tiers de l’expérience (la moitié avec l’Amulette du Partage). Les calebasses sont plus
   généreuses (×1,5), surtout avec les jeunes Jinémon (jusqu’au niveau 20) : en début de partie, un Jinémon commun
   presque K.O. ne leur échappe plus. Les trois bandits de la Savane, l’apprenti de la Forge et Sirafa ont été allégés,
   et le starter Plante apprend Charge de Brousse dès le niveau 6 (il n’avait rien contre les oiseaux et les insectes du
@@ -172,6 +173,10 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
   jusqu’à la nuit suivante ; capturée, elle ne revient plus. Si elle terrasse toute l’équipe, elle s’en prend au héros.
 
 ## Combats animés
+
+- **Des Jinémon vivants** : au repos, chacun bouge selon son corps — le quadrupède respire et balance la tête, le
+  serpent ondule, l’oiseau bat des ailes en sautillant, l’esprit et la lanterne flottent, l’insecte frémit, l’arbre
+  ploie au vent — et cligne des yeux de temps en temps. Endormi, il garde les yeux fermés.
 
 - **Chaque attaque a sa chorégraphie**, dans les couleurs de son type : le lanceur prend son élan et fonce (images
   rémanentes), tire des projectiles en arc (boules de feu, feuilles tranchantes, rochers, dards, feux follets…),

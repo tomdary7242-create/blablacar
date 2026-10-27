@@ -58,25 +58,36 @@ function shiny(src: HTMLCanvasElement, speciesId: number): HTMLCanvasElement {
 export function creatureSprite(
   speciesId: number,
   size = 64,
-  variant: 'normal' | 'silhouette' | 'blanc' | 'chatoyant' = 'normal',
+  variant: 'normal' | 'silhouette' | 'blanc' | 'chatoyant' | 'clin' = 'normal',
   pose: Pose = 'face',
 ): HTMLCanvasElement {
   const key = `${speciesId}:${size}:${variant}:${pose}`;
   const cached = creatureCache.get(key);
   if (cached) return cached;
   let canvas: HTMLCanvasElement;
-  if (variant === 'chatoyant') {
+  if (variant === 'clin') {
+    // Les yeux fermés sont rendus en même temps que l'image normale (de dos, rien ne change).
+    const normal = creatureSprite(speciesId, size, 'normal', pose);
+    return creatureCache.get(key) ?? normal;
+  } else if (variant === 'chatoyant') {
     canvas = shiny(creatureSprite(speciesId, size, 'normal', pose), speciesId);
   } else if (variant !== 'normal') {
     canvas = tint(creatureSprite(speciesId, size, 'normal', pose), variant === 'silhouette' ? '#201828' : '#ffffff');
   } else {
-    const img = renderCreature(speciesId, size, pose);
-    canvas = document.createElement('canvas');
-    canvas.width = img.w;
-    canvas.height = img.h;
-    canvas.getContext('2d')!.putImageData(new ImageData(img.rgba, img.w, img.h), 0, 0);
+    const blink: { rgba?: Uint8ClampedArray } = {};
+    const img = renderCreature(speciesId, size, pose, blink);
+    canvas = toCanvas(img.rgba, img.w, img.h);
+    if (blink.rgba) creatureCache.set(`${speciesId}:${size}:clin:${pose}`, toCanvas(blink.rgba, img.w, img.h));
   }
   creatureCache.set(key, canvas);
+  return canvas;
+}
+
+function toCanvas(rgba: Uint8ClampedArray, w: number, h: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(rgba), w, h), 0, 0);
   return canvas;
 }
 
@@ -154,12 +165,19 @@ export interface CreatureFx {
   silhouette?: number;
   /** Ne dessine que ce qui dépasse au-dessus de cette ligne (le Jinémon s'enfonce dans le sol). */
   clipBelow?: number;
+  /** Yeux fermés (clignement, sommeil). */
+  blink?: boolean;
+  /**
+   * Déformation vivante, dessinée bande par bande : le haut du corps se balance (`sway`, px),
+   * ondule (`wave`, px, phase `phase`) ou s'élargit comme des ailes qui battent (`flap`).
+   */
+  bend?: { sway: number; wave: number; flap: number; phase: number };
 }
 
 /** Dessine un Jinémon en combat avec ses effets ; (x, y) est le point au sol. */
 export function drawCreatureFx(ctx: CanvasRenderingContext2D, speciesId: number, x: number, y: number, size: number, fx: CreatureFx = {}): void {
   const pose: Pose = fx.back ? 'dos' : 'face';
-  const variant = fx.shiny ? 'chatoyant' : 'normal';
+  const variant = fx.shiny ? 'chatoyant' : fx.blink ? 'clin' : 'normal';
   drawSpriteFx(ctx, creatureSprite(speciesId, size, variant, pose), `${speciesId}:${size}:${variant}:${pose}`, x, y, fx);
 }
 
@@ -181,18 +199,32 @@ export function drawSpriteFx(ctx: CanvasRenderingContext2D, base: HTMLCanvasElem
   const left = -w / 2;
   const top = -h + 2;
   const alpha = fx.alpha ?? 1;
+  const bend = fx.bend;
+  // Sans déformation, l'image d'un bloc ; sinon, par bandes de deux pixels décalées.
+  const blit = (img: HTMLCanvasElement, ox = 0, oy = 0) => {
+    if (!bend) {
+      ctx.drawImage(img, left + ox, top + oy, w, h);
+      return;
+    }
+    for (let y = 0; y < h; y += 2) {
+      const t = 1 - (y + 1) / h;
+      const dx = Math.round(bend.sway * t * t + bend.wave * Math.sin(bend.phase + y * 0.22) * t);
+      const bw = Math.round(w * (1 + (bend.flap * Math.max(0, t - 0.3)) / 0.7));
+      ctx.drawImage(img, 0, y, w, 2, left + ox + dx - (bw - w) / 2, top + oy + y, bw, 2);
+    }
+  };
   if (fx.glow) {
     // Halo : la silhouette teintée, décalée d'un pixel dans les quatre directions.
     ctx.globalAlpha = alpha * 0.85;
     const halo = tintedSprite(base, fx.glow, key);
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(halo, left + dx, top + dy, w, h);
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) blit(halo, dx, dy);
   }
   ctx.globalAlpha = alpha;
-  ctx.drawImage(base, left, top, w, h);
+  blit(base);
   const over = (color: string, amount: number) => {
     if (amount <= 0) return;
     ctx.globalAlpha = alpha * Math.min(1, amount);
-    ctx.drawImage(tintedSprite(base, color, key), left, top, w, h);
+    blit(tintedSprite(base, color, key));
   };
   over('#201828', fx.silhouette ?? 0);
   if (fx.tint) over(fx.tint, fx.tintAmount ?? 0.5);
