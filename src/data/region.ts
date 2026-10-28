@@ -38,18 +38,19 @@ export const REGION_BADGES: readonly BadgeId[] = BADGE_ORDER.filter((badge) =>
   REGION_ZONES.some((id) => ZONES[id].npcs.some((n) => n.script.kind === 'dresseur' && getTrainer(n.script.trainer).badge === badge)),
 );
 
-/** Les Jinémon qu'on peut obtenir dans la région : herbes, nuit, pêche, Hantises, Terreurs, bandits, évolutions. */
+/** Les Jinémon qu'on peut obtenir dans la région : herbes, nuit, pêche, Hantises, Terreurs, bandits, cadeaux, évolutions. */
 function obtainable(): number[] {
   const ids = new Set<number>([1, 4, 7]);
   for (const id of REGION_TOWNS) {
     const zone = ZONES[id];
     for (const e of [...zone.encounters, ...(zone.nightEncounters ?? []), ...(zone.fishing ?? [])]) ids.add(e.species);
     for (const n of zone.npcs) {
-      if (n.script.kind === 'legendaire') ids.add(n.script.species);
-      // Un Jinémon affaibli peut être arraché à un bandit.
+      if (n.script.kind === 'legendaire' || n.script.kind === 'compagnon') ids.add(n.script.species);
       if (n.script.kind === 'dresseur') {
         const t = getTrainer(n.script.trainer);
+        // Un Jinémon affaibli peut être arraché à un bandit ; certains dresseurs offrent un Jinémon.
         if (t.bandit) t.team.forEach((m) => m.species > 0 && ids.add(m.species));
+        if (t.gift) ids.add(t.gift.species);
       }
     }
     [...nightMobsOf(id), ...townMobs(id, 0), ...townMobs(id, 1)].forEach((m) => ids.add(m.species));

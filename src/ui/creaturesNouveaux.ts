@@ -35,6 +35,8 @@ const calico = { kind: 'taches' as const, color: '#3a3030', scale: 6, amount: 0.
 export const NEW_QUAD_TUNING: Record<number, Partial<QuadShape>> = {
   ...ACTE2_QUAD_TUNING,
   ...NUIT_QUAD_TUNING,
+  // Wouloupi, le chiot de Djenna : grosse tête, grandes oreilles dressées de basenji, pattes courtes, grands yeux.
+  145: { len: 8.5, girth: 6.5, width: 5.5, legLen: 6, legR: 2, neck: 3, neckAngle: 38, headR: 7, snout: 4.4, snoutR: 2.5, snoutDrop: 0.35, ears: 'pointues', earSize: 1.1, tail: 'aucune', fur: 0.5, socks: '#f2ede4', muzzle: '#f2ede4', eye: 'doux', eyeScale: 1.4, skin: { belly: '#f2ede4' } },
   // Pangolins : dos arqué couvert d'écailles, longue queue, petite tête pointue.
   74: { len: 10, girth: 6.5, width: 5.5, legLen: 5.5, legR: 2.2, neck: 2.5, neckAngle: 12, headR: 4.6, snout: 5.5, snoutR: 1.4, snoutDrop: 0.45, ears: 'aucune', tail: 'aucune', fur: 0, slope: -1.5, eyeScale: 1.25, skin: { pattern: scales('#5a3a24'), belly: '#f0d8b0' } },
   75: { len: 13, girth: 8, width: 7, legLen: 7, legR: 2.8, neck: 3, neckAngle: 12, headR: 5.5, snout: 6, snoutR: 1.8, snoutDrop: 0.45, ears: 'aucune', tail: 'aucune', fur: 0, slope: -2, eye: 'feroce', skin: { gloss: true, pattern: scales('#3a3028', 3.2), belly: '#d8c0a0' } },
@@ -169,6 +171,32 @@ function griffonHead(b: Build, f: QuadFrame): void {
 export const QUAD_EXTRAS: Record<number, (b: Build, f: QuadFrame) => void> = {
   ...ACTE2_QUAD_EXTRAS,
   ...NUIT_QUAD_EXTRAS,
+  145: (b, f) => {
+    const { s, m } = b;
+    const [, white, gold] = b.look.colors;
+    // Poitrail blanc, liseré blanc sur le front, petite truffe brillante, collier rouge et son cauri.
+    s.paint([f.neckBase[0] - 1.5, f.neckBase[1] - 1.5, 0], [2.4, 3.2, 3], m(white, { fur: 0.6 }));
+    s.paint([f.hc[0] - f.q.headR * 0.8, f.hc[1] + f.q.headR * 0.3, 0], [1.2, f.q.headR * 0.4, 0.55], m(white, { fur: 0.4 }));
+    // Le bout de la langue, rose, qui dépasse.
+    s.ellipsoid([f.snoutEnd[0] + 0.6, f.snoutEnd[1] - 1.6, 0.3], [0.9, 0.5, 0.7], m('#f07888', { gloss: true }));
+    s.sphere([f.snoutEnd[0] - 0.2, f.snoutEnd[1] + 0.4, 0], 0.9, m('#14121a', { gloss: true }));
+    const collar: V3[] = [];
+    for (let i = 0; i <= 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      collar.push([f.neckBase[0] - 0.4 + Math.cos(a) * 0.6, f.neckBase[1] + 0.8 + Math.sin(a) * 0.4, Math.sin(a) * 3.1 + Math.cos(a) * 0.2]);
+    }
+    s.tube(collar, collar.map(() => 0.55), m('#c8302a', { edge: true }));
+    s.ellipsoid([f.neckBase[0] - 2.2, f.neckBase[1] - 0.6, 0], [0.7, 1, 0.6], m('#f8f2e0', { gloss: true }));
+    // La queue en tire-bouchon, enroulée sur le dos, au bout blanc.
+    const tail: V3[] = [];
+    for (let i = 0; i <= 12; i++) {
+      const a = (i / 12) * Math.PI * 1.7;
+      tail.push([f.tb[0] + 1.2 - Math.sin(a) * 2.2 + i * 0.05, f.tb[1] + 1.5 + (1 - Math.cos(a)) * 2, Math.sin(a * 0.5) * 0.8]);
+    }
+    s.tube(tail, tail.map((_, i) => 1.15 - i * 0.04), m(b.look.colors[0], { fur: 0.6 }), { k: 0.8 });
+    s.sphere(tail[12], 0.85, m(white, { fur: 0.8 }));
+    b.a.eyeColor = gold;
+  },
   74: (b, f) => pangolinTail(b, f, 1),
   75: (b, f) => pangolinTail(b, f, 1.3),
   78: (b, f) => hippoFace(b, f, false),

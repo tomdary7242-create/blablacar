@@ -5,10 +5,11 @@ import { BADGES, getTrainer, trainerTeam, type Trainer } from '../data/trainers'
 import { isNight, MORNING, advanceTo } from '../engine/clock';
 import { Combat, type Outcome } from '../engine/combat';
 import { createJinemon, evolutionTarget, maxHp, type Jinemon } from '../engine/creature';
-import { addJinemon, hasUsableJinemon, itemCount, markSeen, removeItem, sleepHere } from '../engine/gameState';
+import { addJinemon, hasUsableJinemon, healParty, itemCount, markSeen, removeItem, sleepHere } from '../engine/gameState';
 import { banditFighter, catchBreath } from '../engine/hero';
 import type { Game } from './game';
 import type { TrackId } from './musicScore';
+import { offerNickname, offerNicknames } from './nickname';
 import { BattleScene, type BattleEnd } from './scenes/battle';
 import { CreditsScene } from './scenes/credits';
 import { EvolutionScene } from './scenes/evolution';
@@ -79,8 +80,8 @@ function afterWild(game: Game, combat: Combat, outcome: Outcome, before: Map<Jin
   }
   const lines: string[] = [];
   if (outcome === 'victoire' || outcome === 'capture') breather(game, lines);
-  if (outcome === 'capture' && combat.captured) {
-    const caught = combat.captured;
+  const caught = outcome === 'capture' ? combat.captured : null;
+  if (caught) {
     const species = getSpecies(caught.speciesId);
     const firstTime = !state.dex.caught.includes(caught.speciesId);
     const where = addJinemon(state, caught);
@@ -89,8 +90,9 @@ function afterWild(game: Game, combat: Combat, outcome: Outcome, before: Map<Jin
     if (where === 'grenier') lines.push(`Votre équipe est complète : ${species.name} rejoint la Grande Jarre.`);
   }
   const finish = () => evolutions(game, before, () => game.save(true));
-  if (lines.length) game.say(lines, finish);
-  else finish();
+  const named = () => (caught ? offerNickname(game, caught, finish) : finish());
+  if (lines.length) game.say(lines, named);
+  else named();
 }
 
 export function startTrainerBattle(game: Game, trainerId: string): void {
@@ -126,12 +128,15 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
               return `${getSpecies(j.speciesId).name} se joint à vous${where === 'grenier' ? ' (dans la Grande Jarre)' : ''}.`;
             });
             if (outcome !== 'victoire' || end.duel === 'defaite') {
-              if (trainer.bandit) robbed(game, trainer);
+              if (trainer.friendly) friendlyLoss(game, trainer);
+              else if (trainer.bandit) robbed(game, trainer);
               else blackout(game);
               return;
             }
             state.flags[`dresseur:${trainer.id}`] = true;
-            const lines = trainer.bandit ? sentence(game, trainer, end) : [...trainer.defeat, `Vous recevez ${trainer.reward} cauris.`];
+            const lines = trainer.bandit
+              ? sentence(game, trainer, end)
+              : [...trainer.defeat, ...(trainer.reward > 0 ? [`Vous recevez ${trainer.reward} cauris.`] : [])];
             state.cauris += trainer.reward;
             lines.push(...freed);
             breather(game, lines);
@@ -140,13 +145,15 @@ export function startTrainerBattle(game: Game, trainerId: string): void {
               lines.push(`Vous obtenez l'${BADGES[trainer.badge].name} !`);
               game.jingle('insigne');
             }
-            game.say(lines, () =>
-              evolutions(game, before, () => {
-                game.save(true);
-                if (trainer.id === 'assa') game.scenes.push(new CreditsScene(game, 'acte1'));
-                if (trainer.id === 'kadyChampion') game.scenes.push(new CreditsScene(game, 'final'));
-              }),
-            'victoire');
+            const rest = () =>
+              offerNicknames(game, combat.stolen, () =>
+                evolutions(game, before, () => {
+                  game.save(true);
+                  if (trainer.id === 'assa') game.scenes.push(new CreditsScene(game, 'acte1'));
+                  if (trainer.id === 'kadyChampion') game.scenes.push(new CreditsScene(game, 'final'));
+                }),
+              );
+            game.say(lines, () => (trainer.gift ? giveJinemon(game, trainer.gift, rest) : rest()), 'victoire');
           },
         }),
       );
@@ -203,6 +210,28 @@ function sentence(game: Game, trainer: Trainer, end: BattleEnd): string[] {
 /** Après une victoire, tout le monde reprend son souffle. */
 function breather(game: Game, lines: string[]): void {
   if (catchBreath(game.s, maxHp)) lines.push('Le combat terminé, vous reprenez votre souffle, et vos Jinémon aussi.');
+}
+
+/** Un duel amical perdu : rien n'est perdu, l'équipe est soignée sur place et l'on peut recommencer. */
+function friendlyLoss(game: Game, trainer: Trainer): void {
+  const state = game.s;
+  state.flags[`amical:${trainer.id}`] = true;
+  healParty(state);
+  game.say(trainer.friendly!.lost, () => game.save(true));
+}
+
+/** Un Jinémon offert après un combat : on le reçoit, puis on peut lui donner un surnom. */
+function giveJinemon(game: Game, gift: NonNullable<Trainer['gift']>, next: () => void): void {
+  const state = game.s;
+  const j = createJinemon(gift.species, gift.level, game.rng);
+  const name = getSpecies(gift.species).name;
+  game.say(gift.lines, () => {
+    const where = addJinemon(state, j);
+    game.jingle('capture');
+    game.say([`Vous recevez ${name} !`, ...(where === 'grenier' ? [`Votre équipe est complète : ${name} rejoint la Grande Jarre.`] : [])], () =>
+      offerNickname(game, j, next),
+    );
+  });
 }
 
 /** Battue par un bandit : il ricane et s'en va ; on ramène ses Jinémon se reposer. */

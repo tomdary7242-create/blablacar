@@ -89,6 +89,18 @@ export type NpcScript =
   | { kind: 'thomas' }
   | { kind: 'gardien'; condition: Condition; flag: string; blocked: string[]; open: string[] }
   | { kind: 'objet'; item: ItemId; quantity: number; flag: string }
+  /**
+   * Visite : dès qu'elle voit le joueur (à `sight` cases), elle vient à sa rencontre, parle,
+   * offre ses cadeaux, puis s'en va (une seule fois).
+   */
+  | {
+      kind: 'visite';
+      sight: number;
+      flag: string;
+      lines: string[];
+      gifts: Array<{ item: ItemId; quantity: number; label: string; lines: string[]; after?: string[] }>;
+      farewell: string[];
+    }
   /** Un PNJ confie un Jinémon une seule fois (pour la prochaine Arène), puis répète `after`. */
   | { kind: 'compagnon'; species: number; level: number; flag: string; lines: string[]; after: string[] }
   /** Un PNJ offre un objet une seule fois, puis répète `after`. */
@@ -433,6 +445,36 @@ const terresRouges: Zone = {
         after: ['Vieux forgeron : Mets mon Kappou en tête face à Sirafa. L’eau éteint le feu !'],
       },
     },
+    // Djenna, la sœur de l'héroïne, accourt quand on sort de la Forge.
+    {
+      id: 'djennaVisite', name: 'Djenna', x: 23, y: 7, dir: 'bas',
+      look: { kind: 'personne', look: { skin: '#3e2418', outfit: '#e85a8f', accent: '#ffd040', headwear: 'foulard' } },
+      script: {
+        kind: 'visite',
+        sight: 4,
+        flag: 'djenna:visite',
+        lines: [
+          'Djenna : {nom} ! {nom}, wait ! Wait for me !',
+          'Djenna : Is me, Djenna ! Your sister ! Oh, I am so happy for see you !',
+          'Djenna : I see everything ! You beat the bad guy of the Forge ! Wow… you are very strong now.',
+          'Djenna : Mum say me you go find Thomas. So I run, I run, and I bring you some things.',
+        ],
+        gifts: [
+          {
+            item: 'calebasseMaster', quantity: 5, label: '5 Calebasses Master',
+            lines: ['Djenna : This is five Calebasse Master. With this one, the creature cannot say no ! One hundred percent ! Every time !'],
+          },
+          {
+            item: 'gateauFraise', quantity: 1, label: 'Gâteau à la Fraise',
+            lines: ['Djenna : And this… a strawberry cake ! I make it myself… Okay, Mum help me a little bit.'],
+            after: ['Djenna : When your Jinémon is very tired, he eat one piece, and pouf ! He is like new.'],
+          },
+        ],
+        farewell: ['Djenna : Okay, I go now. But I see you again very soon, promise ! Bye bye, sister !'],
+      },
+      showFlag: 'dresseur:sirafa',
+      hideFlag: 'djenna:visite',
+    },
     dresseur('bakary', 23, 15, 'haut', T('bakary')),
     dresseur('sirafa', 23, 19, 'haut', T('sirafa')),
     objet('tr-moringa', 3, 19, 'moringa'),
@@ -540,6 +582,7 @@ const marigot: Zone = {
         after: ['Herboriste : Mets mon Kaméléo en tête face à Aminata. La plante boit l’eau !'],
       },
     },
+    dresseur('djenna', 14, 24, 'droite', T('djenna')),
     dresseur('sory', 8, 12, 'droite', T('sory')),
     dresseur('aissata', 26, 15, 'droite', T('aissata')),
     dresseur('binta', 17, 15, 'gauche', T('binta')),

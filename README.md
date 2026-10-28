@@ -17,7 +17,10 @@ gardée telle quelle sur la branche [`sauvegarde/ginemon-complet`](../../tree/sa
 ## L’aventure (version courte)
 
 - **L’héroïne s’appelle Lisa** par défaut : le prénom est déjà écrit à l’écran de départ, il suffit de valider, ou
-  de taper un autre prénom (la première lettre tapée remplace « Lisa »).
+  de taper un autre prénom (la première lettre tapée remplace « Lisa »). Sur téléphone, toucher l’écran ouvre le
+  clavier du téléphone.
+- **Surnoms** : chaque Jinémon qui rejoint l’équipe (le premier, ceux qu’on capture, qu’on arrache à un bandit ou
+  qu’on reçoit) peut recevoir un surnom, sur le même écran que le prénom.
 - **Au réveil, Maman** parle des Jinémon, envoie au sanctuaire du Hogon chercher un premier compagnon… et finit par
   l’essentiel : **Thomas a des ennuis, il faut aller le retrouver.**
 - **Les Sandales Noires**, une bande de brigands, ont pris **les deux Arènes de la région** : la Forge des Terres
@@ -25,12 +28,18 @@ gardée telle quelle sur la branche [`sauvegarde/ginemon-complet`](../../tree/sa
   Esprit). Leurs insignes s’obtiennent comme avant ; l’Insigne de l’Enclume suffit à briser les rochers fissurés.
 - **De l’aide avant chaque Arène** : le vieux forgeron chassé de sa Forge confie un Kappou (Eau), et une herboriste du
   Marigot un Kaméléo (Plante). Avec eux, chaque starter gagne les deux Arènes.
+- **Djenna, la sœur de Lisa**, qui parle un anglais approximatif, accourt quand on sort de la Forge après avoir battu
+  Sirafa : elle offre **5 Calebasses Master** (la capture réussit à tous les coups) et un **Gâteau à la Fraise** (un
+  Jinémon retrouve tous ses PV et se remet de ses altérations). On la retrouve à l’entrée du Marigot pour un **duel
+  amical** : perdu, elle soigne l’équipe et l’on recommence quand on veut ; gagné, elle confie **Wouloupi**, un chiot
+  noir aux grandes oreilles, qu’on peut surnommer.
 - **Thomas** attend derrière l’autel du Sanctuaire, une fois Aminata battue. La fin réserve une surprise ; puis le
   générique, et l’on peut continuer à explorer et à remplir le Ginédex. On peut lui reparler pour réentendre son
   message.
 - **La région** : Village des Greniers, Savane des Termitières, Terres Rouges et Marigot des Ancêtres (le gué vers la
   Forêt Sacrée a été emporté). Le Ginédex, la carte, le menu et les insignes ne montrent que ce qu’elle contient :
-  **83 Jinémon** à rencontrer (faune, pêche, trois Hantises et les sept Terreurs nocturnes) et **2 insignes**.
+  **84 Jinémon** à rencontrer (faune, pêche, trois Hantises, les sept Terreurs nocturnes et les Jinémon offerts) et
+  **2 insignes**.
 
 ## Graphismes
 
@@ -118,7 +127,7 @@ La partie est sauvegardée automatiquement (changement de zone, après chaque co
 
 ## Contenu
 
-- **144 Jinémon** dans les données (dont 83 dans la région jouable de la version courte), répartis en 98 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
+- **145 Jinémon** dans les données (dont 84 dans la région jouable de la version courte), répartis en 98 lignées, dont les 12 du GDD (starters Poussilope / Têtuanom / Étincel, Termiton,
   Termitox, Rochard) et quatre Légendes : Yurugal, le Renard Pâle ; Bidawa, le Serpent d’Or du Wagadou ; Faro, génie
   du Niger ; Aïdohwedo, le serpent arc-en-ciel des Fon. Environ un Jinémon sauvage sur 512 est **chatoyant**
   (couleurs rares).
@@ -279,6 +288,8 @@ src/
     night.ts            Éclairage : teinte du crépuscule, obscurité tramée et lumières
     haunts.ts           Déplacement des Hantises sur la carte (traque, téléportation, statue…)
     nightMobs.ts        Terreurs nocturnes sur la carte (araignée, pendu, ver, clochette, oiseau, faux villageois, fauve) et villageois poursuivis
+    nickname.ts         Surnoms proposés aux Jinémon qui rejoignent l’équipe
+    scenes/textEntry.ts Saisie d’un nom (héroïne, surnoms), au clavier ou au clavier du téléphone
     props.ts            Objets du décor sculptés
     buildings.ts        Bâtiments (maison, auberge, Marché, sanctuaire), stands et meubles sculptés
     fighters.ts         Combattants humains sculptés pour les duels (bandit de face, héros de dos)

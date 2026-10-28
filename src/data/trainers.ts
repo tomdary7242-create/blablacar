@@ -92,6 +92,10 @@ export interface Trainer {
    * avoue une fois menotté (ou épargné).
    */
   bandit?: Outlaw;
+  /** Duel amical : perdre ne coûte rien (`lost` est ce qu'elle dit), et l'on recommence en lui parlant. */
+  friendly?: { lost: string[] };
+  /** Jinémon offert après la victoire (on peut lui donner un surnom). */
+  gift?: { species: number; level: number; lines: string[] };
 }
 
 export interface Outlaw {
@@ -253,6 +257,36 @@ const ACTE1: Trainer[] = [
     ],
     bandit: { prime: 1000, plea: ['Binta : Pitié ! La Gardienne me maudira si je meurs sur son seuil !'] },
     look: { skin: '#5a3420', outfit: '#2a7ab8', accent: '#c8f0ff', headwear: 'foulard' },
+  },
+  // La sœur de l'héroïne, venue la défier pour de rire avant le Sanctuaire.
+  {
+    id: 'djenna', name: 'Djenna', title: 'Ta sœur', ai: 'simple', reward: 0, sight: 3,
+    team: [{ species: 18, level: 11 }, { species: 14, level: 12 }, { species: 33, level: 13 }],
+    intro: [
+      'Djenna : {nom} ! Over here ! Is me again, Djenna !',
+      'Djenna : Before you go see the méchante of the Sanctuaire, I want see if you are ready.',
+      'Djenna : A little fight, just for fun ! Sister against sister ! Ready ? Go !',
+    ],
+    defeat: ['Djenna : Whaaat ? You win ! You are so strong, my sister !', 'Djenna : Okay, okay… I am very proud of you. Really.'],
+    after: [
+      'Djenna : Take good care of him, okay ? He like the cuddles very much.',
+      'Djenna : Now go, go ! Thomas is waiting for you ! I stay here and I watch the bridge.',
+    ],
+    friendly: {
+      lost: [
+        'Djenna : Hihi ! I win this time !',
+        'Djenna : No problem, is just for fun. I heal your Jinémon… Voilà ! We try again when you want, sister !',
+      ],
+    },
+    gift: {
+      species: 145,
+      level: 14,
+      lines: [
+        'Djenna : I have one more surprise for you. Look who is here…',
+        'Djenna : This little one, he follow me since the village. He is very cute, no ? But I think… he prefer you.',
+      ],
+    },
+    look: { skin: '#3e2418', outfit: '#e85a8f', accent: '#ffd040', headwear: 'foulard' },
   },
   {
     id: 'aminata', name: 'Aminata', title: 'Bras droit du Chef', ai: 'simple', reward: 2200, badge: 'pluie',

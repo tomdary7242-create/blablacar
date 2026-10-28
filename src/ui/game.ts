@@ -105,10 +105,16 @@ export class Game {
   }
 
   say(lines: string[], onDone?: () => void, music?: TrackId): void {
-    this.scenes.push(new DialogScene(this, lines, { onDone, music }));
+    this.scenes.push(new DialogScene(this, this.personal(lines), { onDone, music }));
   }
 
   ask(lines: string[], choices: string[], onChoice: (index: number) => void, cancelIndex = choices.length - 1): void {
-    this.scenes.push(new DialogScene(this, lines, { choices, onChoice, cancelIndex }));
+    this.scenes.push(new DialogScene(this, this.personal(lines), { choices, onChoice, cancelIndex }));
+  }
+
+  /** « {nom} » devient le nom de l'héroïne. */
+  private personal(lines: string[]): string[] {
+    const name = this.state?.playerName;
+    return name ? lines.map((l) => l.replaceAll('{nom}', name)) : lines;
   }
 }

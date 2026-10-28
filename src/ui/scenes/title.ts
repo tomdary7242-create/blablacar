@@ -9,6 +9,7 @@ import type { Scene } from '../scene';
 import { W } from '../screen';
 import { drawCreature } from '../sprites';
 import { OverworldScene } from './overworld';
+import { TextEntryScene } from './textEntry';
 import { RevealScene } from './transition';
 
 /** Le prénom proposé d'office (on peut l'effacer), puis d'autres suggestions. */
@@ -77,60 +78,17 @@ export class TitleScene implements Scene {
   }
 }
 
-export class NameScene implements Scene {
-  readonly opaque = true;
-  private name = DEFAULT_NAME;
-  private suggestion = 0;
-  /** Le prénom proposé n'a pas encore été touché : la première lettre tapée le remplace. */
-  private pristine = true;
-
-  constructor(private readonly game: Game) {}
-
-  update(): void {
-    const input = this.game.input;
-    const enter = input.codes.includes('Enter') || input.codes.includes('NumpadEnter');
-    if (input.typed.length) {
-      for (const ch of input.typed) {
-        const letter = /^[\p{L}\p{N} '-]$/u.test(ch);
-        if (this.pristine && letter) this.name = '';
-        if (letter || ch === '\b') this.pristine = false;
-        if (ch === '\b') this.name = this.name.slice(0, -1);
-        else if (letter && this.name.length < 10) this.name += ch;
-      }
-      this.suggestion = -1;
-      // Les lettres tapées déclenchent aussi des boutons (ZQSD, J, K…) : seule Entrée valide.
-      if (enter) this.confirm();
-      return;
-    }
-    if (input.pressed('left') || input.pressed('right') || input.pressed('up') || input.pressed('down')) {
-      const delta = input.pressed('left') || input.pressed('up') ? -1 : 1;
-      this.suggestion = (this.suggestion + delta + SUGGESTIONS.length) % SUGGESTIONS.length;
-      this.name = SUGGESTIONS[this.suggestion];
-      this.game.sfx('curseur');
-    }
-    if (input.pressed('b')) {
-      if (this.name) this.name = this.name.slice(0, -1);
-      else this.game.scenes.pop(this);
-    }
-    if (input.pressed('a')) this.confirm();
-  }
-
-  private confirm(): void {
-    const name = this.name.trim() || DEFAULT_NAME;
-    this.game.sfx('valider');
-    startWorld(this.game, newGameState(name), true);
-  }
-
-  render(ctx: CanvasRenderingContext2D): void {
-    sahelBackdrop(ctx);
-    box(ctx, 14, 36, 228, 92);
-    text(ctx, 'Comment t’appelles-tu ?', W / 2, 42, { align: 'center', shadow: PAL.shadow });
-    box(ctx, 58, 58, 140, 26, 'sombre');
-    const caret = Math.floor(this.game.time * 2) % 2 === 0 ? '_' : ' ';
-    text(ctx, this.name + caret, W / 2, 62, { align: 'center', color: PAL.cream, scale: 1 });
-    text(ctx, 'Efface et tape un autre nom,', W / 2, 92, { align: 'center' });
-    text(ctx, 'ou ◄ ► pour une suggestion.', W / 2, 102, { align: 'center' });
-    text(ctx, 'Entrée / A : valider', W / 2, 114, { align: 'center', color: PAL.grey });
+/** Le prénom de l'héroïne : « Lisa » est proposé d'office, on peut en taper un autre. */
+export class NameScene extends TextEntryScene {
+  constructor(game: Game) {
+    super(game, {
+      title: 'Comment t’appelles-tu ?',
+      initial: DEFAULT_NAME,
+      suggestions: SUGGESTIONS,
+      backdrop: sahelBackdrop,
+      onDone: (name) => startWorld(game, newGameState(name), true),
+      onCancel: () => undefined,
+    });
   }
 }
 

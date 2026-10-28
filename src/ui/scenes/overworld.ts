@@ -43,6 +43,7 @@ import { TILE, animateTile, grassOverlay, itemBall, jarVortex, renderZoneLayers,
 import { MenuScene } from './menu';
 import { ShopScene } from './shop';
 import { PlanScene } from './plan';
+import { offerNickname } from '../nickname';
 import { CreditsScene } from './credits';
 import { StarterScene } from './starter';
 import { StorageScene } from './storage';
@@ -583,14 +584,24 @@ export class OverworldScene implements Scene, World {
     return this.npcPos.get(npc.id) ?? { x: npc.x, y: npc.y };
   }
 
-  /** Dresseur pas encore battu dont le regard croise le joueur. */
-  private spottedBy(): Npc | undefined {
+  /** Portée du regard d'un PNJ qui vient à la rencontre du joueur (0 : il attend qu'on lui parle). */
+  private sightOf(npc: Npc): number {
     const flags = this.game.s.flags;
+    const s = npc.script;
+    if (s.kind === 'visite') return flags[s.flag] ? 0 : s.sight;
+    if (s.kind !== 'dresseur') return 0;
+    const trainer = getTrainer(s.trainer);
+    // Battu, ou déjà défié pour de rire : il faut aller lui parler.
+    if (flags[`dresseur:${trainer.id}`] || flags[`amical:${trainer.id}`]) return 0;
+    return trainer.sight ?? (trainer.badge ? 0 : SIGHT);
+  }
+
+  /** Dresseur pas encore battu (ou visiteuse) dont le regard croise le joueur. */
+  private spottedBy(): Npc | undefined {
     for (const npc of this.zone.npcs) {
-      if (npc.script.kind !== 'dresseur' || !this.npcVisible(npc)) continue;
-      const trainer = getTrainer(npc.script.trainer);
-      const sight = trainer.sight ?? (trainer.badge ? 0 : SIGHT);
-      if (!sight || flags[`dresseur:${trainer.id}`]) continue;
+      if (!this.npcVisible(npc)) continue;
+      const sight = this.sightOf(npc);
+      if (!sight) continue;
       const p = this.posOf(npc);
       const { dx, dy } = DIR_DELTA[this.npcDirs.get(npc.id) ?? npc.dir];
       for (let k = 1; k <= sight; k++) {
@@ -846,7 +857,7 @@ export class OverworldScene implements Scene, World {
     const sign = this.zone.signs.find((s) => s.x === tx && s.y === ty);
     if (sign) {
       if (sign.plan) this.game.scenes.push(new PlanScene(this.game, this.zone, { x: this.x, y: this.y }));
-      else this.game.say(this.personal(sign.text));
+      else this.game.say(sign.text);
       return;
     }
     const t = this.tile(tx, ty);
@@ -871,11 +882,6 @@ export class OverworldScene implements Scene, World {
     } else if (this.zone.decor?.[t] ?? DECOR_TEXT[t]) {
       this.game.say([this.zone.decor?.[t] ?? DECOR_TEXT[t]]);
     }
-  }
-
-  /** Remplace « {nom} » par le nom du joueur. */
-  private personal(lines: string[]): string[] {
-    return lines.map((l) => l.replaceAll('{nom}', this.game.s.playerName));
   }
 
   private crackedRock(x: number, y: number): void {
@@ -957,7 +963,7 @@ export class OverworldScene implements Scene, World {
     const s = npc.script;
     switch (s.kind) {
       case 'dialogue':
-        game.say(this.personal(s.lines));
+        game.say(s.lines);
         break;
       case 'maman':
         this.maman();
@@ -965,6 +971,27 @@ export class OverworldScene implements Scene, World {
       case 'thomas':
         this.thomas();
         break;
+      case 'visite': {
+        // Elle parle, offre ses cadeaux l'un après l'autre, puis s'en va.
+        const gifts = [...s.gifts];
+        const next = () => {
+          const gift = gifts.shift();
+          if (!gift) {
+            game.say(s.farewell, () => {
+              state.flags[s.flag] = true;
+              game.save(true);
+            });
+            return;
+          }
+          game.say(gift.lines, () => {
+            addItem(state, gift.item, gift.quantity);
+            game.jingle('objet');
+            game.say([`Vous recevez : ${gift.label} !`, ...(gift.after ?? [])], next);
+          });
+        };
+        game.say(s.lines, next);
+        break;
+      }
       case 'compagnon': {
         if (state.flags[s.flag]) {
           game.say(s.after);
@@ -976,7 +1003,9 @@ export class OverworldScene implements Scene, World {
           state.flags[s.flag] = true;
           game.jingle('capture');
           const name = getSpecies(s.species).name;
-          game.say([`Vous recevez ${name} !`, ...(where === 'grenier' ? [`Votre équipe est complète : ${name} rejoint la Grande Jarre.`] : [])], () => game.save(true));
+          game.say([`Vous recevez ${name} !`, ...(where === 'grenier' ? [`Votre équipe est complète : ${name} rejoint la Grande Jarre.`] : [])], () =>
+            offerNickname(game, j, () => game.save(true)),
+          );
         });
         break;
       }
@@ -1236,24 +1265,8 @@ export class OverworldScene implements Scene, World {
               addItem(state, 'menottes', 5);
               state.flags['don:menottes'] = true;
               game.jingle('capture');
-              game.say(
-                [
-                  `Vous recevez ${displayName(j)} !`,
-                  `Hogon : ${displayName(j)} t’a choisie autant que tu l’as choisi.`,
-                  'Hogon : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
-                  "Hogon : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
-                  'Hogon : Écoute-moi bien. Les pistes sont infestées de bandits. Ils asservissent des Jinémon et détroussent les voyageurs.',
-                  'Hogon : Quand tu auras abattu leurs Jinémon, ils se jetteront sur toi, machette au poing. Mets-les à terre.',
-                  'Hogon : Ensuite, à toi de choisir : les achever… ou les épargner. Beaucoup ont la tête mise à prix : passe-leur ces menottes, et la garde te paiera la prime.',
-                  'Vous recevez : 5 Menottes de Fer !',
-                  'Hogon : Et un Jinémon de bandit affaibli peut lui être arraché d’un coup de calebasse. Libère-les.',
-                  'Hogon : Tu cherches Thomas ? … Les nouvelles ne sont pas bonnes.',
-                  'Hogon : Une bande de brigands, les Sandales Noires, a pris les deux Arènes de la région : la Forge des Terres Rouges et le Sanctuaire du Marigot.',
-                  'Hogon : On dit qu’ils retiennent quelqu’un… Bats les chefs de ces deux Arènes, et tu retrouveras Thomas.',
-                  'Hogon : Ma petite-fille Kady est partie devant. Elle t’attend dans la Savane des Termitières, au nord du village.',
-                  'Hogon : Pour soigner tes Jinémon et dormir, va à l’auberge : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
-                ],
-                () => game.save(),
+              game.say([`Vous recevez ${displayName(j)} !`], () =>
+                offerNickname(game, j, () => game.say(this.hogonAdvice(displayName(j)), () => game.save())),
               );
             }),
           ),
@@ -1263,6 +1276,25 @@ export class OverworldScene implements Scene, World {
     const caught = REGION_SPECIES.filter((id) => state.dex.caught.includes(id)).length;
     const hint = state.flags.fin ? 'Les Sandales Noires ont quitté la région, et Thomas est libre. Les griots chanteront ton nom.' : currentObjective(state).text;
     game.say([`Hogon : Ton Ginédex compte ${caught} espèce${caught > 1 ? 's' : ''} capturée${caught > 1 ? 's' : ''} sur ${REGION_SPECIES.length}.`, `Hogon : ${hint}`]);
+  }
+
+  /** Les conseils du Hogon, une fois le premier Jinémon reçu (et peut-être surnommé). */
+  private hogonAdvice(name: string): string[] {
+    return [
+      `Hogon : ${name} t’a choisie autant que tu l’as choisi.`,
+      'Hogon : Prends aussi ces cinq Calebasses Sacrées et trois pots de Beurre de Karité.',
+      "Hogon : Affaiblis un Jinémon sauvage, puis lance-lui une calebasse : s'il l'accepte, il se joindra à toi.",
+      'Hogon : Écoute-moi bien. Les pistes sont infestées de bandits. Ils asservissent des Jinémon et détroussent les voyageurs.',
+      'Hogon : Quand tu auras abattu leurs Jinémon, ils se jetteront sur toi, machette au poing. Mets-les à terre.',
+      'Hogon : Ensuite, à toi de choisir : les achever… ou les épargner. Beaucoup ont la tête mise à prix : passe-leur ces menottes, et la garde te paiera la prime.',
+      'Vous recevez : 5 Menottes de Fer !',
+      'Hogon : Et un Jinémon de bandit affaibli peut lui être arraché d’un coup de calebasse. Libère-les.',
+      'Hogon : Tu cherches Thomas ? … Les nouvelles ne sont pas bonnes.',
+      'Hogon : Une bande de brigands, les Sandales Noires, a pris les deux Arènes de la région : la Forge des Terres Rouges et le Sanctuaire du Marigot.',
+      'Hogon : On dit qu’ils retiennent quelqu’un… Bats les chefs de ces deux Arènes, et tu retrouveras Thomas.',
+      'Hogon : Ma petite-fille Kady est partie devant. Elle t’attend dans la Savane des Termitières, au nord du village.',
+      'Hogon : Pour soigner tes Jinémon et dormir, va à l’auberge : le bâtiment blanc au toit vert. Il y en a une dans chaque ville.',
+    ];
   }
 
   /** Thomas, retrouvé derrière l'autel du Sanctuaire du Marigot : la fin de l'aventure. */

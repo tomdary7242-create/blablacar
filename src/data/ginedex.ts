@@ -614,6 +614,12 @@ const LS = {
     [18, 'chargeBrousse'], [20, 'ruseLievre'], [23, 'embuscadeNocturne'], [28, 'danseChasseurs'], [33, 'crocsNuit'],
     [38, 'regardPenetrant'], [43, 'ombreRampante'], [49, 'rueeSauvage'], [62, 'eclipseDevorante'],
   ],
+  // ── Le chiot de Djenna ──
+  wouloupi: [
+    [1, 'coupDePatte'], [1, 'regardPenetrant'], [4, 'bondLievre'], [8, 'chargeBrousse'], [12, 'larcin'],
+    [16, 'morsureHyene'], [20, 'criDeGuerre'], [24, 'embuscadeNocturne'], [29, 'ruseLievre'], [34, 'crocsNuit'],
+    [39, 'danseChasseurs'], [44, 'ombreRampante'], [50, 'rueeSauvage'], [56, 'palabre'], [63, 'eclipseDevorante'],
+  ],
 } satisfies Record<string, readonly LearnsetEntry[]>;
 
 const stats = (hp: number, attack: number, defense: number, speed: number): BaseStats => ({ hp, attack, defense, speed });
@@ -1835,6 +1841,16 @@ export const SPECIES: readonly Species[] = [
     folklore: 'Swahili (Tanzanie) — le Mngwa, « l’étrange », fauve gris grand comme un âne qui rôde la nuit autour des villages de la côte.',
     description: 'Il rôde sans un bruit autour des villages et suit votre odeur, de plus en plus près. Quand il vous voit enfin, il charge.',
     look: { plan: 'quadrupede', colors: ['#7a7a74', '#3a3836', '#ffd040'], features: ['yeux'], size: 1.05 },
+  },
+
+  // ── Le chiot que Djenna confie à sa sœur ──
+  {
+    id: 145, name: 'Wouloupi', category: 'Jinémon Chiot de Minuit', types: ['Normal', 'Ténèbres'],
+    baseStats: stats(70, 80, 70, 90), catchRate: 45, baseXp: 150,
+    learnset: LS.wouloupi, talent: 'oeilVigilant',
+    folklore: 'Congo et Mandingue — le basenji, petit chien des chasseurs qui ne sait pas aboyer mais « chante », et que l’on dit capable de voir les esprits de la nuit.',
+    description: 'Un chiot noir aux grandes oreilles et à la queue en tire-bouchon. Il n’aboie jamais : il chante. Il ne quitte plus celle qui l’a adopté.',
+    look: { plan: 'quadrupede', colors: ['#1a1820', '#f2ede4', '#e8a83a'], features: [], size: 0.6 },
   },
 
 ];

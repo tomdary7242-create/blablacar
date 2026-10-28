@@ -2,7 +2,7 @@
 
 > Document généré à partir de `src/data/ginedex.ts` et `src/data/moves.ts`, qui restent la source de vérité.
 
-## Bestiaire (144 espèces)
+## Bestiaire (145 espèces)
 
 ☾ : ne se montre que la nuit (20 h – 5 h). ✦ : Hantise, visible sur la carte la nuit. ◆ : Terreur nocturne. ★ : Légende.
 
@@ -152,6 +152,7 @@
 | 142 | **Dodombre** ◆ | Spectre / Psy |  | Ruse du Conteur | Haoussa (Nigeria, Niger) — le Dodo des contes, monstre qui prend l’apparence des gens pour entrer dans les cases la nuit. |
 | 143 | **Elokloche** ◆ | Esprit / Ténèbres |  | Ruse du Conteur | Mongo (Congo) — les biloko, nains des forêts vêtus de feuilles, qui ensorcellent les voyageurs au tintement de leur clochette. |
 | 144 | **Mngwa** ◆ | Ténèbres / Normal |  | Prestance du Chasseur | Swahili (Tanzanie) — le Mngwa, « l’étrange », fauve gris grand comme un âne qui rôde la nuit autour des villages de la côte. |
+| 145 | **Wouloupi** | Normal / Ténèbres |  | Œil Vigilant | Congo et Mandingue — le basenji, petit chien des chasseurs qui ne sait pas aboyer mais « chante », et que l’on dit capable de voir les esprits de la nuit. Offert par Djenna après son duel amical. |
 
 ## Hantises
 

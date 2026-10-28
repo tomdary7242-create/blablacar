@@ -5,6 +5,7 @@ export type ItemId =
   | 'calebasseOrnee'
   | 'calebasseAncetres'
   | 'calebasseRoyale'
+  | 'calebasseMaster'
   | 'karite'
   | 'bissap'
   | 'painDeSinge'
@@ -12,12 +13,14 @@ export type ItemId =
   | 'kola'
   | 'mielSauvage'
   | 'baumeAnciens'
+  | 'gateauFraise'
   | 'nasse'
   | 'amulettePartage'
   | 'menottes'
   | 'sacCouchage';
 
 export type ItemEffect =
+  /** Bonus de capture (`Infinity` : la capture réussit à coup sûr). */
   | { kind: 'capture'; bonus: number }
   | { kind: 'soin'; amount: number }
   | { kind: 'guerison' }
@@ -52,6 +55,10 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
     name: 'Calebasse Royale', price: 2400, effect: { kind: 'capture', bonus: 3.5 },
     description: 'Ornée de cauris et de fils d’or, digne des rois du Mandé. Presque aucun Jinémon ne lui résiste.',
   },
+  calebasseMaster: {
+    name: 'Calebasse Master', price: 0, effect: { kind: 'capture', bonus: Infinity },
+    description: 'Le cadeau de Djenna. Aucun Jinémon sauvage ne lui résiste : la capture réussit à tous les coups.',
+  },
   karite: {
     name: 'Beurre de Karité', price: 100, effect: { kind: 'soin', amount: 20 },
     description: 'Un baume nourrissant. Restaure 20 PV.',
@@ -79,6 +86,10 @@ const DEFS: Record<ItemId, Omit<Item, 'id'>> = {
   baumeAnciens: {
     name: 'Baume des Anciens', price: 3000, effect: { kind: 'restauration' },
     description: 'Une recette que les guérisseuses se transmettent en secret. Restaure tous les PV et guérit les altérations.',
+  },
+  gateauFraise: {
+    name: 'Gâteau à la Fraise', price: 0, effect: { kind: 'restauration' },
+    description: 'Un gâteau à la fraise fait maison par Djenna. Une bouchée, et un Jinémon retrouve tous ses PV et se remet de ses altérations.',
   },
   amulettePartage: {
     name: 'Amulette du Partage', price: 0, effect: { kind: 'cle' },
