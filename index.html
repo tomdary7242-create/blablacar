@@ -10,6 +10,14 @@
   </head>
   <body>
     <main id="app">
+      <noscript>
+        <p class="sans-js">
+          <strong>Le jeu ne peut pas démarrer ici.</strong><br />
+          L’aperçu de fichiers du téléphone affiche la page sans lancer le jeu.<br />
+          Ouvrez ce fichier sur un ordinateur (Chrome, Safari, Edge, Firefox), ou ouvrez le lien du jeu dans un
+          navigateur.
+        </p>
+      </noscript>
       <div id="cadre">
         <canvas id="ecran" width="320" height="240" aria-label="Ginémon"></canvas>
       </div>
@@ -27,7 +35,6 @@
         </div>
       </div>
     </main>
-    <noscript>Ginémon nécessite JavaScript.</noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

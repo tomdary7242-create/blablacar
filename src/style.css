@@ -196,3 +196,15 @@ body.tactile #manette {
     transform: none;
   }
 }
+
+/* Sans JavaScript (aperçu de fichiers d'un téléphone) : expliquer comment lancer le jeu. */
+.sans-js {
+  max-width: 34em;
+  margin: 24px auto;
+  padding: 16px;
+  border: 2px solid var(--ocre);
+  border-radius: 8px;
+  color: var(--creme);
+  font: 16px/1.5 system-ui, sans-serif;
+  text-align: center;
+}
