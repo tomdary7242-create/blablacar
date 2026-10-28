@@ -28,7 +28,7 @@ gardée telle quelle sur la branche [`sauvegarde/ginemon-complet`](../../tree/sa
   Esprit). Leurs insignes s’obtiennent comme avant ; l’Insigne de l’Enclume suffit à briser les rochers fissurés.
 - **De l’aide avant chaque Arène** : le vieux forgeron chassé de sa Forge confie un Kappou (Eau), et une herboriste du
   Marigot un Kaméléo (Plante). Avec eux, chaque starter gagne les deux Arènes.
-- **Djenna, la sœur de Lisa**, qui parle un anglais approximatif, accourt quand on sort de la Forge après avoir battu
+- **Djenna, la petite sœur de Lisa**, qui parle un anglais approximatif, accourt quand on sort de la Forge après avoir battu
   Sirafa : elle offre **5 Calebasses Master** (la capture réussit à tous les coups) et un **Gâteau à la Fraise** (un
   Jinémon retrouve tous ses PV et se remet de ses altérations). On la retrouve à l’entrée du Marigot pour un **duel
   amical** : perdu, elle soigne l’équipe et l’on recommence quand on veut ; gagné, elle confie **Wouloupi**, un chiot

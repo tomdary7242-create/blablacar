@@ -8,7 +8,7 @@ import { captureChance } from '../src/engine/combat';
 import { applyItem, createJinemon, maxHp } from '../src/engine/creature';
 import { seededRng } from '../src/engine/rng';
 
-describe('Djenna, la sœur de l’héroïne', () => {
+describe('Djenna, la petite sœur de l’héroïne', () => {
   it('accourt à la sortie de la Forge, une fois Sirafa battu, et offre ses cadeaux une seule fois', () => {
     const visit = ZONES.terresRouges.npcs.find((n) => n.id === 'djennaVisite')!;
     expect(visit.showFlag).toBe('dresseur:sirafa');
